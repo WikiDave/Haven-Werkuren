@@ -90,19 +90,25 @@
     internet: 0.80,                           // per volle shift, enkel erkend (pool)
     mtcValue: 7.00, mtcOwn: 1.09,             // maaltijdcheque; eigen bijdrage per volle shift
     wijziging: 17.17, afbestelWeekend: 115.16,
-    tax: {                                    // personenbelasting, inkomsten 2026 (aanslagjaar 2027)
-      costRate: 0.30, costMax: 6070,
-      brackets: [[16720, 0.25], [29510, 0.40], [51070, 0.45], [Infinity, 0.50]],
-      taxFree: 11550,
-      // belastingvrije som wordt niet met de gewone schalen verrekend maar met deze schaal (AJ 2017–2029)
-      taxFreeScale: [[11750, 0.25], [16720, 0.30], [27860, 0.40], [51070, 0.45], [Infinity, 0.50]],
-      kidsSupplement: [0, 2130, 5130, 11440, 18510], extraKid: 7070, // totaal voor 0..4 kinderen, + per kind boven 4
-      under3: 740,                            // per kind jonger dan 3 jaar (zonder kinderopvangkosten)
-      otherDependent: 1980, singleParent: 1980,
-      kidsCreditMax: 550,                     // terugbetaalbaar belastingkrediet voor kinderen ten laste
-      quotientRate: 0.30, quotientMax: 11780, // huwelijksquotiënt
-      pension: [[1050, 0.30], [1350, 0.25]],  // pensioensparen: max storting, belastingvermindering
-    },
+  }];
+
+  // --- belastingbedragen ------------------------------------------------------------
+  // Standaardbedragen. De app laadt de nieuwste versie uit belasting.json (zelfde vorm) en
+  // eigen aanpassingen van de gebruiker gaan daar nog boven: zie setTaxTables.
+  // Personenbelasting per inkomstenjaar ("from" = 1 januari van dat jaar).
+  const DEFAULT_INCOME_TAX = [{
+    from: '2026-01-01',                       // inkomsten 2026, aanslagjaar 2027
+    costRate: 0.30, costMax: 6070,
+    brackets: [[16720, 0.25], [29510, 0.40], [51070, 0.45], [Infinity, 0.50]],
+    taxFree: 11550,
+    // belastingvrije som wordt niet met de gewone schalen verrekend maar met deze schaal (AJ 2017–2029)
+    taxFreeScale: [[11750, 0.25], [16720, 0.30], [27860, 0.40], [51070, 0.45], [Infinity, 0.50]],
+    kidsSupplement: [0, 2130, 5130, 11440, 18510], extraKid: 7070, // totaal voor 0..4 kinderen, + per kind boven 4
+    under3: 740,                              // per kind jonger dan 3 jaar (zonder kinderopvangkosten)
+    otherDependent: 1980, singleParent: 1980,
+    kidsCreditMax: 550,                       // terugbetaalbaar belastingkrediet voor kinderen ten laste
+    quotientRate: 0.30, quotientMax: 11780,   // huwelijksquotiënt
+    pension: [[1050, 0.30], [1350, 0.25]],    // pensioensparen: max storting, belastingvermindering
   }];
 
   // verplaatsingsvergoeding eigen vervoer per shift (per deelgemeente)
@@ -151,7 +157,6 @@
     advance: 0, garnishment: 0, voluntary: 0, groupInsurance: 0,
     extraType: 'A',             // type van wijzigings- en afbestelvergoeding (nog te bevestigen)
     municipalRate: 6.9,         // aanvullende gemeentebelasting in % (Brugge, aanslagjaar 2026)
-    bvTaxFree: 0,               // eigen belastingvrije som voor de voorheffing (0 = bedrag uit de sleutelformule)
   };
 
   // --- feestdagen -------------------------------------------------------------
@@ -294,7 +299,7 @@
   // Bedragen voor betalingen vanaf 1/1/2026. De tarieven bevatten al 7% gemeentebelasting.
   // De verminderingen voor kinderen en het maximum van het huwelijksquotiënt voor 2026 werden niet
   // gevonden: dat zijn de bedragen van 2024 x 11170/10580 (zelfde indexering als de belastingvrije som).
-  const WITHHOLDING = [{
+  const DEFAULT_WITHHOLDING = [{
     from: '2026-01-01',
     scale: [[16710, 0.2675], [29500, 0.4280], [51050, 0.4815], [Infinity, 0.5350]],
     costRate: 0.30, costMax: 6070,
@@ -303,6 +308,27 @@
     kidsReduction: [0, 621, 1660, 4396, 7614, 11098, 14582, 18104, 21968], extraKid: 3864,
     werkbonusRate: 0.3314,                    // vermindering: 33,14% van de werkbonus (luik A)
   }];
+
+  // in JSON staat "null" voor een schijf zonder bovengrens; hier is dat Infinity
+  const toInf = (rows) => rows.map(([upper, rate]) => [upper == null ? Infinity : Number(upper), Number(rate)]);
+  const PAIR_FIELDS = ['scale', 'brackets', 'taxFreeScale', 'pension'];
+  function normalizeTable(list) {
+    if (!Array.isArray(list) || !list.length) return null;
+    const out = list.filter((x) => x && typeof x.from === 'string').map((x) => {
+      const y = { ...x };
+      for (const f of PAIR_FIELDS) if (Array.isArray(y[f])) y[f] = toInf(y[f]);
+      return y;
+    }).sort((a, b) => a.from.localeCompare(b.from));
+    return out.length ? out : null;
+  }
+  let WITHHOLDING = DEFAULT_WITHHOLDING;
+  let INCOME_TAX = DEFAULT_INCOME_TAX;
+  // tabellen vervangen (bv. uit belasting.json, met eigen aanpassingen); leeg = standaard
+  function setTaxTables({ withholding, incomeTax } = {}) {
+    WITHHOLDING = normalizeTable(withholding) || DEFAULT_WITHHOLDING;
+    INCOME_TAX = normalizeTable(incomeTax) || DEFAULT_INCOME_TAX;
+  }
+  const getTaxTables = () => ({ withholding: WITHHOLDING, incomeTax: INCOME_TAX });
 
   // basisschaal met afronding op de cent in elke stap (zoals in de sleutelformule)
   function scaleTax(amount, scale) {
@@ -320,7 +346,7 @@
   function estimateWithholding(belastbaar, settings, date) {
     const s = { ...DEFAULT_SETTINGS, ...settings };
     const w = validOn(WITHHOLDING, date);
-    const taxFree = Number(s.bvTaxFree) > 0 ? Number(s.bvTaxFree) : w.taxFree;
+    const taxFree = w.taxFree;
     // A. bruto jaarinkomen, B. min forfaitaire beroepskosten
     const month = round2(Math.max(0, belastbaar) * 2);
     const year = round2(month * 12);
@@ -368,7 +394,7 @@
     const s = { ...DEFAULT_SETTINGS, ...settings };
     const d = Object.fromEntries(['realCosts', 'kidsUnder3', 'partnerIncome', 'partnerWithholding', 'pension',
       'workBonus', 'otherReductions', 'taxFree', 'costMax'].map((k) => [k, Math.max(0, Number(details[k]) || 0)]));
-    const t = { ...validOn(PARAMS, `${year}-12-31`).tax };
+    const t = { ...validOn(INCOME_TAX, `${year}-12-31`) };
     if (d.taxFree > 0) t.taxFree = d.taxFree;
     if (d.costMax > 0) t.costMax = d.costMax;
     const couple = ['gehuwd', 'wettelijk-samenwonend'].includes(s.civil);
@@ -539,7 +565,7 @@
     round2, addDays, weekday, periodOf, paymentDate,
     START_HOURS, RATE_ROWS, DEFAULT_RATE_PERIODS, FUNCTIONS, FUNCTION_GROUPS, functionOf, PARAMS, TRAVEL, PLACES, DEFAULT_SETTINGS,
     legalHolidays, holidays, holidayOn, tariffRow, rateFor, travelAllowance,
-    WITHHOLDING, shiftLines, estimateWithholding, estimateAnnualTax, calcPeriod, calcAll,
+    DEFAULT_WITHHOLDING, DEFAULT_INCOME_TAX, setTaxTables, getTaxTables, normalizeTable, shiftLines, estimateWithholding, estimateAnnualTax, calcPeriod, calcAll,
     CLOTHING, CLOTHING_ITEMS, clothingPointsFor, clothingLedger,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

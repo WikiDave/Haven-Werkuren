@@ -152,6 +152,13 @@
   .taxresult.pay { background: var(--accent-soft); color: var(--ot); }
   @media (prefers-color-scheme: dark) { .taxresult.back { background: #17352a; color: #7fd6a4; } }
   .taxh { font-size: 15px; margin: 18px 0 2px; }
+  .tbrow { display: grid; grid-template-columns: 1fr 120px; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px dashed var(--line); }
+  .tbrow label { margin: 0; color: var(--text); font-size: 14px; }
+  .tbrow input, .tbpair input { min-height: 38px; padding: 6px 8px; text-align: right; }
+  .tbgroup { padding: 8px 0 4px; border-top: 1px dashed var(--line); }
+  .tbgroup > b { font-size: 14px; }
+  .tbpair .span2 { grid-column: span 2; }
+  .tbpair { display: grid; grid-template-columns: auto 1fr auto 90px auto; gap: 6px; align-items: center; margin-top: 6px; font-size: 13px; color: var(--muted); }
   .li-amt { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .del {
     border: 0; background: transparent; color: var(--danger); width: 36px; height: 36px;
@@ -516,11 +523,7 @@
       <label for="tx-realCosts">Werkelijke beroepskosten (laat leeg voor het forfait)</label>
       <input id="tx-realCosts" data-tx="realCosts" inputmode="decimal" placeholder="forfait">
 
-      <h3 class="taxh">5. Bedragen van de belasting (alleen als ze veranderd zijn)</h3>
-      <div class="row2">
-        <div><label for="tx-taxFree">Belastingvrije som</label><input id="tx-taxFree" data-tx="taxFree" inputmode="decimal"></div>
-        <div><label for="tx-costMax">Max. forfaitaire beroepskosten</label><input id="tx-costMax" data-tx="costMax" inputmode="decimal"></div>
-      </div>
+      <p class="hint">De belastingbedragen zelf (belastingvrije som, schalen, …) zie en wijzig je bij <b>Belastingbedragen</b>.</p>
       <button type="button" class="btn ghost" id="taxClear">Gegevens van dit jaar wissen</button>
     </details>
     <p class="hint" id="taxHint"></p>
@@ -613,11 +616,7 @@
         <label for="sWhPct">Percentage van het belastbaar bedrag</label>
         <input id="sWhPct" data-s="withholdingPct" data-t="num" inputmode="decimal" placeholder="bv. 25">
       </div>
-      <div id="bvWrap">
-        <label for="sBvTaxFree">Belastingvrije som in de sleutelformule</label>
-        <input id="sBvTaxFree" data-s="bvTaxFree" data-t="num" inputmode="decimal" placeholder="11170">
-        <p class="hint">Leeg laten voor het bedrag van 2026 (€ 11.170). Pas het aan als de voorheffing op je loonbrief anders is, bv. na de belastinghervorming.</p>
-      </div>
+      <p class="hint" id="bvHint">De voorheffing wordt berekend met de sleutelformule. De bedragen ervan zie en wijzig je bij <b>Belastingbedragen</b>.</p>
       <label for="sExtraWh">Extra bedrag afhouden per uitbetaling</label>
       <input id="sExtraWh" data-s="extraWithholding" data-t="num" inputmode="decimal" placeholder="0">
       <label for="sMunicipal">Gemeentebelasting (%)</label>
@@ -667,6 +666,28 @@
   </section>
 
   <section class="card">
+    <details class="fold" data-fold="bedragen" id="tbBox">
+      <summary><h2>Belastingbedragen</h2></summary>
+      <p class="hint" id="tbInfo"></p>
+      <div class="ptabs" id="tbKind">
+        <button type="button" data-k="withholding">Voorheffing</button>
+        <button type="button" data-k="incomeTax">Belastingbrief</button>
+      </div>
+      <div class="ptabs" id="tbPeriods"></div>
+      <div id="tbFromWrap">
+        <label for="tbFrom">Geldig vanaf</label>
+        <input type="date" id="tbFrom">
+      </div>
+      <p class="hint" id="tbState"></p>
+      <div id="tbFields"></div>
+      <div class="tools">
+        <button type="button" class="btn ghost" id="tbAdd">Nieuwe bedragen vanaf…</button>
+        <button type="button" class="btn ghost" id="tbReset">Automatische bedragen terugzetten</button>
+      </div>
+    </details>
+  </section>
+
+  <section class="card">
     <details class="fold" data-fold="tarieven">
       <summary><h2>Tarieven</h2></summary>
       <p class="hint">Elke dag wordt berekend met de tarieven die op die datum golden. Pas je een datum of bedrag aan, dan worden alle dagen opnieuw berekend.</p>
@@ -706,11 +727,11 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-05.4"></script>
+<script src="loon.js?v=2026-10-05.5"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-05.4';
+const APP_VERSION = '2026-10-05.5';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -813,6 +834,8 @@ const APP_VERSION = '2026-10-05.4';
   const KEY_COUNTED = 'haven-werkuren.deviceCounted';
   const KEY_MEDICAL = 'haven-werkuren.medicalChecks';
   const KEY_TAX_EXTRA = 'haven-werkuren.taxExtras';
+  const KEY_TAX_REMOTE = 'haven-werkuren.taxTablesRemote'; // laatst opgehaalde belasting.json
+  const KEY_TAX_USER = 'haven-werkuren.taxTablesUser';     // eigen aanpassingen per periode
   const KEY_PURCHASES = 'haven-werkuren.clothingPurchases';
   const KEY_CLOTH_START = 'haven-werkuren.clothingStart';
   const KEY_FOLDS = 'haven-werkuren.folds';
@@ -849,6 +872,40 @@ const APP_VERSION = '2026-10-05.4';
   let purchases = load(KEY_PURCHASES, []);
   let medChecks = load(KEY_MEDICAL, []); // [{ id, date, note }]
   let taxExtras = load(KEY_TAX_EXTRA, {}); // { jaar: { income, withholding } }
+  let taxUser = load(KEY_TAX_USER, { withholding: {}, incomeTax: {} }); // { soort: { vanaf: bedragen } }
+  // belastingbedragen: standaard < belasting.json (automatisch) < eigen aanpassingen
+  function baseTaxTables() {
+    const r = load(KEY_TAX_REMOTE, null);
+    return {
+      withholding: Loon.normalizeTable(r?.withholding) || Loon.DEFAULT_WITHHOLDING,
+      incomeTax: Loon.normalizeTable(r?.incomeTax) || Loon.DEFAULT_INCOME_TAX,
+      updated: r?.updated || '',
+    };
+  }
+  function effectiveTaxTable(kind) {
+    const map = new Map(baseTaxTables()[kind].map((x) => [x.from, x]));
+    for (const [from, obj] of Object.entries(taxUser[kind] || {})) map.set(from, { ...obj, from });
+    return Loon.normalizeTable([...map.values()]);
+  }
+  const applyTaxTables = () => Loon.setTaxTables({ withholding: effectiveTaxTable('withholding'), incomeTax: effectiveTaxTable('incomeTax') });
+  // oudere instellingen omzetten naar eigen belastingbedragen
+  (() => {
+    let changed = false;
+    if (Number(settings.bvTaxFree) > 0) {
+      const base = baseTaxTables().withholding[0];
+      taxUser.withholding[base.from] = { ...base, taxFree: Number(settings.bvTaxFree) };
+      delete settings.bvTaxFree; save(KEY_SETTINGS, settings); changed = true;
+    }
+    for (const [y, d] of Object.entries(taxExtras)) {
+      if (!(Number(d.taxFree) > 0 || Number(d.costMax) > 0)) continue;
+      const from = `${y}-01-01`;
+      const base = taxUser.incomeTax[from] || Loon.normalizeTable(baseTaxTables().incomeTax).filter((x) => x.from <= from).pop() || Loon.DEFAULT_INCOME_TAX[0];
+      taxUser.incomeTax[from] = { ...base, from, ...(Number(d.taxFree) > 0 && { taxFree: Number(d.taxFree) }), ...(Number(d.costMax) > 0 && { costMax: Number(d.costMax) }) };
+      delete d.taxFree; delete d.costMax; changed = true;
+    }
+    if (changed) { save(KEY_TAX_USER, taxUser); save(KEY_TAX_EXTRA, taxExtras); }
+  })();
+  applyTaxTables();
   let taxYear = new Date().getFullYear();
   let clothingStart = load(KEY_CLOTH_START, { date: '', points: 0 });
   let companyLocations = load(KEY_CO_LOCS, {}); // door jou aangepaste plaatsen per bedrijf
@@ -1437,7 +1494,7 @@ const APP_VERSION = '2026-10-05.4';
   const numIn = (v) => (String(v ?? '').trim() ? Number(String(v).replace(',', '.')) : 0);
   const numOut = (n) => (n ? String(n).replace('.', ',') : '');
   const TAX_FIELDS = ['ficheIncome', 'ficheWithholding', 'workBonus', 'income', 'withholding', 'kidsUnder3',
-    'partnerIncome', 'partnerWithholding', 'pension', 'otherReductions', 'realCosts', 'taxFree', 'costMax'];
+    'partnerIncome', 'partnerWithholding', 'pension', 'otherReductions', 'realCosts'];
   const CIVIL_NAMES = { ongehuwd: 'ongehuwd', gehuwd: 'gehuwd', 'wettelijk-samenwonend': 'wettelijk samenwonend', gescheiden: 'gescheiden', weduwe: 'weduwe / weduwnaar' };
   function renderTax() {
     const y = String(taxYear);
@@ -1451,12 +1508,9 @@ const APP_VERSION = '2026-10-05.4';
     const taxable = (useFiche ? Number(d.ficheIncome) : appTaxable) + (Number(d.income) || 0);
     const withheld = (has('ficheWithholding') ? Number(d.ficheWithholding) : appWithheld) + (Number(d.withholding) || 0);
     const r = Loon.estimateAnnualTax({ belastbaar: taxable, voorheffing: withheld, year: taxYear, settings, details: d });
-    const t = Loon.PARAMS[Loon.PARAMS.length - 1].tax;
 
     // formulier invullen
     for (const k of TAX_FIELDS) $('tx-' + k).value = numOut(d[k]);
-    $('tx-taxFree').placeholder = numOut(t.taxFree);
-    $('tx-costMax').placeholder = numOut(t.costMax);
     $('taxPartner').hidden = !r.couple;
     $('taxFamily').textContent = `Je gezinssituatie stel je in bij Netto-instellingen. Nu: ${CIVIL_NAMES[settings.civil] || settings.civil}, `
       + `${Number(settings.kids) || 0} kind(eren) ten laste, ${Number(settings.others) || 0} andere persoon/personen ten laste.`
@@ -1771,6 +1825,154 @@ const APP_VERSION = '2026-10-05.4';
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 
+  // --- belastingbedragen bekijken en aanpassen --------------------------------
+  const TB_SCHEMA = {
+    withholding: [
+      ['taxFree', 'Belastingvrije som', 'eur'],
+      ['costRate', 'Forfaitaire beroepskosten', 'pct'],
+      ['costMax', 'Max. forfaitaire beroepskosten', 'eur'],
+      ['scale', 'Schalen (incl. 7% gemeentebelasting)', 'pairs'],
+      ['werkbonusRate', 'Vermindering op de werkbonus', 'pct'],
+      ['quotientRate', 'Huwelijksquotiënt', 'pct'],
+      ['quotientMax', 'Max. huwelijksquotiënt', 'eur'],
+      ['kidsReduction', 'Vermindering kinderen ten laste', 'kids'],
+      ['extraKid', 'Per kind boven het laatste', 'eur'],
+    ],
+    incomeTax: [
+      ['taxFree', 'Belastingvrije som', 'eur'],
+      ['costRate', 'Forfaitaire beroepskosten', 'pct'],
+      ['costMax', 'Max. forfaitaire beroepskosten', 'eur'],
+      ['brackets', 'Belastingschalen', 'pairs'],
+      ['taxFreeScale', 'Schaal voor de belastingvrije som', 'pairs'],
+      ['kidsSupplement', 'Toeslag kinderen ten laste (totaal)', 'kids'],
+      ['extraKid', 'Per kind boven het laatste', 'eur'],
+      ['under3', 'Per kind jonger dan 3 jaar', 'eur'],
+      ['otherDependent', 'Andere persoon ten laste', 'eur'],
+      ['singleParent', 'Alleenstaande ouder', 'eur'],
+      ['kidsCreditMax', 'Max. belastingkrediet kinderen', 'eur'],
+      ['quotientRate', 'Huwelijksquotiënt', 'pct'],
+      ['quotientMax', 'Max. huwelijksquotiënt', 'eur'],
+      ['pension', 'Pensioensparen (max. storting, vermindering)', 'pairs'],
+    ],
+  };
+  let tbKind = 'withholding';
+  let tbFrom = '';
+  const pctOut = (r) => String(Math.round(r * 1e6) / 1e4).replace('.', ',');
+  function tbPeriodName(kind, from) {
+    return kind === 'incomeTax' ? `Inkomsten ${from.slice(0, 4)}` : `Vanaf ${fmtDate(from)}`;
+  }
+  function renderTaxTables() {
+    const list = effectiveTaxTable(tbKind);
+    if (!list.some((x) => x.from === tbFrom)) tbFrom = list[list.length - 1].from;
+    const cur = list.find((x) => x.from === tbFrom);
+    const base = baseTaxTables();
+    const own = !!taxUser[tbKind]?.[tbFrom];
+    const inBase = base[tbKind].some((x) => x.from === tbFrom);
+    document.querySelectorAll('#tbKind button').forEach((b) => b.classList.toggle('on', b.dataset.k === tbKind));
+    $('tbPeriods').innerHTML = list.map((x) => `<button type="button" data-from="${x.from}" class="${x.from === tbFrom ? 'on' : ''}">${tbPeriodName(tbKind, x.from)}${taxUser[tbKind]?.[x.from] ? ' ✎' : ''}</button>`).join('');
+    $('tbInfo').textContent = 'De app haalt de nieuwste belastingbedragen automatisch op'
+      + (base.updated ? ` (laatst bijgewerkt op ${fmtDate(base.updated)})` : '')
+      + '. Klopt een bedrag niet met je loonbrief, pas het dan hier aan: jouw aanpassingen gaan voor. Komen er nieuwe bedragen vanaf een bepaalde datum, voeg ze dan toe met "Nieuwe bedragen vanaf…".';
+    $('tbFromWrap').hidden = inBase;
+    $('tbFrom').value = tbFrom;
+    $('tbState').textContent = own ? (inBase ? 'Eigen aanpassingen (✎): die gaan voor op de automatische bedragen.' : 'Eigen bedragen die je zelf toegevoegd hebt.')
+      : 'Automatische bedragen.';
+    $('tbReset').hidden = !own;
+    $('tbReset').textContent = inBase ? 'Automatische bedragen terugzetten' : 'Deze bedragen verwijderen';
+    $('tbFields').innerHTML = TB_SCHEMA[tbKind].map(([f, label, type]) => {
+      const v = cur[f];
+      if (v === undefined) return '';
+      if (type === 'eur' || type === 'pct') {
+        return `<div class="tbrow"><label for="tb-${f}">${label}${type === 'pct' ? ' (%)' : ' (€)'}</label>
+          <input id="tb-${f}" data-f="${f}" data-t="${type}" inputmode="decimal" value="${type === 'pct' ? pctOut(v) : numOut(v)}"></div>`;
+      }
+      if (type === 'kids') {
+        return `<div class="tbgroup"><b>${label} (€)</b>${v.slice(1).map((n, i) => `<div class="tbrow"><label for="tb-${f}-${i + 1}">${i + 1} ${i ? 'kinderen' : 'kind'}</label>
+          <input id="tb-${f}-${i + 1}" data-f="${f}" data-t="kids" data-i="${i + 1}" inputmode="decimal" value="${numOut(n)}"></div>`).join('')}</div>`;
+      }
+      // schijven: [bovengrens, tarief]
+      return `<div class="tbgroup"><b>${label}</b>${v.map(([upper, rate], i) => {
+        const lower = i ? v[i - 1][0] : 0;
+        const range = upper === Infinity ? `<span class="span2">boven ${numOut(lower) || 0}</span>`
+          : `<span>${f === 'pension' ? 'tot' : `van ${numOut(lower) || 0} tot`}</span>`
+            + `<input data-f="${f}" data-t="pair" data-i="${i}" data-j="0" inputmode="decimal" value="${numOut(upper)}" aria-label="bovengrens">`;
+        return `<div class="tbpair">${range}<span>:</span>
+          <input data-f="${f}" data-t="pair" data-i="${i}" data-j="1" inputmode="decimal" value="${pctOut(rate)}" aria-label="tarief"><span>%</span></div>`;
+      }).join('')}</div>`;
+    }).join('');
+  }
+  function saveTaxPeriod(kind, from, obj) {
+    taxUser[kind] = { ...(taxUser[kind] || {}), [from]: obj };
+    save(KEY_TAX_USER, taxUser);
+    applyTaxTables(); render(); renderTaxTables();
+  }
+  $('tbKind').addEventListener('click', (ev) => {
+    const k = ev.target.closest('[data-k]')?.dataset.k;
+    if (k) { tbKind = k; tbFrom = ''; renderTaxTables(); }
+  });
+  $('tbPeriods').addEventListener('click', (ev) => {
+    const f = ev.target.closest('[data-from]')?.dataset.from;
+    if (f) { tbFrom = f; renderTaxTables(); }
+  });
+  $('tbFields').addEventListener('change', (ev) => {
+    const el = ev.target.closest('[data-f]');
+    if (!el) return;
+    let n = numIn(el.value);
+    if (!Number.isFinite(n) || n < 0) { renderTaxTables(); return alert('Vul een geldig bedrag of percentage in.'); }
+    const cur = structuredClone(effectiveTaxTable(tbKind).find((x) => x.from === tbFrom));
+    const f = el.dataset.f, t = el.dataset.t;
+    if (t === 'pct') cur[f] = n / 100;
+    else if (t === 'eur') cur[f] = n;
+    else if (t === 'kids') cur[f][Number(el.dataset.i)] = n;
+    else cur[f][Number(el.dataset.i)][Number(el.dataset.j)] = el.dataset.j === '1' ? n / 100 : n;
+    saveTaxPeriod(tbKind, tbFrom, cur);
+  });
+  $('tbAdd').addEventListener('click', () => {
+    const list = effectiveTaxTable(tbKind);
+    const last = list[list.length - 1];
+    let from;
+    if (tbKind === 'incomeTax') from = `${Number(last.from.slice(0, 4)) + 1}-01-01`;
+    else {
+      let d = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+      while (list.some((x) => x.from >= isoDate(d))) d = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+      from = isoDate(d);
+    }
+    tbFrom = from;
+    saveTaxPeriod(tbKind, from, { ...structuredClone(last), from });
+  });
+  $('tbFrom').addEventListener('change', () => {
+    const v = $('tbFrom').value;
+    const list = effectiveTaxTable(tbKind);
+    if (!v || list.some((x) => x.from === v)) { renderTaxTables(); return alert('Kies een datum die nog niet gebruikt wordt.'); }
+    const obj = { ...taxUser[tbKind][tbFrom], from: v };
+    delete taxUser[tbKind][tbFrom];
+    tbFrom = v;
+    saveTaxPeriod(tbKind, v, obj);
+  });
+  $('tbReset').addEventListener('click', () => {
+    const inBase = baseTaxTables()[tbKind].some((x) => x.from === tbFrom);
+    if (!confirm(inBase ? 'Je eigen aanpassingen voor deze periode wissen?' : 'Deze bedragen verwijderen?')) return;
+    delete taxUser[tbKind][tbFrom];
+    save(KEY_TAX_USER, taxUser);
+    if (!inBase) tbFrom = '';
+    applyTaxTables(); render(); renderTaxTables();
+  });
+
+  // nieuwste bedragen ophalen (enkel op de echte website)
+  async function refreshTaxTables() {
+    if (!location.protocol.startsWith('http')) return;
+    try {
+      const res = await fetch(`belasting.json?t=${Date.now()}`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const j = await res.json();
+      if (!Loon.normalizeTable(j.withholding) || !Loon.normalizeTable(j.incomeTax)) return;
+      const next = { updated: j.updated || '', withholding: j.withholding, incomeTax: j.incomeTax };
+      if (JSON.stringify(next) === JSON.stringify(load(KEY_TAX_REMOTE, null))) return;
+      save(KEY_TAX_REMOTE, next);
+      applyTaxTables(); render(); renderTaxTables();
+    } catch { /* offline: verder met de bewaarde bedragen */ }
+  }
+
   // --- netto-instellingen -------------------------------------------------
   $('sPlace').innerHTML = Loon.PLACES.map((p) => `<option value="${escapeHtml(p)}">${escapeHtml(p)} (${money(Loon.TRAVEL[Loon.TRAVEL.length - 1].table[p])})</option>`).join('');
   const settingInputs = [...document.querySelectorAll('[data-s]')];
@@ -1784,7 +1986,7 @@ const APP_VERSION = '2026-10-05.4';
     $('placeWrap').hidden = settings.transport !== 'auto';
     $('bikeWrap').hidden = settings.transport !== 'fiets';
     $('pctWrap').hidden = settings.withholdingMode !== 'percentage';
-    $('bvWrap').hidden = settings.withholdingMode === 'percentage';
+    $('bvHint').hidden = settings.withholdingMode === 'percentage';
   }
   $('settingsBox').addEventListener('change', (ev) => {
     const el = ev.target.closest('[data-s]');
@@ -1899,7 +2101,7 @@ const APP_VERSION = '2026-10-05.4';
   }
   $('exportJson').addEventListener('click', () => {
     download(`werkuren-backup-${isoDate(new Date())}.json`,
-      JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, medChecks, taxExtras }, null, 2), 'application/json');
+      JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, medChecks, taxExtras, taxUser }, null, 2), 'application/json');
   });
   $('importBtn').addEventListener('click', () => $('importFile').click());
   $('importFile').addEventListener('change', async (ev) => {
@@ -1918,14 +2120,15 @@ const APP_VERSION = '2026-10-05.4';
       if (Array.isArray(data.purchases)) purchases = data.purchases;
       if (Array.isArray(data.medChecks)) medChecks = data.medChecks;
       if (data.taxExtras) taxExtras = data.taxExtras;
+      if (data.taxUser) { taxUser = data.taxUser; applyTaxTables(); }
       if (data.clothingStart) clothingStart = data.clothingStart;
       if (data.companyLocations) companyLocations = data.companyLocations;
       if (data.lastLocation) lastLocation = data.lastLocation;
       if (data.companyPins) companyPins = data.companyPins;
       save(KEY_ENTRIES, entries); save(KEY_PERIODS, periods); save(KEY_SETTINGS, settings); save(KEY_HOLIDAYS, holidayOverrides);
       save(KEY_CUSTOM_CO, customCompanies); save(KEY_HIDDEN_CO, hiddenCompanies);
-      save(KEY_MEDICAL, medChecks); save(KEY_TAX_EXTRA, taxExtras); save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation);
-      renderCompanyPicker(); renderSettings(); renderHolidays(); renderRates(); render();
+      save(KEY_MEDICAL, medChecks); save(KEY_TAX_EXTRA, taxExtras); save(KEY_TAX_USER, taxUser); save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation);
+      renderCompanyPicker(); renderSettings(); renderTaxTables(); renderHolidays(); renderRates(); render();
     } catch { alert('Dit is geen geldig back-upbestand.'); }
     ev.target.value = '';
   });
@@ -1983,6 +2186,8 @@ const APP_VERSION = '2026-10-05.4';
   renderHolidays();
   renderRates();
   selectDay(isoDate(today), false);
+  renderTaxTables();
+  refreshTaxTables();
   countDevice();
   // uitleg bij elke start van de app
   openWelcome();

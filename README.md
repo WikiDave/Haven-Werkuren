@@ -33,6 +33,18 @@ node --test
 
 Functieloon volgens de Codex (artikel 31): basisloon alle werk van de shift plus 1× overuurloon (chauffeurs: tugmaster, heftruck, bobcat, unimog, empty container handler, hoogwerker, tugmaster kaai, verreiker), 2× uurloon (bull, heftruck +20 ton, reachstacker, giekkraan −20 ton, hydraulische kraan) of 2× overuurloon (straddle carrier, portaalkraan, giekkraan +20 ton, RMG/RTG). High/heavy chauffeur = alle werk.
 
+## Belastingbedragen bijwerken
+
+Alle bedragen voor de voorheffing (sleutelformule) en de belastingbrief staan in `belasting.json`:
+
+- `withholding`: sleutelformule bedrijfsvoorheffing, per **betaaldatum** (`from`).
+- `incomeTax`: personenbelasting, per **inkomstenjaar** (`from` = 1 januari).
+- In schalen staat `null` voor een schijf zonder bovengrens.
+
+Komen er nieuwe bedragen (bv. op 1 januari, of vanaf 1 november 2026 na de belastinghervorming), voeg dan een nieuw blok toe met de datum waarop ze ingaan en pas `updated` aan. De app haalt `belasting.json` bij elke start op, dus iedereen krijgt de nieuwe bedragen meteen. Zet dezelfde bedragen ook in `loon.js` (standaardbedragen voor offline gebruik): een test controleert dat beide gelijk zijn.
+
+Gebruikers kunnen in de app bij **Belastingbedragen** zelf bedragen aanpassen of nieuwe bedragen vanaf een datum toevoegen; hun aanpassingen gaan voor op `belasting.json`.
+
 ## Kledijpunten
 
 Volgens de Codex (artikel 39 en bijlage 11): 1 punt per gewerkte shift, 2 punten voor lashing roro, container en high & heavy; saldo afgetopt op 300. Vul het saldo van je loonbrief in als vertrekpunt; afgehaalde kledij gaat van het saldo af.

@@ -85,8 +85,32 @@ test('bedrijfsvoorheffing volgens de sleutelformule 2026', () => {
   assert.equal(bv(2000, { civil: 'gehuwd', spouseDependent: true }), 302.89);
   // werkbonus 50 per halve maand: maand 167,01 - 33,14 = 133,87; / 2 = 66,94
   assert.equal(bv(1000, { werkbonus: 50 }), 66.94);
-  // eigen belastingvrije som (bv. na de hervorming): 11550 x 26,75% = 3089,63 -> 8824,33 / 12 = 735,36 / 2 = 367,68
-  assert.equal(bv(1652.55, { bvTaxFree: 11550 }), 367.68);
+});
+
+test('belastingbedragen vervangen en nieuwe bedragen vanaf een datum', () => {
+  const bv = (belastbaar, date) => Loon.estimateWithholding(belastbaar, {}, date).amount;
+  const w = Loon.DEFAULT_WITHHOLDING[0];
+  try {
+    // vanaf 1 november een hogere belastingvrije som: 11550 x 26,75% = 3089,63 -> 8824,33 / 12 = 735,36 / 2 = 367,68
+    Loon.setTaxTables({ withholding: [w, { ...w, from: '2026-11-01', taxFree: 11550 }] });
+    assert.equal(bv(1652.55, '2026-10-16'), 371.92);
+    assert.equal(bv(1652.55, '2026-11-16'), 367.68);
+    // JSON-vorm: null = schijf zonder bovengrens
+    Loon.setTaxTables({ withholding: [{ ...w, scale: [[16710, 0.2675], [29500, 0.428], [51050, 0.4815], [null, 0.535]] }] });
+    assert.equal(bv(1652.55, '2026-10-16'), 371.92);
+    assert.equal(Loon.getTaxTables().withholding[0].scale[3][0], Infinity);
+  } finally {
+    Loon.setTaxTables();
+  }
+  assert.equal(bv(1652.55, '2026-11-16'), 371.92);
+});
+
+test('belasting.json is gelijk aan de standaardbedragen in loon.js', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const json = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'belasting.json'), 'utf8'));
+  assert.deepEqual(Loon.normalizeTable(json.withholding), Loon.DEFAULT_WITHHOLDING);
+  assert.deepEqual(Loon.normalizeTable(json.incomeTax), Loon.DEFAULT_INCOME_TAX);
 });
 
 test('halve shift, pool en maaltijdcheque', () => {
