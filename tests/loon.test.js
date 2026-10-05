@@ -69,13 +69,48 @@ test('uitbetalingsperiodes', () => {
   assert.equal(Loon.paymentDate(Loon.periodOf('2026-09-20')).date, '2026-10-05');
 });
 
-test('voorheffing-schatting', () => {
-  // 2000 x 24 = 48000; kosten 6070; basis 41930; belasting 14885 - 2887,50 = 11997,50; / 24
-  assert.equal(Loon.estimateWithholding(2000, {}, '2026-09-01').amount, 499.9);
-  assert.equal(Loon.estimateWithholding(236.58, {}, '2026-08-01').amount, 0);
-  const r = Loon.estimateWithholding(2000, { kids: 1 }, '2026-09-01');
-  assert.equal(r.calculated, false);
-  assert.equal(r.amount, 0);
+test('bedrijfsvoorheffing volgens de sleutelformule 2026', () => {
+  const bv = (belastbaar, settings = {}) => Loon.estimateWithholding(belastbaar, settings, '2026-09-16').amount;
+  // loonbrieven zonder voorheffing
+  assert.equal(bv(236.58), 0);   // augustus, periode A
+  assert.equal(bv(527.43), 0);   // september, periode A
+  // 1652,55 x 2 x 12 = 39661,20; - 6070 = 33591,20; schaal 9944,05 + 4091,20 x 48,15% = 11913,96
+  // - 11170 x 26,75% (2987,98) = 8925,98; / 12 = 743,83; / 2 = 371,92
+  assert.equal(bv(1652.55), 371.92);
+  // 2000: jaar 48000, netto 41930, schaal 15929,10 - 2987,98 = 12941,12; / 12 = 1078,43; / 2 = 539,22
+  assert.equal(bv(2000), 539.22);
+  // 1 kind: 12941,12 - 621 = 12320,12; / 12 = 1026,68; / 2 = 513,34
+  assert.equal(bv(2000, { kids: 1 }), 513.34);
+  // partner zonder inkomen: 30% = 12579 -> 3364,88 + 9880,28 - 2 x 2987,98 = 7269,20; / 12 = 605,77; / 2 = 302,89
+  assert.equal(bv(2000, { civil: 'gehuwd', spouseDependent: true }), 302.89);
+  // werkbonus 50 per halve maand: maand 167,01 - 33,14 = 133,87; / 2 = 66,94
+  assert.equal(bv(1000, { werkbonus: 50 }), 66.94);
+});
+
+test('belastingbedragen vervangen en nieuwe bedragen vanaf een datum', () => {
+  const bv = (belastbaar, date) => Loon.estimateWithholding(belastbaar, {}, date).amount;
+  const w = Loon.DEFAULT_WITHHOLDING[0];
+  try {
+    // vanaf 1 november een hogere belastingvrije som: 11550 x 26,75% = 3089,63 -> 8824,33 / 12 = 735,36 / 2 = 367,68
+    Loon.setTaxTables({ withholding: [w, { ...w, from: '2026-11-01', taxFree: 11550 }] });
+    assert.equal(bv(1652.55, '2026-10-16'), 371.92);
+    assert.equal(bv(1652.55, '2026-11-16'), 367.68);
+    // JSON-vorm: null = schijf zonder bovengrens
+    Loon.setTaxTables({ withholding: [{ ...w, scale: [[16710, 0.2675], [29500, 0.428], [51050, 0.4815], [null, 0.535]] }] });
+    assert.equal(bv(1652.55, '2026-10-16'), 371.92);
+    assert.equal(Loon.getTaxTables().withholding[0].scale[3][0], Infinity);
+  } finally {
+    Loon.setTaxTables();
+  }
+  assert.equal(bv(1652.55, '2026-11-16'), 371.92);
+});
+
+test('belasting.json is gelijk aan de standaardbedragen in loon.js', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const json = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'belasting.json'), 'utf8'));
+  assert.deepEqual(Loon.normalizeTable(json.withholding), Loon.DEFAULT_WITHHOLDING);
+  assert.deepEqual(Loon.normalizeTable(json.incomeTax), Loon.DEFAULT_INCOME_TAX);
 });
 
 test('halve shift, pool en maaltijdcheque', () => {
@@ -171,4 +206,62 @@ test('functielonen volgens Codex art. 31', () => {
 test('oudere tarieventabel zonder uurloon', () => {
   const old = [{ from: '', values: Object.fromEntries(Object.entries(Loon.DEFAULT_RATE_PERIODS[1].values).map(([k, v]) => [k, { shift: v.shift, overuur: v.overuur }])) }];
   assert.equal(Loon.rateFor(old, '2026-10-06', '08').uur, 24.84);
+});
+
+test('belastingbrief: schatting van de aanslag', () => {
+  // 30000 belastbaar: kosten 6070 (max), netto 23930; belasting 4180 + 7210 x 40% = 7064 - 2887,50 = 4176,50
+  const r = Loon.estimateAnnualTax({ belastbaar: 30000, voorheffing: 4000, year: 2026, settings: {} });
+  assert.equal(r.costs, 6070);
+  assert.equal(r.netTaxable, 23930);
+  assert.equal(r.stateTax, 4176.5);
+  assert.equal(r.municipal, 288.18);      // 6,9% gemeentebelasting Brugge
+  assert.equal(r.total, 4464.68);
+  assert.equal(r.difference, 464.68);     // bijbetalen
+  const low = Loon.estimateAnnualTax({ belastbaar: 8000, voorheffing: 150, year: 2026, settings: {} });
+  assert.equal(low.total, 0);
+  assert.equal(low.difference, -150);     // alles terug
+});
+
+test('belastingbrief: kinderen, partner, pensioensparen en eigen gegevens', () => {
+  const est = (settings, details, belastbaar = 30000, voorheffing = 4000) =>
+    Loon.estimateAnnualTax({ belastbaar, voorheffing, year: 2026, settings, details });
+  // alleenstaande met 1 kind: belastingvrije som 11550 + 2130 + 1980 = 15660
+  // vermindering via aparte schaal: 2937,50 + (15660 - 11750) x 30% = 4110,50; belasting 7064 - 4110,50 = 2953,50
+  const kid = est({ kids: 1 });
+  assert.equal(kid.taxFree, 15660);
+  assert.equal(kid.stateTax, 2953.5);
+  assert.equal(kid.municipal, 203.79);
+  assert.equal(kid.total, 3157.29);
+  // gehuwd, partner zonder inkomen: huwelijksquotiënt 30% van 23930 = 7179
+  const couple = est({ civil: 'gehuwd' });
+  assert.equal(couple.quotient, 7179);
+  assert.equal(couple.stateTax, 1304.9);
+  assert.equal(couple.total, 1394.94);
+  // partner met eigen loon en voorheffing: geen quotiënt nodig, voorheffing van beiden telt mee
+  const both = est({ civil: 'gehuwd' }, { partnerIncome: 30000, partnerWithholding: 4000 });
+  assert.equal(both.quotient, 0);
+  assert.equal(both.voorheffing, 8000);
+  assert.equal(both.stateTax, 8353);
+  // pensioensparen 1050 -> 315 vermindering; 1350 -> 337,50
+  assert.equal(est({}, { pension: 1050 }).pension, 315);
+  assert.equal(est({}, { pension: 1350 }).pension, 337.5);
+  assert.equal(est({}, { pension: 1100 }).pension, 315);   // 30% van 1050 is gunstiger dan 25% van 1100
+  assert.equal(est({}, { pension: 1050 }).stateTax, 4176.5);
+  assert.equal(est({}, { pension: 1050 }).total, 4127.94); // (4176,50 - 315) x 1,069
+  // werkelijke beroepskosten en eigen belastingvrije som
+  assert.equal(est({}, { realCosts: 2000 }).netTaxable, 28000);
+  assert.equal(est({}, { taxFree: 11180 }).taxFreeReduction, 2795);
+  // fiscale werkbonus en kinderkrediet zijn terugbetaalbaar
+  assert.equal(est({}, { workBonus: 500 }, 8000, 0).difference, -500);
+  const lowKids = est({ kids: 2 }, {}, 8000, 0);
+  assert.equal(lowKids.kidsCredit, 550);
+});
+
+test('verlofdagen: geen zondagen en feestdagen, zaterdagen alleen op vraag', () => {
+  // 21-31 december 2026: Kerstmis (vr 25) telt niet, za 26 en zo 27 niet
+  const days = Loon.leaveDays('2026-12-21', '2026-12-31');
+  assert.deepEqual(days, ['2026-12-21', '2026-12-22', '2026-12-23', '2026-12-24', '2026-12-28', '2026-12-29', '2026-12-30', '2026-12-31']);
+  assert.equal(Loon.leaveDays('2026-12-21', '2026-12-31', { saturdays: true }).length, 9);
+  assert.deepEqual(Loon.leaveDays('2026-10-07'), ['2026-10-07']);
+  assert.deepEqual(Loon.leaveDays('2026-10-11', '2026-10-11'), []); // zondag
 });

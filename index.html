@@ -17,16 +17,17 @@
   :root {
     --bg: #f3f5f8; --card: #ffffff; --text: #16202b; --muted: #637083;
     --line: #dde3ea; --accent: #0f5c8c; --accent-soft: #e3eff7;
-    --ot: #b3541e; --danger: #b42318;
+    --ot: #b3541e; --danger: #b42318; --leave: #e4f4ea; --leave-text: #1a7a4c;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #0f1419; --card: #1a2129; --text: #e7edf3; --muted: #93a1b1;
       --line: #2c3642; --accent: #5fb0e6; --accent-soft: #1c3345;
-      --ot: #f0a36b; --danger: #f97066;
+      --ot: #f0a36b; --danger: #f97066; --leave: #183527; --leave-text: #6fd3a0;
     }
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
     font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -134,6 +135,52 @@
   .disclaimer p { margin: 0; }
   .disclaimer p + p { margin-top: 8px; }
   .disclaimer b, .disclaimer-text b { color: var(--text); }
+  .medstatus { margin: 0 0 4px; padding: 12px 14px; border-radius: 10px; background: var(--bg); font-weight: 600; }
+  .medstatus.warn { color: var(--ot); background: var(--accent-soft); }
+  .medstatus.bad { color: #fff; background: var(--danger); }
+  .medbanner {
+    display: block; width: 100%; margin: 12px 0 0; padding: 12px 14px; border: 0; border-radius: 12px;
+    font: inherit; font-weight: 600; text-align: left; cursor: pointer; color: #fff; background: var(--ot);
+  }
+  .medbanner.bad { background: var(--danger); }
+  .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tile {
+    display: flex; flex-direction: column; gap: 2px; min-height: 44px; padding: 12px; border: 0; border-radius: 12px;
+    background: var(--bg); color: var(--text); font: inherit; text-align: left; cursor: pointer;
+  }
+  .tile.big, .tile.wide { grid-column: 1 / -1; }
+  .tile.big { background: var(--accent-soft); }
+  .tile .k { font-size: 12px; color: var(--muted); }
+  .tile .v { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tile.big .v { font-size: 30px; color: var(--accent); }
+  .tile .m { font-size: 12px; color: var(--muted); }
+  .tile.warn .v { color: var(--ot); }
+  .tile.bad { background: var(--danger); }
+  .tile.bad .k, .tile.bad .v, .tile.bad .m { color: #fff; }
+  .tile.leave { background: var(--leave); }
+  .tile.leave .v { color: var(--leave-text); }
+  .inset { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 12px; }
+  .inset details.fold > summary h2 { font-size: 16px; }
+  .more-day { margin-top: 12px; }
+  .more-day > summary { font-weight: 600; color: var(--accent); cursor: pointer; padding: 8px 0; }
+  .payday { margin: 0 0 8px; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .leaveday { margin: 0 0 8px; padding: 10px 12px; border-radius: 10px; background: var(--leave); color: var(--leave-text); font-weight: 600; }
+  .cal button .medmark {
+    position: absolute; top: 3px; left: 4px; font-size: 11px; font-weight: 800; line-height: 1; color: #1a8f5a;
+  }
+  .cal button .medmark.due { color: var(--ot); }
+  .taxresult { margin: 10px 0 0; padding: 14px; border-radius: 12px; font-size: 17px; font-weight: 700; background: var(--bg); }
+  .taxresult.back { background: #e3f4ea; color: #146c43; }
+  .taxresult.pay { background: var(--accent-soft); color: var(--ot); }
+  @media (prefers-color-scheme: dark) { .taxresult.back { background: #17352a; color: #7fd6a4; } }
+  .taxh { font-size: 15px; margin: 18px 0 2px; }
+  .tbrow { display: grid; grid-template-columns: 1fr 120px; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px dashed var(--line); }
+  .tbrow label { margin: 0; color: var(--text); font-size: 14px; }
+  .tbrow input, .tbpair input { min-height: 38px; padding: 6px 8px; text-align: right; }
+  .tbgroup { padding: 8px 0 4px; border-top: 1px dashed var(--line); }
+  .tbgroup > b { font-size: 14px; }
+  .tbpair .span2 { grid-column: span 2; }
+  .tbpair { display: grid; grid-template-columns: auto 1fr auto 90px auto; gap: 6px; align-items: center; margin-top: 6px; font-size: 13px; color: var(--muted); }
   .li-amt { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .del {
     border: 0; background: transparent; color: var(--danger); width: 36px; height: 36px;
@@ -184,6 +231,20 @@
   .cal button.hol .n { color: var(--ot); font-weight: 700; }
   .cal button.work { background: var(--accent-soft); border-color: transparent; }
   .cal button.work .n { color: var(--text); }
+  .cal button.leave { background: var(--leave); border-color: transparent; }
+  .cal button .pay {
+    position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; padding: 0 2px; border-radius: 8px;
+    font-size: 10px; font-weight: 800; line-height: 15px; color: #fff; background: var(--accent);
+  }
+  .cal button.paid .dot { right: 20px; }
+  .cal-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 8px 0 0; font-size: 12px; color: var(--muted); }
+  .cal-legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .cal-legend i { display: inline-block; width: 14px; height: 14px; border-radius: 4px; font-style: normal; font-size: 10px; font-weight: 800; text-align: center; line-height: 14px; }
+  .cal-legend .lg-pay { background: var(--accent); color: #fff; border-radius: 7px; }
+  .cal-legend .lg-leave { background: var(--leave); }
+  .cal-legend .lg-med { color: #1a8f5a; font-size: 13px; }
+  .cal-legend .lg-ot { width: 6px; height: 6px; border-radius: 50%; background: var(--ot); }
+  .cal button .lv { font-size: 11px; font-weight: 700; color: var(--leave-text); line-height: 1.1; }
   .cal button.today .n { color: var(--accent); font-weight: 700; text-decoration: underline; }
   .cal button.sel { outline: 2px solid var(--accent); outline-offset: -1px; }
   .cal button .dot {
@@ -317,7 +378,7 @@
 
     <section>
       <h3>Opslaan</h3>
-      <p>Alles wat je invult, wordt meteen op dit toestel bewaard. Maak af en toe een back-up via <b>Back-up &amp; export</b>, zeker voor je van gsm wisselt.</p>
+      <p>Alles wat je invult, wordt meteen op dit toestel bewaard. Maak af en toe een back-up via <b>Instellingen › Back-up &amp; export</b>, zeker voor je van gsm wisselt.</p>
     </section>
 
     <section>
@@ -328,6 +389,18 @@
 
     <form method="dialog"><button class="btn" value="ok">Begrepen</button></form>
   </dialog>
+
+  <button type="button" class="medbanner" id="medBanner" hidden></button>
+
+  <section class="card" id="dash" aria-label="Snel overzicht">
+    <div class="dash-grid">
+      <button type="button" class="tile big" data-go="slipCard"><span class="k" id="dPayK">Volgende uitbetaling</span><span class="v" id="dPay"></span><span class="m" id="dPayM"></span></button>
+      <button type="button" class="tile" data-go="sumCard" id="dMonthTile"><span class="k" id="dMonthK">Netto deze maand</span><span class="v" id="dMonth"></span><span class="m" id="dMonthM"></span></button>
+      <button type="button" class="tile" data-go="clothCard" id="dClothTile"><span class="k">Kledijpunten</span><span class="v" id="dCloth"></span><span class="m" id="dClothM"></span></button>
+      <button type="button" class="tile" data-go="medCard" id="dMedTile"><span class="k">Medische controle</span><span class="v" id="dMed"></span><span class="m" id="dMedM"></span></button>
+      <button type="button" class="tile leave" data-go="leaveCard" id="dLeaveTile"><span class="k">Verlof</span><span class="v" id="dLeave"></span><span class="m" id="dLeaveM"></span></button>
+    </div>
+  </section>
 
   <section class="card">
     <div class="monthbar">
@@ -341,6 +414,7 @@
     </div></div>
     <div class="cal-head"><span>ma</span><span>di</span><span>wo</span><span>do</span><span>vr</span><span>za</span><span>zo</span></div>
     <div class="cal" id="cal"></div>
+    <p class="cal-legend" id="calLegend"><span><i class="lg-pay">€</i>uitbetaling</span><span id="lgLeave"><i class="lg-leave"></i>verlof</span><span><i class="lg-med">+</i>medische controle</span><span><i class="lg-ot"></i>overuren</span></p>
     <div class="monthsum"><span id="sumLabel">Totaal bruto</span><b id="tTotalTop"></b></div>
   </section>
 
@@ -348,7 +422,10 @@
     <details class="fold" data-fold="dag" open>
       <summary><h2 id="dayTitle"></h2></summary>
     <p class="hint" id="dayNote" hidden></p>
+    <p class="leaveday" id="dayLeaveNote" hidden></p>
+    <p class="payday" id="dayPayNote" hidden></p>
     <ul class="list" id="list"></ul>
+    <button type="button" class="btn ghost" id="dayLeave">Verlof op deze dag</button>
     <input type="hidden" id="date">
 
     <label>Bedrijf</label>
@@ -394,34 +471,31 @@
         <option value="other">Gewoon werk (1 kledijpunt)</option>
         <option value="lashing">Lashing roro, container, high &amp; heavy (2 kledijpunten)</option>
       </select>
-      <div class="row2">
-        <div>
-          <label for="code">Start</label>
-          <select id="code"></select>
-        </div>
-        <div>
-          <label for="tariff">Tarief</label>
-          <select id="tariff">
-            <option value="auto">Automatisch</option>
-            <option value="wk">Weekdag</option>
-            <option value="ZA">Zaterdag</option>
-            <option value="ZO">Zon- en feestdag</option>
-          </select>
-        </div>
-      </div>
-      <p class="hint" id="tariffHint"></p>
-
-      <label for="kaai">Kaai</label>
-      <input id="kaai" placeholder="bv. 106">
+      <label for="code">Start</label>
+      <select id="code"></select>
 
       <label for="ot">Overuren (na 7u45), bv. 1u30 of 1,5</label>
       <input id="ot" inputmode="decimal" placeholder="0">
-
-      <label class="check"><input type="checkbox" id="wijziging"> Wijzigingsvergoeding (€ 17,17)</label>
     </div>
 
-    <label for="note">Notitie (optioneel)</label>
-    <input id="note" placeholder="bv. schip…">
+    <details class="more-day" id="dayMore">
+      <summary>Meer: kaai, tarief, notitie…</summary>
+      <div id="workMore">
+        <label for="kaai">Kaai</label>
+        <input id="kaai" placeholder="bv. 106">
+        <label for="tariff">Tarief</label>
+        <select id="tariff">
+          <option value="auto">Automatisch</option>
+          <option value="wk">Weekdag</option>
+          <option value="ZA">Zaterdag</option>
+          <option value="ZO">Zon- en feestdag</option>
+        </select>
+        <p class="hint" id="tariffHint"></p>
+        <label class="check"><input type="checkbox" id="wijziging"> Wijzigingsvergoeding (€ 17,17)</label>
+      </div>
+      <label for="note">Notitie (optioneel)</label>
+      <input id="note" placeholder="bv. schip…">
+    </details>
 
     <div class="preview"><span>Deze shift bruto<br><span class="net" id="previewNet"></span></span><b id="preview">€ 0,00</b></div>
     <button class="btn" id="add">Opslaan</button>
@@ -449,8 +523,104 @@
     </details>
   </section>
 
+  <section class="card" id="taxCard">
+    <details class="fold" data-fold="belasting">
+      <summary><h2>Belastingbrief</h2></summary>
+    <div class="yearbar">
+      <button id="taxPrev" aria-label="Vorig jaar">‹</button>
+      <b id="taxYear"></b>
+      <button id="taxNext" aria-label="Volgend jaar">›</button>
+    </div>
+    <p class="taxresult" id="taxResult"></p>
+    <table class="slip-t" id="taxTable"></table>
+    <details id="taxExtraBox">
+      <summary>Jouw gegevens invullen (nauwkeuriger)</summary>
+      <p class="hint">Vul in wat je weet; lege velden worden niet meegeteld. Alles blijft op je gsm.</p>
+
+      <h3 class="taxh">1. Je loonfiche van Cewez</h3>
+      <p class="hint">Heb je je loonfiche (281.10) al? Die bedragen zijn het nauwkeurigst en vervangen de bedragen uit de app.</p>
+      <div class="row2">
+        <div><label for="tx-ficheIncome">Belastbaar loon (code 1250)</label><input id="tx-ficheIncome" data-tx="ficheIncome" inputmode="decimal" placeholder="uit de app"></div>
+        <div><label for="tx-ficheWithholding">Bedrijfsvoorheffing (code 1286)</label><input id="tx-ficheWithholding" data-tx="ficheWithholding" inputmode="decimal" placeholder="uit de app"></div>
+      </div>
+      <label for="tx-workBonus">Fiscale werkbonus (op je loonfiche)</label>
+      <input id="tx-workBonus" data-tx="workBonus" inputmode="decimal" placeholder="0">
+
+      <h3 class="taxh">2. Vakantiegeld en ander inkomen</h3>
+      <p class="hint">Vakantiegeld van het vakantiefonds (loonfiche 281.10 van het fonds).</p>
+      <div class="row2">
+        <div><label for="tx-holidayPay">Vakantiegeld (belastbaar)</label><input id="tx-holidayPay" data-tx="holidayPay" inputmode="decimal" placeholder="0"></div>
+        <div><label for="tx-holidayWithholding">Voorheffing daarop</label><input id="tx-holidayWithholding" data-tx="holidayWithholding" inputmode="decimal" placeholder="0"></div>
+      </div>
+      <p class="hint">Bv. loon van een andere job of uitkeringen (loonfiches 281.10, 281.13).</p>
+      <div class="row2">
+        <div><label for="tx-income">Extra belastbaar inkomen</label><input id="tx-income" data-tx="income" inputmode="decimal" placeholder="0"></div>
+        <div><label for="tx-withholding">Voorheffing daarop</label><input id="tx-withholding" data-tx="withholding" inputmode="decimal" placeholder="0"></div>
+      </div>
+
+      <h3 class="taxh">3. Gezin</h3>
+      <p class="hint" id="taxFamily"></p>
+      <label for="tx-kidsUnder3">Kinderen jonger dan 3 jaar (zonder kosten kinderopvang)</label>
+      <input id="tx-kidsUnder3" data-tx="kidsUnder3" inputmode="numeric" placeholder="0">
+      <div class="row2" id="taxPartner">
+        <div><label for="tx-partnerIncome">Belastbaar inkomen partner</label><input id="tx-partnerIncome" data-tx="partnerIncome" inputmode="decimal" placeholder="0"></div>
+        <div><label for="tx-partnerWithholding">Voorheffing partner</label><input id="tx-partnerWithholding" data-tx="partnerWithholding" inputmode="decimal" placeholder="0"></div>
+      </div>
+
+      <h3 class="taxh">4. Aftrekken en verminderingen</h3>
+      <label for="tx-pension">Pensioensparen gestort dit jaar</label>
+      <input id="tx-pension" data-tx="pension" inputmode="decimal" placeholder="0">
+      <label for="tx-otherReductions">Andere belastingverminderingen (bv. giften, dienstencheques)</label>
+      <input id="tx-otherReductions" data-tx="otherReductions" inputmode="decimal" placeholder="0">
+      <label for="tx-realCosts">Werkelijke beroepskosten (laat leeg voor het forfait)</label>
+      <input id="tx-realCosts" data-tx="realCosts" inputmode="decimal" placeholder="forfait">
+
+      <p class="hint">De belastingbedragen zelf (belastingvrije som, schalen, …) zie en wijzig je bij <b>Instellingen › Belastingbedragen</b>.</p>
+      <button type="button" class="btn ghost" id="taxClear">Gegevens van dit jaar wissen</button>
+    </details>
+    <p class="hint" id="taxHint"></p>
+    </details>
+  </section>
+
+  <section class="card" id="medCard">
+    <details class="fold" data-fold="medisch">
+      <summary><h2>Medische controle</h2></summary>
+    <p class="medstatus" id="medStatus"></p>
+    <label for="medDate">Datum van je controle</label>
+    <input type="date" id="medDate">
+    <label for="medNote">Notitie (optioneel)</label>
+    <input id="medNote" placeholder="bv. Attentia, Noordzeestraat 148">
+    <button type="button" class="btn" id="medAdd">Controle opslaan</button>
+    <ul class="list" id="medList"></ul>
+    <p class="hint">De controle gebeurt één keer per jaar. De app rekent de volgende datum uit en waarschuwt je een maand op voorhand.</p>
+    </details>
+  </section>
+
+  <section class="card" id="leaveCard">
+    <details class="fold" data-fold="verlof">
+      <summary><h2>Verlof</h2></summary>
+    <p class="medstatus" id="lvStatus"></p>
+    <div class="row2">
+      <div><label for="lvFrom">Van</label><input type="date" id="lvFrom"></div>
+      <div><label for="lvTo">Tot en met</label><input type="date" id="lvTo"></div>
+    </div>
+    <label for="lvType">Soort</label>
+    <select id="lvType">
+      <option value="vakantie">Jaarlijkse vakantie</option>
+      <option value="anciënniteit">Anciënniteitsverlof</option>
+      <option value="ander">Ander verlof</option>
+    </select>
+    <label class="check"><input type="checkbox" id="lvSat"> Zaterdagen meetellen</label>
+    <button type="button" class="btn" id="lvAdd">Verlof opslaan</button>
+    <ul class="list" id="lvList"></ul>
+    <label for="lvQuota">Verlofdagen per jaar (optioneel, dan zie je hoeveel je er nog hebt)</label>
+    <input id="lvQuota" inputmode="numeric" placeholder="bv. 20">
+    <p class="hint">Zondagen en feestdagen tellen niet mee. Op een verlofdag werk je niet voor Cewez, dus daar is er geen loon. Je vakantiegeld krijg je één keer per jaar van het vakantiefonds, met een eigen voorheffing. Vul het in bij <b>Belastingbrief</b> zodra je het krijgt, dan klopt de schatting van je belastingen.</p>
+    </details>
+  </section>
+
   <section class="card" id="clothCard">
-    <details class="fold" data-fold="kledij" open>
+    <details class="fold" data-fold="kledij">
       <summary><h2>Kledijpunten</h2></summary>
     <div class="totals">
       <div class="stat big"><div class="k">Saldo <span id="clMax"></span></div><div class="v" id="clBalance"></div></div>
@@ -477,126 +647,159 @@
     </details>
   </section>
 
-  <section class="card">
-    <details class="fold" data-fold="netto" id="settingsBox">
-      <summary><h2>Netto-instellingen</h2></summary>
-      <p class="hint">Hiermee rekent de app je netto uit. Je gegevens blijven op dit toestel.</p>
-      <label for="sStatus">Statuut</label>
-      <select id="sStatus" data-s="status">
-        <option value="gelegenheid">Gelegenheidsarbeider</option>
-        <option value="pool">Erkend (pool)</option>
-      </select>
-      <label for="sTransport">Vervoer</label>
-      <select id="sTransport" data-s="transport">
-        <option value="auto">Eigen vervoer</option>
-        <option value="fiets">Fiets</option>
-      </select>
-      <div id="placeWrap">
-        <label for="sPlace">Woonplaats (deelgemeente)</label>
-        <select id="sPlace" data-s="place"></select>
-      </div>
-      <div class="row2" id="bikeWrap">
-        <div><label for="sBikeKm">Km per shift</label><input id="sBikeKm" data-s="bikeKm" data-t="num" inputmode="decimal"></div>
-        <div><label for="sBikeRate">Bedrag per km</label><input id="sBikeRate" data-s="bikeRate" data-t="num" inputmode="decimal"></div>
-      </div>
-      <label for="sCivil">Burgerlijke staat</label>
-      <select id="sCivil" data-s="civil">
-        <option value="ongehuwd">Ongehuwd</option>
-        <option value="gehuwd">Gehuwd</option>
-        <option value="wettelijk-samenwonend">Wettelijk samenwonend</option>
-        <option value="gescheiden">Gescheiden</option>
-        <option value="weduwe">Weduwe / weduwnaar</option>
-      </select>
-      <label class="check"><input type="checkbox" id="sSpouse" data-s="spouseDependent" data-t="bool"> Echtgeno(o)t(e) ten laste</label>
-      <div class="row2">
-        <div><label for="sKids">Kinderen ten laste</label><input id="sKids" data-s="kids" data-t="num" inputmode="numeric"></div>
-        <div><label for="sOthers">Anderen ten laste</label><input id="sOthers" data-s="others" data-t="num" inputmode="numeric"></div>
-      </div>
-      <label for="sWhMode">Voorheffing (belastingen)</label>
-      <select id="sWhMode" data-s="withholdingMode">
-        <option value="schatting">Schatting door de app</option>
-        <option value="percentage">Eigen percentage (gevraagd aan Cewez)</option>
-      </select>
-      <div id="pctWrap">
-        <label for="sWhPct">Percentage van het belastbaar bedrag</label>
-        <input id="sWhPct" data-s="withholdingPct" data-t="num" inputmode="decimal" placeholder="bv. 25">
-      </div>
-      <label for="sExtraWh">Extra bedrag afhouden per uitbetaling</label>
-      <input id="sExtraWh" data-s="extraWithholding" data-t="num" inputmode="decimal" placeholder="0">
-
-      <details>
-        <summary>Meer (nog niet gekende bedragen)</summary>
-        <p class="hint">Deze staan standaard op 0. Vul ze in als ze op je loonbrief staan.</p>
-        <div class="row2">
-          <div><label for="sWerkbonus">Werkbonus</label><input id="sWerkbonus" data-s="werkbonus" data-t="num" inputmode="decimal"></div>
-          <div><label for="sSpecial">Speciale bijdrage</label><input id="sSpecial" data-s="specialContribution" data-t="num" inputmode="decimal"></div>
-          <div><label for="sGroup">Groepsverzekering</label><input id="sGroup" data-s="groupInsurance" data-t="num" inputmode="decimal"></div>
-          <div><label for="sAdvance">Voorschot</label><input id="sAdvance" data-s="advance" data-t="num" inputmode="decimal"></div>
-          <div><label for="sGarn">Loonbeslag</label><input id="sGarn" data-s="garnishment" data-t="num" inputmode="decimal"></div>
-          <div><label for="sVol">Vrijwillige afhoudingen</label><input id="sVol" data-s="voluntary" data-t="num" inputmode="decimal"></div>
-        </div>
-        <label for="sExtraType">Wijzigings- en afbestelvergoeding</label>
-        <select id="sExtraType" data-s="extraType">
-          <option value="A">Met RSZ en voorheffing</option>
-          <option value="D">Zonder RSZ en voorheffing</option>
+  <section class="card" id="setCard">
+    <details class="fold" data-fold="instellingen">
+      <summary><h2>Instellingen</h2></summary>
+      <p class="hint">Hier hoef je meestal niets te doen: de app werkt met de standaardwaarden. Wil je een nauwkeuriger netto, vul dan je Netto-instellingen in.</p>
+    <section class="inset">
+      <details class="fold" data-fold="netto" id="settingsBox">
+        <summary><h2>Netto-instellingen</h2></summary>
+        <p class="hint">Hiermee rekent de app je netto uit. Je gegevens blijven op dit toestel.</p>
+        <label for="sStatus">Statuut</label>
+        <select id="sStatus" data-s="status">
+          <option value="gelegenheid">Gelegenheidsarbeider</option>
+          <option value="pool">Erkend (pool)</option>
         </select>
+        <label class="check"><input type="checkbox" id="sRed" data-s="redCard" data-t="bool"> Rode kaart (geen verlof)</label>
+        <label for="sTransport">Vervoer</label>
+        <select id="sTransport" data-s="transport">
+          <option value="auto">Eigen vervoer</option>
+          <option value="fiets">Fiets</option>
+        </select>
+        <div id="placeWrap">
+          <label for="sPlace">Woonplaats (deelgemeente)</label>
+          <select id="sPlace" data-s="place"></select>
+        </div>
+        <div class="row2" id="bikeWrap">
+          <div><label for="sBikeKm">Km per shift</label><input id="sBikeKm" data-s="bikeKm" data-t="num" inputmode="decimal"></div>
+          <div><label for="sBikeRate">Bedrag per km</label><input id="sBikeRate" data-s="bikeRate" data-t="num" inputmode="decimal"></div>
+        </div>
+        <label for="sCivil">Burgerlijke staat</label>
+        <select id="sCivil" data-s="civil">
+          <option value="ongehuwd">Ongehuwd</option>
+          <option value="gehuwd">Gehuwd</option>
+          <option value="wettelijk-samenwonend">Wettelijk samenwonend</option>
+          <option value="gescheiden">Gescheiden</option>
+          <option value="weduwe">Weduwe / weduwnaar</option>
+        </select>
+        <label class="check"><input type="checkbox" id="sSpouse" data-s="spouseDependent" data-t="bool"> Partner heeft geen eigen beroepsinkomen</label>
+        <div class="row2">
+          <div><label for="sKids">Kinderen ten laste</label><input id="sKids" data-s="kids" data-t="num" inputmode="numeric"></div>
+          <div><label for="sOthers">Anderen ten laste</label><input id="sOthers" data-s="others" data-t="num" inputmode="numeric"></div>
+        </div>
+        <label for="sWhMode">Voorheffing (belastingen)</label>
+        <select id="sWhMode" data-s="withholdingMode">
+          <option value="schatting">Sleutelformule (berekend door de app)</option>
+          <option value="percentage">Eigen percentage (gevraagd aan Cewez)</option>
+        </select>
+        <div id="pctWrap">
+          <label for="sWhPct">Percentage van het belastbaar bedrag</label>
+          <input id="sWhPct" data-s="withholdingPct" data-t="num" inputmode="decimal" placeholder="bv. 25">
+        </div>
+        <p class="hint" id="bvHint">De voorheffing wordt berekend met de sleutelformule. De bedragen ervan zie en wijzig je bij <b>Belastingbedragen</b>.</p>
+        <label for="sExtraWh">Extra bedrag afhouden per uitbetaling</label>
+        <input id="sExtraWh" data-s="extraWithholding" data-t="num" inputmode="decimal" placeholder="0">
+        <label for="sMunicipal">Gemeentebelasting (%)</label>
+        <input id="sMunicipal" data-s="municipalRate" data-t="num" inputmode="decimal" placeholder="6,9">
+        <p class="hint">Brugge (ook Assebroek, Sint-Kruis, Sint-Michiels, …): 6,9%. Woon je elders, vul dan het percentage van je gemeente in.</p>
+
+        <details>
+          <summary>Meer (nog niet gekende bedragen)</summary>
+          <p class="hint">Deze staan standaard op 0. Vul ze in als ze op je loonbrief staan.</p>
+          <div class="row2">
+            <div><label for="sWerkbonus">Werkbonus</label><input id="sWerkbonus" data-s="werkbonus" data-t="num" inputmode="decimal"></div>
+            <div><label for="sSpecial">Speciale bijdrage</label><input id="sSpecial" data-s="specialContribution" data-t="num" inputmode="decimal"></div>
+            <div><label for="sGroup">Groepsverzekering</label><input id="sGroup" data-s="groupInsurance" data-t="num" inputmode="decimal"></div>
+            <div><label for="sAdvance">Voorschot</label><input id="sAdvance" data-s="advance" data-t="num" inputmode="decimal"></div>
+            <div><label for="sGarn">Loonbeslag</label><input id="sGarn" data-s="garnishment" data-t="num" inputmode="decimal"></div>
+            <div><label for="sVol">Vrijwillige afhoudingen</label><input id="sVol" data-s="voluntary" data-t="num" inputmode="decimal"></div>
+          </div>
+          <label for="sExtraType">Wijzigings- en afbestelvergoeding</label>
+          <select id="sExtraType" data-s="extraType">
+            <option value="A">Met RSZ en voorheffing</option>
+            <option value="D">Zonder RSZ en voorheffing</option>
+          </select>
+        </details>
       </details>
-    </details>
-  </section>
+    </section>
 
-  <section class="card">
-    <details class="fold" data-fold="feestdagen">
-      <summary><h2>Feestdagen</h2></summary>
-      <p class="hint">Op de dag waarop de haven een feestdag viert, geldt het zon- en feestdagtarief. Valt een feestdag in het weekend, vul dan de vervangingsdag in.</p>
-      <div class="yearbar">
-        <button id="holPrev" aria-label="Vorig jaar">‹</button>
-        <b id="holYear"></b>
-        <button id="holNext" aria-label="Volgend jaar">›</button>
-      </div>
-      <ul class="hols" id="holList"></ul>
-    </details>
-  </section>
+    <section class="inset">
+      <details class="fold" data-fold="feestdagen">
+        <summary><h2>Feestdagen</h2></summary>
+        <p class="hint">Op de dag waarop de haven een feestdag viert, geldt het zon- en feestdagtarief. Valt een feestdag in het weekend, vul dan de vervangingsdag in.</p>
+        <div class="yearbar">
+          <button id="holPrev" aria-label="Vorig jaar">‹</button>
+          <b id="holYear"></b>
+          <button id="holNext" aria-label="Volgend jaar">›</button>
+        </div>
+        <ul class="hols" id="holList"></ul>
+      </details>
+    </section>
 
-  <section class="card">
-    <details class="fold" data-fold="bedrijven">
-      <summary><h2>Bedrijven beheren</h2></summary>
-      <p class="hint">Per bedrijf staan de plaatsen (kantoor, terminal, kaai) met hun adres. Pas ze aan of voeg er toe; bij een dag kies je de plaats en zet je op de kaart een spelt per plaats. Verwijderen haalt het bedrijf alleen uit de keuzelijst; dagen die je al opgeslagen hebt, blijven bewaard.</p>
-      <ul class="list" id="coList"></ul>
-      <button class="btn ghost" id="coRestore" hidden>Verwijderde bedrijven terugzetten</button>
-    </details>
-  </section>
+    <section class="inset">
+      <details class="fold" data-fold="bedrijven">
+        <summary><h2>Bedrijven beheren</h2></summary>
+        <p class="hint">Per bedrijf staan de plaatsen (kantoor, terminal, kaai) met hun adres. Pas ze aan of voeg er toe; bij een dag kies je de plaats en zet je op de kaart een spelt per plaats. Verwijderen haalt het bedrijf alleen uit de keuzelijst; dagen die je al opgeslagen hebt, blijven bewaard.</p>
+        <ul class="list" id="coList"></ul>
+        <button class="btn ghost" id="coRestore" hidden>Verwijderde bedrijven terugzetten</button>
+      </details>
+    </section>
 
-  <section class="card">
-    <details class="fold" data-fold="tarieven">
-      <summary><h2>Tarieven</h2></summary>
-      <p class="hint">Elke dag wordt berekend met de tarieven die op die datum golden. Pas je een datum of bedrag aan, dan worden alle dagen opnieuw berekend.</p>
-      <div class="ptabs" id="periodTabs"></div>
-      <div id="periodFromWrap">
-        <label for="periodFrom">Geldig vanaf</label>
-        <input type="date" id="periodFrom">
-      </div>
-      <table class="rates">
-        <thead><tr><th>Start</th><th>Shift</th><th>Uur</th><th>Overuur</th></tr></thead>
-        <tbody id="ratesBody"></tbody>
-      </table>
-      <div class="tools">
-        <button class="btn ghost" id="addPeriod">Nieuwe tarieven toevoegen</button>
-        <button class="btn ghost" id="delPeriod">Deze tarieven verwijderen</button>
-        <button class="btn ghost" id="resetRates" style="grid-column:1/-1">Standaardtarieven terugzetten</button>
-      </div>
-    </details>
-  </section>
+    <section class="inset">
+      <details class="fold" data-fold="bedragen" id="tbBox">
+        <summary><h2>Belastingbedragen</h2></summary>
+        <p class="hint" id="tbInfo"></p>
+        <div class="ptabs" id="tbKind">
+          <button type="button" data-k="withholding">Voorheffing</button>
+          <button type="button" data-k="incomeTax">Belastingbrief</button>
+        </div>
+        <div class="ptabs" id="tbPeriods"></div>
+        <div id="tbFromWrap">
+          <label for="tbFrom">Geldig vanaf</label>
+          <input type="date" id="tbFrom">
+        </div>
+        <p class="hint" id="tbState"></p>
+        <div id="tbFields"></div>
+        <div class="tools">
+          <button type="button" class="btn ghost" id="tbAdd">Nieuwe bedragen vanaf…</button>
+          <button type="button" class="btn ghost" id="tbReset">Automatische bedragen terugzetten</button>
+        </div>
+      </details>
+    </section>
 
-  <section class="card">
-    <details class="fold" data-fold="backup">
-      <summary><h2>Back-up &amp; export</h2></summary>
-      <p class="hint">Je gegevens staan alleen op dit toestel, in deze browser. Maak af en toe een back-up.</p>
-      <div class="tools">
-        <button class="btn ghost" id="exportJson">Back-up downloaden</button>
-        <button class="btn ghost" id="importBtn">Back-up terugzetten</button>
-        <button class="btn ghost" id="exportCsv" style="grid-column:1/-1">Maand als CSV (Excel)</button>
-      </div>
-      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    <section class="inset">
+      <details class="fold" data-fold="tarieven">
+        <summary><h2>Tarieven</h2></summary>
+        <p class="hint">Elke dag wordt berekend met de tarieven die op die datum golden. Pas je een datum of bedrag aan, dan worden alle dagen opnieuw berekend.</p>
+        <div class="ptabs" id="periodTabs"></div>
+        <div id="periodFromWrap">
+          <label for="periodFrom">Geldig vanaf</label>
+          <input type="date" id="periodFrom">
+        </div>
+        <table class="rates">
+          <thead><tr><th>Start</th><th>Shift</th><th>Uur</th><th>Overuur</th></tr></thead>
+          <tbody id="ratesBody"></tbody>
+        </table>
+        <div class="tools">
+          <button class="btn ghost" id="addPeriod">Nieuwe tarieven toevoegen</button>
+          <button class="btn ghost" id="delPeriod">Deze tarieven verwijderen</button>
+          <button class="btn ghost" id="resetRates" style="grid-column:1/-1">Standaardtarieven terugzetten</button>
+        </div>
+      </details>
+    </section>
+
+    <section class="inset">
+      <details class="fold" data-fold="backup">
+        <summary><h2>Back-up &amp; export</h2></summary>
+        <p class="hint">Je gegevens staan alleen op dit toestel, in deze browser. Maak af en toe een back-up.</p>
+        <div class="tools">
+          <button class="btn ghost" id="exportJson">Back-up downloaden</button>
+          <button class="btn ghost" id="importBtn">Back-up terugzetten</button>
+          <button class="btn ghost" id="exportCsv" style="grid-column:1/-1">Maand als CSV (Excel)</button>
+        </div>
+        <input type="file" id="importFile" accept="application/json,.json" hidden>
+      </details>
+    </section>
     </details>
   </section>
   <footer class="disclaimer">
@@ -606,11 +809,11 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-02.15"></script>
+<script src="loon.js?v=2026-10-05.7"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-02.15';
+const APP_VERSION = '2026-10-05.7';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -711,6 +914,11 @@ const APP_VERSION = '2026-10-02.15';
   const KEY_LAST_WORK = 'haven-werkuren.lastWork';
   const KEY_LAST_FUNC = 'haven-werkuren.lastFunction';
   const KEY_COUNTED = 'haven-werkuren.deviceCounted';
+  const KEY_MEDICAL = 'haven-werkuren.medicalChecks';
+  const KEY_LEAVE = 'haven-werkuren.leave';
+  const KEY_TAX_EXTRA = 'haven-werkuren.taxExtras';
+  const KEY_TAX_REMOTE = 'haven-werkuren.taxTablesRemote'; // laatst opgehaalde belasting.json
+  const KEY_TAX_USER = 'haven-werkuren.taxTablesUser';     // eigen aanpassingen per periode
   const KEY_PURCHASES = 'haven-werkuren.clothingPurchases';
   const KEY_CLOTH_START = 'haven-werkuren.clothingStart';
   const KEY_FOLDS = 'haven-werkuren.folds';
@@ -745,6 +953,44 @@ const APP_VERSION = '2026-10-02.15';
   let holidayOverrides = load(KEY_HOLIDAYS, {});
   let showMode = load(KEY_MODE, 'bruto');
   let purchases = load(KEY_PURCHASES, []);
+  let medChecks = load(KEY_MEDICAL, []); // [{ id, date, note }]
+  let leave = load(KEY_LEAVE, []);       // [{ date, type, g }] één per verlofdag; g = samen aangevraagd
+  let taxExtras = load(KEY_TAX_EXTRA, {}); // { jaar: { income, withholding } }
+  let taxUser = load(KEY_TAX_USER, { withholding: {}, incomeTax: {} }); // { soort: { vanaf: bedragen } }
+  // belastingbedragen: standaard < belasting.json (automatisch) < eigen aanpassingen
+  function baseTaxTables() {
+    const r = load(KEY_TAX_REMOTE, null);
+    return {
+      withholding: Loon.normalizeTable(r?.withholding) || Loon.DEFAULT_WITHHOLDING,
+      incomeTax: Loon.normalizeTable(r?.incomeTax) || Loon.DEFAULT_INCOME_TAX,
+      updated: r?.updated || '',
+    };
+  }
+  function effectiveTaxTable(kind) {
+    const map = new Map(baseTaxTables()[kind].map((x) => [x.from, x]));
+    for (const [from, obj] of Object.entries(taxUser[kind] || {})) map.set(from, { ...obj, from });
+    return Loon.normalizeTable([...map.values()]);
+  }
+  const applyTaxTables = () => Loon.setTaxTables({ withholding: effectiveTaxTable('withholding'), incomeTax: effectiveTaxTable('incomeTax') });
+  // oudere instellingen omzetten naar eigen belastingbedragen
+  (() => {
+    let changed = false;
+    if (Number(settings.bvTaxFree) > 0) {
+      const base = baseTaxTables().withholding[0];
+      taxUser.withholding[base.from] = { ...base, taxFree: Number(settings.bvTaxFree) };
+      delete settings.bvTaxFree; save(KEY_SETTINGS, settings); changed = true;
+    }
+    for (const [y, d] of Object.entries(taxExtras)) {
+      if (!(Number(d.taxFree) > 0 || Number(d.costMax) > 0)) continue;
+      const from = `${y}-01-01`;
+      const base = taxUser.incomeTax[from] || Loon.normalizeTable(baseTaxTables().incomeTax).filter((x) => x.from <= from).pop() || Loon.DEFAULT_INCOME_TAX[0];
+      taxUser.incomeTax[from] = { ...base, from, ...(Number(d.taxFree) > 0 && { taxFree: Number(d.taxFree) }), ...(Number(d.costMax) > 0 && { costMax: Number(d.costMax) }) };
+      delete d.taxFree; delete d.costMax; changed = true;
+    }
+    if (changed) { save(KEY_TAX_USER, taxUser); save(KEY_TAX_EXTRA, taxExtras); }
+  })();
+  applyTaxTables();
+  let taxYear = new Date().getFullYear();
   let clothingStart = load(KEY_CLOTH_START, { date: '', points: 0 });
   let companyLocations = load(KEY_CO_LOCS, {}); // door jou aangepaste plaatsen per bedrijf
   let companyPins = load(KEY_CO_PIN, {});         // spelden per plaats: "bedrijf/plaats"
@@ -1102,6 +1348,7 @@ const APP_VERSION = '2026-10-02.15';
   function updatePreview() {
     const e = readForm();
     $('workFields').hidden = e.kind === 'afbestel';
+    $('workMore').hidden = e.kind === 'afbestel';
     const auto = Loon.tariffRow(e.date, e.code, holidayOverrides, 'auto');
     $('tariffHint').textContent = e.tariff === 'auto'
       ? `Automatisch: ${ROW_NAMES[auto] || 'weekdagtarief'}`
@@ -1166,7 +1413,24 @@ const APP_VERSION = '2026-10-02.15';
     }
   }
 
+  // uitbetalingen die in deze maand vallen: { datum: [periode, …] }
+  function paydaysIn(y, m) {
+    const out = {};
+    for (const delta of [-1, 0]) {
+      const d = new Date(y, m + delta, 1);
+      const ym = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+      for (const day of ['01', '16']) {
+        const per = Loon.periodOf(`${ym}-${day}`);
+        const pay = Loon.paymentDate(per, holidayOverrides);
+        if (pay.date.slice(0, 7) === `${y}-${pad(m + 1)}`) (out[pay.date] ||= []).push({ per, pay, r: calc.periods[per.key] });
+      }
+    }
+    return out;
+  }
+  const payTitle = (x) => `uitbetaling ${rangeText([x.per.start, x.per.end])}${x.r ? `: ${money(x.r.netto)}` : ''}${x.pay.approx ? ' (ongeveer)' : ''}`;
+
   function renderCalendar() {
+    const paydays = paydaysIn(viewYear, viewMonth);
     const first = new Date(viewYear, viewMonth, 1);
     const days = new Date(viewYear, viewMonth + 1, 0).getDate();
     const lead = (first.getDay() + 6) % 7; // maandag eerst
@@ -1176,9 +1440,13 @@ const APP_VERSION = '2026-10-02.15';
       const iso = `${viewYear}-${pad(viewMonth + 1)}-${pad(day)}`;
       const list = dayEntries(iso);
       const wd = (lead + day - 1) % 7;
-      const cls = [wd >= 5 && 'we', holidayName(iso) && 'hol', list.length && 'work', iso === todayIso && 'today', iso === selected && 'sel']
+      const lv = leaveOn(iso);
+      const pay = paydays[iso];
+      const cls = [wd >= 5 && 'we', holidayName(iso) && 'hol', list.length && 'work', lv && 'leave', pay && 'paid', iso === todayIso && 'today', iso === selected && 'sel']
         .filter(Boolean).join(' ');
       let inner = `<span class="n">${day}</span>`;
+      if (medChecks.some((m) => m.date === iso)) inner += '<span class="medmark" title="medische controle">+</span>';
+      else if (iso === nextMedDate()) inner += '<span class="medmark due" title="volgende medische controle">+</span>';
       if (list.length) {
         const t = totals(list);
         const withCo = list.filter((e) => e.company || e.companyName);
@@ -1187,7 +1455,8 @@ const APP_VERSION = '2026-10-02.15';
           : `<span class="c">${list.map(shortCode).join('+')}</span>`;
         inner += `${mark}<span class="a">${Math.round(shown(t))}</span>`;
         if (t.otH) inner += '<span class="dot" title="overuren"></span>';
-      }
+      } else if (lv) inner += '<span class="lv">verlof</span>';
+      if (pay) inner += `<span class="pay" title="${escapeHtml(pay.map(payTitle).join(', '))}">€</span>`;
       html += `<button class="${cls}" data-date="${iso}">${inner}</button>`;
     }
     $('cal').innerHTML = html;
@@ -1196,8 +1465,18 @@ const APP_VERSION = '2026-10-02.15';
   function renderDay() {
     const hol = holidayName(selected);
     const moved = movedHoliday(selected);
-    $('dayTitle').textContent = fmtDate(selected, { weekday: 'long', day: 'numeric', month: 'long' }) + (hol ? ` · ${hol}` : '');
+    $('dayTitle').textContent = fmtDate(selected, { weekday: 'long', day: 'numeric', month: 'long' }) + (hol ? ` · ${hol}` : '')
+      + (medChecks.some((m) => m.date === selected) ? ' · medische controle' : selected === nextMedDate() ? ' · volgende medische controle' : '');
     $('dayNote').hidden = !moved;
+    const lv = leaveOn(selected);
+    $('dayLeaveNote').hidden = !lv;
+    if (lv) $('dayLeaveNote').textContent = `Verlof: ${LEAVE_TYPES[lv.type] || 'verlof'}`;
+    $('dayLeave').hidden = !leaveEnabled();
+    $('lgLeave').hidden = !leaveEnabled();
+    const pays = paydaysIn(Number(selected.slice(0, 4)), Number(selected.slice(5, 7)) - 1)[selected];
+    $('dayPayNote').hidden = !pays;
+    if (pays) $('dayPayNote').textContent = pays.map((x) => payTitle(x).replace(/^u/, 'U')).join(' · ');
+    $('dayLeave').textContent = lv ? 'Verlof op deze dag weghalen' : 'Verlof op deze dag';
     if (moved) {
       $('dayNote').textContent = moved.effective
         ? `${moved.name} valt in het weekend en wordt gevierd op ${fmtDate(moved.effective, { weekday: 'long', day: 'numeric', month: 'long' })}.`
@@ -1309,6 +1588,10 @@ const APP_VERSION = '2026-10-02.15';
 
     $('slips').innerHTML = slipHtml('A') + slipHtml('B');
     renderClothing();
+    renderMedical();
+    renderLeave();
+    renderTax();
+    renderDash();
 
     renderCalendar();
     renderDay();
@@ -1321,6 +1604,305 @@ const APP_VERSION = '2026-10-02.15';
     const m = ev.target.closest('[data-m]')?.dataset.m;
     if (!m) return;
     showMode = m; save(KEY_MODE, m); render();
+  });
+
+  // --- belastingbrief (schatting) -------------------------------------------
+  const numIn = (v) => (String(v ?? '').trim() ? Number(String(v).replace(',', '.')) : 0);
+  const numOut = (n) => (n ? String(n).replace('.', ',') : '');
+  const TAX_FIELDS = ['ficheIncome', 'ficheWithholding', 'workBonus', 'holidayPay', 'holidayWithholding', 'income', 'withholding', 'kidsUnder3',
+    'partnerIncome', 'partnerWithholding', 'pension', 'otherReductions', 'realCosts'];
+  const CIVIL_NAMES = { ongehuwd: 'ongehuwd', gehuwd: 'gehuwd', 'wettelijk-samenwonend': 'wettelijk samenwonend', gescheiden: 'gescheiden', weduwe: 'weduwe / weduwnaar' };
+  function renderTax() {
+    const y = String(taxYear);
+    $('taxYear').textContent = `${y} · brief in ${taxYear + 1}`;
+    const periodsOfYear = Object.values(calc.periods).filter((r) => r.period.start.startsWith(y));
+    const d = taxExtras[y] || {};
+    const has = (k) => Number(d[k]) > 0 || (k.startsWith('fiche') && String(d[k] ?? '') !== '' && Number(d[k]) === 0);
+    const appTaxable = round2(periodsOfYear.reduce((t, r) => t + r.belastbaar, 0));
+    const appWithheld = round2(periodsOfYear.reduce((t, r) => t + r.voorheffing, 0));
+    const useFiche = has('ficheIncome');
+    const taxable = (useFiche ? Number(d.ficheIncome) : appTaxable) + (Number(d.holidayPay) || 0) + (Number(d.income) || 0);
+    const withheld = (has('ficheWithholding') ? Number(d.ficheWithholding) : appWithheld)
+      + (Number(d.holidayWithholding) || 0) + (Number(d.withholding) || 0);
+    const r = Loon.estimateAnnualTax({ belastbaar: taxable, voorheffing: withheld, year: taxYear, settings, details: d });
+
+    // formulier invullen
+    for (const k of TAX_FIELDS) $('tx-' + k).value = numOut(d[k]);
+    $('taxPartner').hidden = !r.couple;
+    $('taxFamily').textContent = `Je gezinssituatie stel je in bij Instellingen › Netto-instellingen. Nu: ${CIVIL_NAMES[settings.civil] || settings.civil}, `
+      + `${Number(settings.kids) || 0} kind(eren) ten laste, ${Number(settings.others) || 0} andere persoon/personen ten laste.`
+      + (r.couple ? ' Vul hieronder het inkomen van je partner in (gezamenlijke aanslag).' : '');
+
+    const row = (label, amount, cls = '') => `<tr class="${cls}"><td>${label}</td><td>${money(amount)}</td></tr>`;
+    if (!periodsOfYear.length && !taxable) {
+      $('taxResult').className = 'taxresult';
+      $('taxResult').textContent = `Nog geen gegevens voor ${y}.`;
+      $('taxTable').innerHTML = '';
+    } else {
+      const diff = r.difference;
+      $('taxResult').className = 'taxresult' + (diff < -0.5 ? ' back' : diff > 0.5 ? ' pay' : '');
+      $('taxResult').textContent = diff < -0.5 ? `Je krijgt ongeveer ${money(-diff)} terug.`
+        : diff > 0.5 ? `Je moet ongeveer ${money(diff)} bijbetalen.`
+        : 'Ongeveer € 0: je voorheffing dekt je belasting.';
+      $('taxTable').innerHTML = [
+        useFiche ? row('Belastbaar loon (loonfiche)', Number(d.ficheIncome))
+          : row(`Belastbaar loon in de app (${periodsOfYear.length} uitbetaling${periodsOfYear.length === 1 ? '' : 'en'})`, appTaxable),
+        d.holidayPay ? row('Vakantiegeld (vakantiefonds)', Number(d.holidayPay)) : '',
+        d.income ? row('Ander inkomen', Number(d.income)) : '',
+        row(r.realCosts ? 'Werkelijke beroepskosten' : 'Forfaitaire beroepskosten', -r.costs),
+        row('Netto belastbaar inkomen', r.netTaxable, 'mid'),
+        r.couple ? row('Netto inkomen partner', r.partnerNet) : '',
+        r.quotient ? row('Huwelijksquotiënt (naar laagste inkomen)', r.quotient, 'sub') : '',
+        row('Belasting volgens de schalen', r.grossTax),
+        row(`Belastingvrije som (${money(r.taxFree)})`, -r.taxFreeReduction),
+        row('Belasting (federaal en Vlaams)', r.stateTax, 'mid'),
+        r.pension ? row('Vermindering pensioensparen', -Math.min(r.pension, r.reductions)) : '',
+        r.otherReductions ? row('Andere verminderingen', -Math.max(0, r.reductions - r.pension)) : '',
+        row(`Gemeentebelasting ${String(r.municipalRate).replace('.', ',')}%`, r.municipal),
+        r.kidsCredit ? row('Belastingkrediet kinderen', -r.kidsCredit) : '',
+        r.workBonus ? row('Fiscale werkbonus', -r.workBonus) : '',
+        row('Totaal verschuldigd', r.total, 'mid'),
+        row(r.couple && d.partnerWithholding ? 'Al betaalde voorheffing (jullie samen)' : 'Al betaalde voorheffing', -r.voorheffing),
+        `<tr class="tot"><td>${diff < 0 ? 'Terug te krijgen' : 'Bij te betalen'} <span class="est">schatting</span></td><td>${money(Math.abs(diff))}</td></tr>`,
+      ].join('');
+    }
+    const missing = [!useFiche && 'je loonfiche', !d.holidayPay && 'je vakantiegeld', !d.workBonus && 'de fiscale werkbonus'].filter(Boolean);
+    $('taxHint').textContent = `Schatting van je aanslag personenbelasting (inkomstenjaar ${y}, aanslagjaar ${taxYear + 1}). `
+      + (missing.length ? `Hoe meer je invult bij "Jouw gegevens" (bv. ${missing.slice(0, -1).join(', ')}${missing.length > 1 ? ' en ' : ''}${missing[missing.length - 1]}), hoe nauwkeuriger. ` : '')
+      + (!useFiche && settings.withholdingMode !== 'percentage' ? 'De voorheffing in de app is zelf ook een schatting. ' : '')
+      + 'Je echte aanslag kan verschillen.';
+  }
+  $('taxExtraBox').addEventListener('change', (ev) => {
+    const el = ev.target.closest('[data-tx]');
+    if (!el) return;
+    const n = numIn(el.value);
+    if (!Number.isFinite(n) || n < 0) { renderTax(); return alert('Vul een geldig bedrag in.'); }
+    const d = { ...(taxExtras[taxYear] || {}) };
+    if (el.value.trim() === '') delete d[el.dataset.tx]; else d[el.dataset.tx] = n;
+    taxExtras[taxYear] = d;
+    save(KEY_TAX_EXTRA, taxExtras);
+    renderTax();
+  });
+  $('taxClear').addEventListener('click', () => {
+    if (!confirm(`Alle ingevulde gegevens voor ${taxYear} wissen?`)) return;
+    delete taxExtras[taxYear];
+    save(KEY_TAX_EXTRA, taxExtras);
+    renderTax();
+  });
+  $('taxPrev').addEventListener('click', () => { taxYear--; renderTax(); });
+  $('taxNext').addEventListener('click', () => { taxYear++; renderTax(); });
+
+  // --- medische controle (1 keer per jaar) --------------------------------
+  const MED_WARN_DAYS = 30;
+  const lastMedCheck = () => medChecks.map((m) => m.date).sort().pop() || '';
+  function nextMedDate() {
+    const last = lastMedCheck();
+    if (!last) return '';
+    const d = new Date(last + 'T12:00');
+    const day = d.getDate();
+    d.setFullYear(d.getFullYear() + 1);
+    if (d.getDate() !== day) d.setDate(0); // 29 februari -> 28 februari
+    return isoDate(d);
+  }
+  const daysUntil = (iso) => Math.round((new Date(iso + 'T12:00') - new Date(isoDate(today) + 'T12:00')) / 86400000);
+  function medState() {
+    const next = nextMedDate();
+    if (!next) return { level: 'none', next };
+    const days = daysUntil(next);
+    return { level: days < 0 ? 'bad' : days <= MED_WARN_DAYS ? 'warn' : 'ok', next, days };
+  }
+  const dayWord = (n) => `${n} ${Math.abs(n) === 1 ? 'dag' : 'dagen'}`;
+  function renderMedical() {
+    const st = medState();
+    const when = st.next ? fmtDate(st.next, { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+    $('medStatus').className = 'medstatus' + (st.level === 'warn' ? ' warn' : st.level === 'bad' ? ' bad' : '');
+    $('medStatus').textContent = st.level === 'none' ? 'Nog geen controle ingevuld. Vul de datum van je laatste controle in.'
+      : st.level === 'bad' ? `Je medische controle is te laat: die moest voor ${when} (${dayWord(-st.days)} geleden).`
+      : st.level === 'warn' ? `Binnenkort: je volgende controle moet voor ${when} (nog ${dayWord(st.days)}).`
+      : `Volgende controle voor ${when} (nog ${dayWord(st.days)}).`;
+    $('medBanner').hidden = !['warn', 'bad'].includes(st.level);
+    $('medBanner').className = 'medbanner' + (st.level === 'bad' ? ' bad' : '');
+    $('medBanner').textContent = st.level === 'bad'
+      ? `Medische controle te laat (sinds ${when}). Tik voor details.`
+      : `Medische controle binnenkort: voor ${when} (nog ${dayWord(st.days || 0)}).`;
+    const list = [...medChecks].sort((a, b) => b.date.localeCompare(a.date));
+    $('medList').innerHTML = list.map((m) => `<li>
+      <div class="li-main"><div class="d">${fmtDate(m.date, { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+        ${m.note ? `<div class="m">${escapeHtml(m.note)}</div>` : ''}</div>
+      <button class="del" data-mid="${m.id}" aria-label="Verwijderen">✕</button></li>`).join('');
+    $('medList').hidden = !list.length;
+  }
+  $('medAdd').addEventListener('click', () => {
+    const date = $('medDate').value;
+    if (!date) return alert('Kies de datum van je controle.');
+    if (medChecks.some((m) => m.date === date)) return alert('Deze datum staat er al.');
+    medChecks.push({ id: 'm' + Date.now().toString(36), date, note: $('medNote').value.trim() });
+    save(KEY_MEDICAL, medChecks);
+    $('medNote').value = '';
+    render();
+  });
+  $('medList').addEventListener('click', (ev) => {
+    const id = ev.target.closest('[data-mid]')?.dataset.mid;
+    if (!id || !confirm('Deze controle verwijderen?')) return;
+    medChecks = medChecks.filter((m) => m.id !== id);
+    save(KEY_MEDICAL, medChecks);
+    render();
+  });
+  $('medBanner').addEventListener('click', () => {
+    document.querySelector('[data-fold="medisch"]').open = true;
+    $('medCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  // --- verlof ---------------------------------------------------------------
+  const LEAVE_TYPES = { vakantie: 'jaarlijkse vakantie', 'anciënniteit': 'anciënniteitsverlof', ander: 'ander verlof' };
+  const leaveEnabled = () => !settings.redCard; // rode kaart: geen verlof
+  const leaveOn = (iso) => (leaveEnabled() ? leave.find((l) => l.date === iso) : undefined);
+  const newGroupId = () => 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const saveLeave = () => { leave.sort((a, b) => a.date.localeCompare(b.date)); save(KEY_LEAVE, leave); };
+  // samen aangevraagde dagen als één blok tonen
+  function leaveGroups() {
+    const map = new Map();
+    for (const l of [...leave].sort((a, b) => a.date.localeCompare(b.date))) {
+      if (!map.has(l.g)) map.set(l.g, { g: l.g, type: l.type, days: [] });
+      map.get(l.g).days.push(l.date);
+    }
+    return [...map.values()];
+  }
+  function leaveStats() {
+    const todayIso = isoDate(today);
+    const y = todayIso.slice(0, 4);
+    const year = leave.filter((l) => l.date.startsWith(y));
+    const quota = Number(settings.leaveQuota) || 0;
+    const next = leaveGroups().find((g) => g.days[g.days.length - 1] >= todayIso);
+    return { y, count: year.length, taken: year.filter((l) => l.date < todayIso).length, quota, left: quota ? quota - year.length : null, next };
+  }
+  const dayCount = (n) => `${n} ${n === 1 ? 'dag' : 'dagen'}`;
+  const rangeText = (days, opts = { day: 'numeric', month: 'short' }) => (days.length === 1
+    ? fmtDate(days[0], { weekday: 'short', ...opts })
+    : `${fmtDate(days[0], opts)} – ${fmtDate(days[days.length - 1], opts)}`);
+  function renderLeave() {
+    const on = leaveEnabled();
+    $('leaveCard').hidden = !on;
+    if (!on) return;
+    const st = leaveStats();
+    const todayIso = isoDate(today);
+    $('lvStatus').className = 'medstatus' + (st.left !== null && st.left < 0 ? ' warn' : '');
+    $('lvStatus').textContent = `${st.y}: ${dayCount(st.count)} verlof aangevraagd`
+      + (st.left !== null ? (st.left >= 0 ? `, nog ${dayCount(st.left)} over (van ${st.quota}).` : `, ${dayCount(-st.left)} meer dan je ${st.quota}.`) : '.')
+      + (st.next ? ` Volgende: ${rangeText(st.next.days, { day: 'numeric', month: 'long' })}.` : '');
+    // eerst wat nog komt (vroegste bovenaan), daarna wat voorbij is
+    const all = leaveGroups().filter((g) => g.days[g.days.length - 1] >= `${st.y}-01-01`);
+    const groups = [...all.filter((g) => g.days[g.days.length - 1] >= todayIso), ...all.filter((g) => g.days[g.days.length - 1] < todayIso).reverse()];
+    $('lvList').innerHTML = groups.map((g) => {
+      const past = g.days[g.days.length - 1] < todayIso;
+      return `<li>
+      <div class="li-main"><div class="d">${rangeText(g.days, { day: 'numeric', month: 'long' })}</div>
+        <div class="m">${dayCount(g.days.length)} · ${LEAVE_TYPES[g.type] || 'verlof'}${past ? ' · voorbij' : ''}</div></div>
+      <button class="del" data-lg="${g.g}" aria-label="Verwijderen">✕</button></li>`;
+    }).join('');
+    $('lvList').hidden = !groups.length;
+    $('lvQuota').value = settings.leaveQuota || '';
+  }
+  function addLeave(from, to, type, saturdays) {
+    const days = Loon.leaveDays(from, to, { saturdays, overrides: holidayOverrides }).filter((d) => !leave.some((l) => l.date === d));
+    if (!days.length) return 0;
+    const g = newGroupId();
+    leave.push(...days.map((date) => ({ date, type, g })));
+    saveLeave();
+    return days.length;
+  }
+  $('lvAdd').addEventListener('click', () => {
+    const from = $('lvFrom').value;
+    const to = $('lvTo').value || from;
+    if (!from) return alert('Kies de eerste verlofdag.');
+    if (to < from) return alert('De laatste dag ligt voor de eerste dag.');
+    const busy = entries.filter((e) => e.date >= from && e.date <= to).length;
+    if (busy && !confirm(`Er staan al ${busy} shift(en) in die periode. Toch verlof opslaan?`)) return;
+    const n = addLeave(from, to, $('lvType').value, $('lvSat').checked);
+    if (!n) return alert('Geen nieuwe verlofdagen: zondagen en feestdagen tellen niet mee, en dagen die al verlof zijn ook niet.');
+    $('lvFrom').value = ''; $('lvTo').value = '';
+    render();
+  });
+  $('lvFrom').addEventListener('change', () => { if (!$('lvTo').value || $('lvTo').value < $('lvFrom').value) $('lvTo').value = $('lvFrom').value; });
+  $('lvList').addEventListener('click', (ev) => {
+    const g = ev.target.closest('[data-lg]')?.dataset.lg;
+    if (!g || !confirm('Dit verlof verwijderen?')) return;
+    leave = leave.filter((l) => l.g !== g);
+    saveLeave();
+    render();
+  });
+  $('lvQuota').addEventListener('change', () => {
+    const n = numIn($('lvQuota').value);
+    if (!Number.isFinite(n) || n < 0) { renderLeave(); return alert('Vul een geldig aantal dagen in.'); }
+    settings.leaveQuota = Math.round(n);
+    save(KEY_SETTINGS, settings);
+    render();
+  });
+  $('dayLeave').addEventListener('click', () => {
+    const lv = leaveOn(selected);
+    if (lv) {
+      leave = leave.filter((l) => l.date !== selected);
+    } else {
+      if (dayEntries(selected).length && !confirm('Op deze dag staat al een shift. Toch verlof zetten?')) return;
+      leave.push({ date: selected, type: 'vakantie', g: newGroupId() });
+    }
+    saveLeave();
+    render();
+  });
+
+  // --- snel overzicht bovenaan ----------------------------------------------
+  function renderDash() {
+    const todayIso = isoDate(today);
+    // eerstvolgende uitbetaling (of de laatste als er niets meer komt)
+    const all = Object.values(calc.periods).sort((a, b) => a.payment.date.localeCompare(b.payment.date));
+    const r = all.find((x) => x.payment.date >= todayIso) || all[all.length - 1];
+    if (r) {
+      const coming = r.payment.date >= todayIso;
+      $('dPayK').textContent = coming ? 'Volgende uitbetaling' : 'Laatste uitbetaling';
+      $('dPay').textContent = money(r.netto);
+      $('dPayM').textContent = `${rangeText([r.period.start, r.period.end])} · ${r.shifts.length} shift${r.shifts.length === 1 ? '' : 'en'}`
+        + ` · ${r.payment.approx ? 'rond' : coming ? 'uiterlijk' : 'op'} ${fmtDate(r.payment.date, { weekday: 'short', day: 'numeric', month: 'short' })}`
+        + (r.estimate ? ' · schatting' : '');
+    } else {
+      $('dPayK').textContent = 'Volgende uitbetaling';
+      $('dPay').textContent = money(0);
+      $('dPayM').textContent = 'Tik op een dag in de kalender om je shift in te vullen.';
+    }
+    const mt = totals(monthEntries(today.getFullYear(), today.getMonth()));
+    $('dMonthK').textContent = 'Netto ' + fmtDate(`${todayIso.slice(0, 7)}-01`, { month: 'long' });
+    $('dMonth').textContent = money(mt.netto);
+    $('dMonthM').textContent = `${mt.shifts} shift${mt.shifts === 1 ? '' : 'en'} · ${money(mt.bruto)} bruto`;
+
+    const l = Loon.clothingLedger(entries, purchases, clothingStart);
+    $('dCloth').textContent = l.balance;
+    $('dClothM').textContent = l.balance >= l.max ? `maximum (${l.max}) bereikt: haal kledij af` : `punten · max ${l.max}`;
+    $('dClothTile').className = 'tile' + (l.balance >= l.max || l.balance < 0 ? ' warn' : '');
+
+    const st = medState();
+    $('dMedTile').className = 'tile' + (st.level === 'warn' ? ' warn' : st.level === 'bad' ? ' bad' : '');
+    if (st.level === 'none') { $('dMed').textContent = '—'; $('dMedM').textContent = 'datum nog invullen'; }
+    else {
+      $('dMed').textContent = fmtDate(st.next, { day: 'numeric', month: 'short', year: 'numeric' });
+      $('dMedM').textContent = st.days < 0 ? `${dayWord(-st.days)} te laat` : `nog ${dayWord(st.days)}`;
+    }
+
+    const on = leaveEnabled();
+    $('dLeaveTile').hidden = !on;
+    $('dMedTile').classList.toggle('wide', !on);
+    if (on) {
+      const ls = leaveStats();
+      $('dLeave').textContent = ls.left !== null ? `${ls.left} over` : dayCount(ls.count);
+      $('dLeaveM').textContent = ls.next ? `volgende: ${rangeText(ls.next.days)}`
+        : ls.count ? `aangevraagd in ${ls.y}` : 'nog geen verlof ingevuld';
+    }
+  }
+  $('dash').addEventListener('click', (ev) => {
+    const id = ev.target.closest('[data-go]')?.dataset.go;
+    if (!id) return;
+    const card = $(id);
+    const fold = card.querySelector('details.fold');
+    if (fold) fold.open = true;
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
   // --- kledijpunten -------------------------------------------------------
@@ -1513,6 +2095,154 @@ const APP_VERSION = '2026-10-02.15';
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 
+  // --- belastingbedragen bekijken en aanpassen --------------------------------
+  const TB_SCHEMA = {
+    withholding: [
+      ['taxFree', 'Belastingvrije som', 'eur'],
+      ['costRate', 'Forfaitaire beroepskosten', 'pct'],
+      ['costMax', 'Max. forfaitaire beroepskosten', 'eur'],
+      ['scale', 'Schalen (incl. 7% gemeentebelasting)', 'pairs'],
+      ['werkbonusRate', 'Vermindering op de werkbonus', 'pct'],
+      ['quotientRate', 'Huwelijksquotiënt', 'pct'],
+      ['quotientMax', 'Max. huwelijksquotiënt', 'eur'],
+      ['kidsReduction', 'Vermindering kinderen ten laste', 'kids'],
+      ['extraKid', 'Per kind boven het laatste', 'eur'],
+    ],
+    incomeTax: [
+      ['taxFree', 'Belastingvrije som', 'eur'],
+      ['costRate', 'Forfaitaire beroepskosten', 'pct'],
+      ['costMax', 'Max. forfaitaire beroepskosten', 'eur'],
+      ['brackets', 'Belastingschalen', 'pairs'],
+      ['taxFreeScale', 'Schaal voor de belastingvrije som', 'pairs'],
+      ['kidsSupplement', 'Toeslag kinderen ten laste (totaal)', 'kids'],
+      ['extraKid', 'Per kind boven het laatste', 'eur'],
+      ['under3', 'Per kind jonger dan 3 jaar', 'eur'],
+      ['otherDependent', 'Andere persoon ten laste', 'eur'],
+      ['singleParent', 'Alleenstaande ouder', 'eur'],
+      ['kidsCreditMax', 'Max. belastingkrediet kinderen', 'eur'],
+      ['quotientRate', 'Huwelijksquotiënt', 'pct'],
+      ['quotientMax', 'Max. huwelijksquotiënt', 'eur'],
+      ['pension', 'Pensioensparen (max. storting, vermindering)', 'pairs'],
+    ],
+  };
+  let tbKind = 'withholding';
+  let tbFrom = '';
+  const pctOut = (r) => String(Math.round(r * 1e6) / 1e4).replace('.', ',');
+  function tbPeriodName(kind, from) {
+    return kind === 'incomeTax' ? `Inkomsten ${from.slice(0, 4)}` : `Vanaf ${fmtDate(from)}`;
+  }
+  function renderTaxTables() {
+    const list = effectiveTaxTable(tbKind);
+    if (!list.some((x) => x.from === tbFrom)) tbFrom = list[list.length - 1].from;
+    const cur = list.find((x) => x.from === tbFrom);
+    const base = baseTaxTables();
+    const own = !!taxUser[tbKind]?.[tbFrom];
+    const inBase = base[tbKind].some((x) => x.from === tbFrom);
+    document.querySelectorAll('#tbKind button').forEach((b) => b.classList.toggle('on', b.dataset.k === tbKind));
+    $('tbPeriods').innerHTML = list.map((x) => `<button type="button" data-from="${x.from}" class="${x.from === tbFrom ? 'on' : ''}">${tbPeriodName(tbKind, x.from)}${taxUser[tbKind]?.[x.from] ? ' ✎' : ''}</button>`).join('');
+    $('tbInfo').textContent = 'De app haalt de nieuwste belastingbedragen automatisch op'
+      + (base.updated ? ` (laatst bijgewerkt op ${fmtDate(base.updated)})` : '')
+      + '. Klopt een bedrag niet met je loonbrief, pas het dan hier aan: jouw aanpassingen gaan voor. Komen er nieuwe bedragen vanaf een bepaalde datum, voeg ze dan toe met "Nieuwe bedragen vanaf…".';
+    $('tbFromWrap').hidden = inBase;
+    $('tbFrom').value = tbFrom;
+    $('tbState').textContent = own ? (inBase ? 'Eigen aanpassingen (✎): die gaan voor op de automatische bedragen.' : 'Eigen bedragen die je zelf toegevoegd hebt.')
+      : 'Automatische bedragen.';
+    $('tbReset').hidden = !own;
+    $('tbReset').textContent = inBase ? 'Automatische bedragen terugzetten' : 'Deze bedragen verwijderen';
+    $('tbFields').innerHTML = TB_SCHEMA[tbKind].map(([f, label, type]) => {
+      const v = cur[f];
+      if (v === undefined) return '';
+      if (type === 'eur' || type === 'pct') {
+        return `<div class="tbrow"><label for="tb-${f}">${label}${type === 'pct' ? ' (%)' : ' (€)'}</label>
+          <input id="tb-${f}" data-f="${f}" data-t="${type}" inputmode="decimal" value="${type === 'pct' ? pctOut(v) : numOut(v)}"></div>`;
+      }
+      if (type === 'kids') {
+        return `<div class="tbgroup"><b>${label} (€)</b>${v.slice(1).map((n, i) => `<div class="tbrow"><label for="tb-${f}-${i + 1}">${i + 1} ${i ? 'kinderen' : 'kind'}</label>
+          <input id="tb-${f}-${i + 1}" data-f="${f}" data-t="kids" data-i="${i + 1}" inputmode="decimal" value="${numOut(n)}"></div>`).join('')}</div>`;
+      }
+      // schijven: [bovengrens, tarief]
+      return `<div class="tbgroup"><b>${label}</b>${v.map(([upper, rate], i) => {
+        const lower = i ? v[i - 1][0] : 0;
+        const range = upper === Infinity ? `<span class="span2">boven ${numOut(lower) || 0}</span>`
+          : `<span>${f === 'pension' ? 'tot' : `van ${numOut(lower) || 0} tot`}</span>`
+            + `<input data-f="${f}" data-t="pair" data-i="${i}" data-j="0" inputmode="decimal" value="${numOut(upper)}" aria-label="bovengrens">`;
+        return `<div class="tbpair">${range}<span>:</span>
+          <input data-f="${f}" data-t="pair" data-i="${i}" data-j="1" inputmode="decimal" value="${pctOut(rate)}" aria-label="tarief"><span>%</span></div>`;
+      }).join('')}</div>`;
+    }).join('');
+  }
+  function saveTaxPeriod(kind, from, obj) {
+    taxUser[kind] = { ...(taxUser[kind] || {}), [from]: obj };
+    save(KEY_TAX_USER, taxUser);
+    applyTaxTables(); render(); renderTaxTables();
+  }
+  $('tbKind').addEventListener('click', (ev) => {
+    const k = ev.target.closest('[data-k]')?.dataset.k;
+    if (k) { tbKind = k; tbFrom = ''; renderTaxTables(); }
+  });
+  $('tbPeriods').addEventListener('click', (ev) => {
+    const f = ev.target.closest('[data-from]')?.dataset.from;
+    if (f) { tbFrom = f; renderTaxTables(); }
+  });
+  $('tbFields').addEventListener('change', (ev) => {
+    const el = ev.target.closest('[data-f]');
+    if (!el) return;
+    let n = numIn(el.value);
+    if (!Number.isFinite(n) || n < 0) { renderTaxTables(); return alert('Vul een geldig bedrag of percentage in.'); }
+    const cur = structuredClone(effectiveTaxTable(tbKind).find((x) => x.from === tbFrom));
+    const f = el.dataset.f, t = el.dataset.t;
+    if (t === 'pct') cur[f] = n / 100;
+    else if (t === 'eur') cur[f] = n;
+    else if (t === 'kids') cur[f][Number(el.dataset.i)] = n;
+    else cur[f][Number(el.dataset.i)][Number(el.dataset.j)] = el.dataset.j === '1' ? n / 100 : n;
+    saveTaxPeriod(tbKind, tbFrom, cur);
+  });
+  $('tbAdd').addEventListener('click', () => {
+    const list = effectiveTaxTable(tbKind);
+    const last = list[list.length - 1];
+    let from;
+    if (tbKind === 'incomeTax') from = `${Number(last.from.slice(0, 4)) + 1}-01-01`;
+    else {
+      let d = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+      while (list.some((x) => x.from >= isoDate(d))) d = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+      from = isoDate(d);
+    }
+    tbFrom = from;
+    saveTaxPeriod(tbKind, from, { ...structuredClone(last), from });
+  });
+  $('tbFrom').addEventListener('change', () => {
+    const v = $('tbFrom').value;
+    const list = effectiveTaxTable(tbKind);
+    if (!v || list.some((x) => x.from === v)) { renderTaxTables(); return alert('Kies een datum die nog niet gebruikt wordt.'); }
+    const obj = { ...taxUser[tbKind][tbFrom], from: v };
+    delete taxUser[tbKind][tbFrom];
+    tbFrom = v;
+    saveTaxPeriod(tbKind, v, obj);
+  });
+  $('tbReset').addEventListener('click', () => {
+    const inBase = baseTaxTables()[tbKind].some((x) => x.from === tbFrom);
+    if (!confirm(inBase ? 'Je eigen aanpassingen voor deze periode wissen?' : 'Deze bedragen verwijderen?')) return;
+    delete taxUser[tbKind][tbFrom];
+    save(KEY_TAX_USER, taxUser);
+    if (!inBase) tbFrom = '';
+    applyTaxTables(); render(); renderTaxTables();
+  });
+
+  // nieuwste bedragen ophalen (enkel op de echte website)
+  async function refreshTaxTables() {
+    if (!location.protocol.startsWith('http')) return;
+    try {
+      const res = await fetch(`belasting.json?t=${Date.now()}`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const j = await res.json();
+      if (!Loon.normalizeTable(j.withholding) || !Loon.normalizeTable(j.incomeTax)) return;
+      const next = { updated: j.updated || '', withholding: j.withholding, incomeTax: j.incomeTax };
+      if (JSON.stringify(next) === JSON.stringify(load(KEY_TAX_REMOTE, null))) return;
+      save(KEY_TAX_REMOTE, next);
+      applyTaxTables(); render(); renderTaxTables();
+    } catch { /* offline: verder met de bewaarde bedragen */ }
+  }
+
   // --- netto-instellingen -------------------------------------------------
   $('sPlace').innerHTML = Loon.PLACES.map((p) => `<option value="${escapeHtml(p)}">${escapeHtml(p)} (${money(Loon.TRAVEL[Loon.TRAVEL.length - 1].table[p])})</option>`).join('');
   const settingInputs = [...document.querySelectorAll('[data-s]')];
@@ -1526,6 +2256,7 @@ const APP_VERSION = '2026-10-02.15';
     $('placeWrap').hidden = settings.transport !== 'auto';
     $('bikeWrap').hidden = settings.transport !== 'fiets';
     $('pctWrap').hidden = settings.withholdingMode !== 'percentage';
+    $('bvHint').hidden = settings.withholdingMode === 'percentage';
   }
   $('settingsBox').addEventListener('change', (ev) => {
     const el = ev.target.closest('[data-s]');
@@ -1640,7 +2371,7 @@ const APP_VERSION = '2026-10-02.15';
   }
   $('exportJson').addEventListener('click', () => {
     download(`werkuren-backup-${isoDate(new Date())}.json`,
-      JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation }, null, 2), 'application/json');
+      JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, medChecks, leave, taxExtras, taxUser }, null, 2), 'application/json');
   });
   $('importBtn').addEventListener('click', () => $('importFile').click());
   $('importFile').addEventListener('change', async (ev) => {
@@ -1657,14 +2388,18 @@ const APP_VERSION = '2026-10-02.15';
       if (Array.isArray(data.customCompanies)) customCompanies = data.customCompanies;
       if (Array.isArray(data.hiddenCompanies)) hiddenCompanies = data.hiddenCompanies;
       if (Array.isArray(data.purchases)) purchases = data.purchases;
+      if (Array.isArray(data.medChecks)) medChecks = data.medChecks;
+      if (Array.isArray(data.leave)) leave = data.leave;
+      if (data.taxExtras) taxExtras = data.taxExtras;
+      if (data.taxUser) { taxUser = data.taxUser; applyTaxTables(); }
       if (data.clothingStart) clothingStart = data.clothingStart;
       if (data.companyLocations) companyLocations = data.companyLocations;
       if (data.lastLocation) lastLocation = data.lastLocation;
       if (data.companyPins) companyPins = data.companyPins;
       save(KEY_ENTRIES, entries); save(KEY_PERIODS, periods); save(KEY_SETTINGS, settings); save(KEY_HOLIDAYS, holidayOverrides);
       save(KEY_CUSTOM_CO, customCompanies); save(KEY_HIDDEN_CO, hiddenCompanies);
-      save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation);
-      renderCompanyPicker(); renderSettings(); renderHolidays(); renderRates(); render();
+      save(KEY_MEDICAL, medChecks); save(KEY_LEAVE, leave); save(KEY_TAX_EXTRA, taxExtras); save(KEY_TAX_USER, taxUser); save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation);
+      renderCompanyPicker(); renderSettings(); renderTaxTables(); renderHolidays(); renderRates(); render();
     } catch { alert('Dit is geen geldig back-upbestand.'); }
     ev.target.value = '';
   });
@@ -1717,10 +2452,13 @@ const APP_VERSION = '2026-10-02.15';
     Loon.FUNCTIONS.filter((f) => f.group === g).map((f) => `<option value="${f.id}">${f.label}</option>`).join('')}</optgroup>`).join('');
   $('func').value = load(KEY_LAST_FUNC, 'alle');
   $('clDate').value = isoDate(today);
+  $('medDate').value = isoDate(today);
   renderSettings();
   renderHolidays();
   renderRates();
   selectDay(isoDate(today), false);
+  renderTaxTables();
+  refreshTaxTables();
   countDevice();
   // uitleg bij elke start van de app
   openWelcome();

@@ -1,0 +1,41 @@
+{
+  "updated": "2026-10-05",
+  "note": "Belastingbedragen voor Haven Werkuren. withholding = sleutelformule bedrijfsvoorheffing (per betaaldatum), incomeTax = personenbelasting (per inkomstenjaar). null = geen bovengrens.",
+  "sources": {
+    "withholding": "FOD Financien, bijlage III KB/WIB 92 (BS 29-12-2025); kinderverminderingen en max. quotient 2026: bedragen 2024 geindexeerd",
+    "incomeTax": "Geindexeerde bedragen aanslagjaar 2027 (Practicali)"
+  },
+  "withholding": [
+    {
+      "from": "2026-01-01",
+      "scale": [[16710, 0.2675], [29500, 0.428], [51050, 0.4815], [null, 0.535]],
+      "costRate": 0.3,
+      "costMax": 6070,
+      "taxFree": 11170,
+      "quotientRate": 0.3,
+      "quotientMax": 13788,
+      "kidsReduction": [0, 621, 1660, 4396, 7614, 11098, 14582, 18104, 21968],
+      "extraKid": 3864,
+      "werkbonusRate": 0.3314
+    }
+  ],
+  "incomeTax": [
+    {
+      "from": "2026-01-01",
+      "costRate": 0.3,
+      "costMax": 6070,
+      "brackets": [[16720, 0.25], [29510, 0.4], [51070, 0.45], [null, 0.5]],
+      "taxFree": 11550,
+      "taxFreeScale": [[11750, 0.25], [16720, 0.3], [27860, 0.4], [51070, 0.45], [null, 0.5]],
+      "kidsSupplement": [0, 2130, 5130, 11440, 18510],
+      "extraKid": 7070,
+      "under3": 740,
+      "otherDependent": 1980,
+      "singleParent": 1980,
+      "kidsCreditMax": 550,
+      "quotientRate": 0.3,
+      "quotientMax": 11780,
+      "pension": [[1050, 0.3], [1350, 0.25]]
+    }
+  ]
+}
