@@ -561,12 +561,26 @@
   }
   const isoToday = () => toIso(new Date());
 
+  // --- verlof ---------------------------------------------------------------------
+  // verlofdagen tussen twee datums: zondagen en feestdagen tellen niet mee, zaterdagen alleen als je die vraagt
+  function leaveDays(from, to, { saturdays = false, overrides = {} } = {}) {
+    if (!from) return [];
+    if (!to || to < from) to = from;
+    const out = [];
+    for (let d = from; d <= to && out.length < 400; d = addDays(d, 1)) {
+      const wd = weekday(d);
+      if (wd === 0 || (wd === 6 && !saturdays) || holidayOn(d, overrides)) continue;
+      out.push(d);
+    }
+    return out;
+  }
+
   const api = {
     round2, addDays, weekday, periodOf, paymentDate,
     START_HOURS, RATE_ROWS, DEFAULT_RATE_PERIODS, FUNCTIONS, FUNCTION_GROUPS, functionOf, PARAMS, TRAVEL, PLACES, DEFAULT_SETTINGS,
     legalHolidays, holidays, holidayOn, tariffRow, rateFor, travelAllowance,
     DEFAULT_WITHHOLDING, DEFAULT_INCOME_TAX, setTaxTables, getTaxTables, normalizeTable, shiftLines, estimateWithholding, estimateAnnualTax, calcPeriod, calcAll,
-    CLOTHING, CLOTHING_ITEMS, clothingPointsFor, clothingLedger,
+    CLOTHING, CLOTHING_ITEMS, clothingPointsFor, clothingLedger, leaveDays,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Loon = api;

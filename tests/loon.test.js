@@ -256,3 +256,12 @@ test('belastingbrief: kinderen, partner, pensioensparen en eigen gegevens', () =
   const lowKids = est({ kids: 2 }, {}, 8000, 0);
   assert.equal(lowKids.kidsCredit, 550);
 });
+
+test('verlofdagen: geen zondagen en feestdagen, zaterdagen alleen op vraag', () => {
+  // 21-31 december 2026: Kerstmis (vr 25) telt niet, za 26 en zo 27 niet
+  const days = Loon.leaveDays('2026-12-21', '2026-12-31');
+  assert.deepEqual(days, ['2026-12-21', '2026-12-22', '2026-12-23', '2026-12-24', '2026-12-28', '2026-12-29', '2026-12-30', '2026-12-31']);
+  assert.equal(Loon.leaveDays('2026-12-21', '2026-12-31', { saturdays: true }).length, 9);
+  assert.deepEqual(Loon.leaveDays('2026-10-07'), ['2026-10-07']);
+  assert.deepEqual(Loon.leaveDays('2026-10-11', '2026-10-11'), []); // zondag
+});
