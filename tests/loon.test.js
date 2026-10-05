@@ -172,3 +172,18 @@ test('oudere tarieventabel zonder uurloon', () => {
   const old = [{ from: '', values: Object.fromEntries(Object.entries(Loon.DEFAULT_RATE_PERIODS[1].values).map(([k, v]) => [k, { shift: v.shift, overuur: v.overuur }])) }];
   assert.equal(Loon.rateFor(old, '2026-10-06', '08').uur, 24.84);
 });
+
+test('belastingbrief: schatting van de aanslag', () => {
+  // 30000 belastbaar: kosten 6070 (max), netto 23930; belasting 4180 + 7210 x 40% = 7064 - 2887,50 = 4176,50
+  const r = Loon.estimateAnnualTax({ belastbaar: 30000, voorheffing: 4000, year: 2026, settings: {} });
+  assert.equal(r.costs, 6070);
+  assert.equal(r.netTaxable, 23930);
+  assert.equal(r.stateTax, 4176.5);
+  assert.equal(r.municipal, 288.18);      // 6,9% gemeentebelasting Brugge
+  assert.equal(r.total, 4464.68);
+  assert.equal(r.difference, 464.68);     // bijbetalen
+  const low = Loon.estimateAnnualTax({ belastbaar: 8000, voorheffing: 150, year: 2026, settings: {} });
+  assert.equal(low.total, 0);
+  assert.equal(low.difference, -150);     // alles terug
+  assert.equal(Loon.estimateAnnualTax({ belastbaar: 30000, voorheffing: 0, year: 2026, settings: { kids: 1 } }).calculated, false);
+});

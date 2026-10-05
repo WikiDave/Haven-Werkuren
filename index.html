@@ -147,6 +147,10 @@
     position: absolute; top: 3px; left: 4px; font-size: 11px; font-weight: 800; line-height: 1; color: #1a8f5a;
   }
   .cal button .medmark.due { color: var(--ot); }
+  .taxresult { margin: 10px 0 0; padding: 14px; border-radius: 12px; font-size: 17px; font-weight: 700; background: var(--bg); }
+  .taxresult.back { background: #e3f4ea; color: #146c43; }
+  .taxresult.pay { background: var(--accent-soft); color: var(--ot); }
+  @media (prefers-color-scheme: dark) { .taxresult.back { background: #17352a; color: #7fd6a4; } }
   .li-amt { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .del {
     border: 0; background: transparent; color: var(--danger); width: 36px; height: 36px;
@@ -464,6 +468,28 @@
     </details>
   </section>
 
+  <section class="card" id="taxCard">
+    <details class="fold" data-fold="belasting" open>
+      <summary><h2>Belastingbrief</h2></summary>
+    <div class="yearbar">
+      <button id="taxPrev" aria-label="Vorig jaar">‹</button>
+      <b id="taxYear"></b>
+      <button id="taxNext" aria-label="Volgend jaar">›</button>
+    </div>
+    <p class="taxresult" id="taxResult"></p>
+    <table class="slip-t" id="taxTable"></table>
+    <details id="taxExtraBox">
+      <summary>Inkomen dat niet in de app staat</summary>
+      <p class="hint">Bv. loon van voor je de app gebruikte, vakantiegeld, uitkeringen of een andere job. Je vindt de bedragen op je loonfiches (281.10, 281.13).</p>
+      <div class="row2">
+        <div><label for="taxExtraInc">Extra belastbaar inkomen</label><input id="taxExtraInc" inputmode="decimal" placeholder="0"></div>
+        <div><label for="taxExtraWh">Extra betaalde voorheffing</label><input id="taxExtraWh" inputmode="decimal" placeholder="0"></div>
+      </div>
+    </details>
+    <p class="hint" id="taxHint"></p>
+    </details>
+  </section>
+
   <section class="card" id="medCard">
     <details class="fold" data-fold="medisch" open>
       <summary><h2>Medische controle</h2></summary>
@@ -552,6 +578,9 @@
       </div>
       <label for="sExtraWh">Extra bedrag afhouden per uitbetaling</label>
       <input id="sExtraWh" data-s="extraWithholding" data-t="num" inputmode="decimal" placeholder="0">
+      <label for="sMunicipal">Gemeentebelasting (%)</label>
+      <input id="sMunicipal" data-s="municipalRate" data-t="num" inputmode="decimal" placeholder="6,9">
+      <p class="hint">Brugge (ook Assebroek, Sint-Kruis, Sint-Michiels, …): 6,9%. Woon je elders, vul dan het percentage van je gemeente in.</p>
 
       <details>
         <summary>Meer (nog niet gekende bedragen)</summary>
@@ -635,11 +664,11 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-05.1"></script>
+<script src="loon.js?v=2026-10-05.2"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-05.1';
+const APP_VERSION = '2026-10-05.2';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -741,6 +770,7 @@ const APP_VERSION = '2026-10-05.1';
   const KEY_LAST_FUNC = 'haven-werkuren.lastFunction';
   const KEY_COUNTED = 'haven-werkuren.deviceCounted';
   const KEY_MEDICAL = 'haven-werkuren.medicalChecks';
+  const KEY_TAX_EXTRA = 'haven-werkuren.taxExtras';
   const KEY_PURCHASES = 'haven-werkuren.clothingPurchases';
   const KEY_CLOTH_START = 'haven-werkuren.clothingStart';
   const KEY_FOLDS = 'haven-werkuren.folds';
@@ -776,6 +806,8 @@ const APP_VERSION = '2026-10-05.1';
   let showMode = load(KEY_MODE, 'bruto');
   let purchases = load(KEY_PURCHASES, []);
   let medChecks = load(KEY_MEDICAL, []); // [{ id, date, note }]
+  let taxExtras = load(KEY_TAX_EXTRA, {}); // { jaar: { income, withholding } }
+  let taxYear = new Date().getFullYear();
   let clothingStart = load(KEY_CLOTH_START, { date: '', points: 0 });
   let companyLocations = load(KEY_CO_LOCS, {}); // door jou aangepaste plaatsen per bedrijf
   let companyPins = load(KEY_CO_PIN, {});         // spelden per plaats: "bedrijf/plaats"
@@ -1344,6 +1376,7 @@ const APP_VERSION = '2026-10-05.1';
     $('slips').innerHTML = slipHtml('A') + slipHtml('B');
     renderClothing();
     renderMedical();
+    renderTax();
 
     renderCalendar();
     renderDay();
@@ -1357,6 +1390,66 @@ const APP_VERSION = '2026-10-05.1';
     if (!m) return;
     showMode = m; save(KEY_MODE, m); render();
   });
+
+  // --- belastingbrief (schatting) -------------------------------------------
+  const numIn = (v) => (String(v ?? '').trim() ? Number(String(v).replace(',', '.')) : 0);
+  const numOut = (n) => (n ? String(n).replace('.', ',') : '');
+  function renderTax() {
+    const y = String(taxYear);
+    $('taxYear').textContent = `${y} · brief in ${taxYear + 1}`;
+    const periodsOfYear = Object.values(calc.periods).filter((r) => r.period.start.startsWith(y));
+    const extra = taxExtras[y] || {};
+    const appTaxable = round2(periodsOfYear.reduce((t, r) => t + r.belastbaar, 0));
+    const appWithheld = round2(periodsOfYear.reduce((t, r) => t + r.voorheffing, 0));
+    const r = Loon.estimateAnnualTax({
+      belastbaar: appTaxable + (Number(extra.income) || 0),
+      voorheffing: appWithheld + (Number(extra.withholding) || 0),
+      year: taxYear, settings,
+    });
+    $('taxExtraInc').value = numOut(extra.income);
+    $('taxExtraWh').value = numOut(extra.withholding);
+    const empty = !periodsOfYear.length && !extra.income;
+    const row = (label, amount, cls = '') => `<tr class="${cls}"><td>${label}</td><td>${money(amount)}</td></tr>`;
+    if (empty) {
+      $('taxResult').className = 'taxresult';
+      $('taxResult').textContent = `Nog geen gegevens voor ${y}.`;
+      $('taxTable').innerHTML = '';
+    } else if (!r.calculated) {
+      $('taxResult').className = 'taxresult';
+      $('taxResult').textContent = 'Niet berekend: de schatting werkt enkel voor een alleenstaande zonder personen ten laste.';
+      $('taxTable').innerHTML = '';
+    } else {
+      const diff = r.difference;
+      $('taxResult').className = 'taxresult' + (diff < -0.5 ? ' back' : diff > 0.5 ? ' pay' : '');
+      $('taxResult').textContent = diff < -0.5 ? `Je krijgt ongeveer ${money(-diff)} terug.`
+        : diff > 0.5 ? `Je moet ongeveer ${money(diff)} bijbetalen.`
+        : 'Ongeveer € 0: je voorheffing dekt je belasting.';
+      $('taxTable').innerHTML = [
+        row(`Belastbaar loon in de app (${periodsOfYear.length} uitbetaling${periodsOfYear.length === 1 ? '' : 'en'})`, appTaxable),
+        extra.income ? row('Extra inkomen (niet in de app)', extra.income) : '',
+        row('Forfaitaire beroepskosten', -r.costs),
+        row('Netto belastbaar inkomen', r.netTaxable, 'mid'),
+        row('Belasting (federaal en Vlaams)', r.stateTax),
+        row(`Gemeentebelasting ${String(r.municipalRate).replace('.', ',')}%`, r.municipal),
+        row('Totaal verschuldigd', r.total, 'mid'),
+        row('Al betaalde voorheffing', -r.voorheffing),
+        `<tr class="tot"><td>${diff < 0 ? 'Terug te krijgen' : 'Bij te betalen'} <span class="est">schatting</span></td><td>${money(Math.abs(diff))}</td></tr>`,
+      ].join('');
+    }
+    $('taxHint').textContent = `Ruwe schatting van je aanslag personenbelasting (inkomstenjaar ${y}, aanslagjaar ${taxYear + 1}), met de belastingschalen, `
+      + 'de belastingvrije som en de forfaitaire beroepskosten. De fiscale werkbonus, aftrekken (bv. pensioensparen) en het inkomen van een partner zitten er niet in. '
+      + (settings.withholdingMode === 'percentage' ? '' : 'De voorheffing in de app is zelf ook een schatting. ')
+      + 'Je echte aanslag kan dus verschillen.';
+  }
+  $('taxExtraBox').addEventListener('change', () => {
+    const income = numIn($('taxExtraInc').value), withholding = numIn($('taxExtraWh').value);
+    if (![income, withholding].every((n) => Number.isFinite(n) && n >= 0)) { renderTax(); return alert('Vul een geldig bedrag in.'); }
+    taxExtras[taxYear] = { income, withholding };
+    save(KEY_TAX_EXTRA, taxExtras);
+    renderTax();
+  });
+  $('taxPrev').addEventListener('click', () => { taxYear--; renderTax(); });
+  $('taxNext').addEventListener('click', () => { taxYear++; renderTax(); });
 
   // --- medische controle (1 keer per jaar) --------------------------------
   const MED_WARN_DAYS = 30;
@@ -1736,7 +1829,7 @@ const APP_VERSION = '2026-10-05.1';
   }
   $('exportJson').addEventListener('click', () => {
     download(`werkuren-backup-${isoDate(new Date())}.json`,
-      JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, medChecks }, null, 2), 'application/json');
+      JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, medChecks, taxExtras }, null, 2), 'application/json');
   });
   $('importBtn').addEventListener('click', () => $('importFile').click());
   $('importFile').addEventListener('change', async (ev) => {
@@ -1754,13 +1847,14 @@ const APP_VERSION = '2026-10-05.1';
       if (Array.isArray(data.hiddenCompanies)) hiddenCompanies = data.hiddenCompanies;
       if (Array.isArray(data.purchases)) purchases = data.purchases;
       if (Array.isArray(data.medChecks)) medChecks = data.medChecks;
+      if (data.taxExtras) taxExtras = data.taxExtras;
       if (data.clothingStart) clothingStart = data.clothingStart;
       if (data.companyLocations) companyLocations = data.companyLocations;
       if (data.lastLocation) lastLocation = data.lastLocation;
       if (data.companyPins) companyPins = data.companyPins;
       save(KEY_ENTRIES, entries); save(KEY_PERIODS, periods); save(KEY_SETTINGS, settings); save(KEY_HOLIDAYS, holidayOverrides);
       save(KEY_CUSTOM_CO, customCompanies); save(KEY_HIDDEN_CO, hiddenCompanies);
-      save(KEY_MEDICAL, medChecks); save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation);
+      save(KEY_MEDICAL, medChecks); save(KEY_TAX_EXTRA, taxExtras); save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation);
       renderCompanyPicker(); renderSettings(); renderHolidays(); renderRates(); render();
     } catch { alert('Dit is geen geldig back-upbestand.'); }
     ev.target.value = '';

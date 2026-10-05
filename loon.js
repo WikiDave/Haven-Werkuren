@@ -142,6 +142,7 @@
     werkbonus: 0, specialContribution: 0,
     advance: 0, garnishment: 0, voluntary: 0, groupInsurance: 0,
     extraType: 'A',             // type van wijzigings- en afbestelvergoeding (nog te bevestigen)
+    municipalRate: 6.9,         // aanvullende gemeentebelasting in % (Brugge, aanslagjaar 2026)
   };
 
   // --- feestdagen -------------------------------------------------------------
@@ -280,22 +281,46 @@
   // --- voorheffing (voorlopige schatting) -----------------------------------------
   // Aanname: Cewez behandelt elke halve maand als een half maandloon.
   // Enkel geldig voor een alleenstaande zonder personen ten laste.
-  function estimateWithholding(belastbaar, settings, date) {
-    const s = { ...DEFAULT_SETTINGS, ...settings };
-    const alone = !['gehuwd', 'wettelijk-samenwonend'].includes(s.civil)
-      && !s.spouseDependent && !Number(s.kids) && !Number(s.others);
-    if (!alone) return { amount: 0, calculated: false };
-    const t = validOn(PARAMS, date).tax;
-    const year = belastbaar * t.periodsPerYear;
-    const costs = Math.min(year * t.costRate, t.costMax);
-    const base = year - costs;
+  const isAlone = (s) => !['gehuwd', 'wettelijk-samenwonend'].includes(s.civil)
+    && !s.spouseDependent && !Number(s.kids) && !Number(s.others);
+
+  // personenbelasting op een jaarloon: forfaitaire beroepskosten, schalen, belastingvrije som
+  function incomeTaxOnYear(yearTaxable, t) {
+    const costs = Math.min(Math.max(0, yearTaxable) * t.costRate, t.costMax);
+    const base = Math.max(0, yearTaxable - costs);
     let tax = 0, lower = 0;
     for (const [upper, rate] of t.brackets) {
       if (base > lower) tax += (Math.min(base, upper) - lower) * rate;
       lower = upper;
     }
     tax -= t.taxFree * t.brackets[0][1];
-    return { amount: round2(Math.max(0, tax) / t.periodsPerYear), calculated: true };
+    return { costs, base, tax: Math.max(0, tax) };
+  }
+
+  function estimateWithholding(belastbaar, settings, date) {
+    const s = { ...DEFAULT_SETTINGS, ...settings };
+    if (!isAlone(s)) return { amount: 0, calculated: false };
+    const t = validOn(PARAMS, date).tax;
+    const r = incomeTaxOnYear(belastbaar * t.periodsPerYear, t);
+    return { amount: round2(r.tax / t.periodsPerYear), calculated: true };
+  }
+
+  // --- belastingbrief (schatting van de aanslag personenbelasting) ------------------
+  // belastbaar = jaartotaal belastbaar loon, voorheffing = jaartotaal ingehouden voorheffing.
+  // difference > 0: bijbetalen, < 0: terugkrijgen. Zonder fiscale werkbonus, aftrekken of partnerinkomen.
+  function estimateAnnualTax({ belastbaar, voorheffing, year, settings }) {
+    const s = { ...DEFAULT_SETTINGS, ...settings };
+    if (!isAlone(s)) return { calculated: false };
+    const t = validOn(PARAMS, `${year}-12-31`).tax;
+    const r = incomeTaxOnYear(belastbaar, t);
+    const stateTax = round2(r.tax);
+    const municipalRate = Number(s.municipalRate) || 0;
+    const municipal = round2(stateTax * municipalRate / 100);
+    const total = round2(stateTax + municipal);
+    return {
+      calculated: true, year, belastbaar: round2(belastbaar), costs: round2(r.costs), netTaxable: round2(r.base),
+      stateTax, municipalRate, municipal, total, voorheffing: round2(voorheffing), difference: round2(total - voorheffing),
+    };
   }
 
   // --- berekening per periode -------------------------------------------------------
@@ -408,7 +433,7 @@
     round2, addDays, weekday, periodOf, paymentDate,
     START_HOURS, RATE_ROWS, DEFAULT_RATE_PERIODS, FUNCTIONS, FUNCTION_GROUPS, functionOf, PARAMS, TRAVEL, PLACES, DEFAULT_SETTINGS,
     legalHolidays, holidays, holidayOn, tariffRow, rateFor, travelAllowance,
-    shiftLines, estimateWithholding, calcPeriod, calcAll,
+    shiftLines, estimateWithholding, estimateAnnualTax, calcPeriod, calcAll,
     CLOTHING, CLOTHING_ITEMS, clothingPointsFor, clothingLedger,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
