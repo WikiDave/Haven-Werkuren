@@ -20,7 +20,7 @@ De berekening staat in `loon.js` (zonder schermcode) en volgt de opbouw van de C
 
 - Twee uitbetalingen per maand: dag 1–15 (rond de 19e) en dag 16–einde maand (uiterlijk 3 werkdagen later).
 - Per shift: shiftloon, vaste premie en overuren (RSZ + voorheffing), kledij, verplaatsing en internet (pool) zonder RSZ en voorheffing, eigen bijdrage maaltijdcheque.
-- RSZ: 13,07% op 108% van basis RSZ. Voorheffing: voorlopige schatting (half maandloon x 24, schalen 2026), enkel voor een alleenstaande zonder personen ten laste.
+- RSZ: 13,07% op 108% van basis RSZ. Voorheffing: sleutelformule van de FOD Financiën (bijlage III KB/WIB 92, bedragen 2026), met de regel voor betalingen per veertien dagen (x 2 x 12, maandbedrag / 2); belastingvrije som instelbaar.
 - Zon- en feestdagtarief vanaf 18u00 de dag ervoor; een feestdag in het weekend telt op de vervangingsdag.
 
 Tests (met een echte loonbrief van augustus 2026 die tot op de cent moet kloppen):
@@ -40,7 +40,7 @@ Volgens de Codex (artikel 39 en bijlage 11): 1 punt per gewerkte shift, 2 punten
 ## Nog open
 
 - Werkbonus, speciale bijdrage sociale zekerheid: staan op 0 (instelbaar).
-- Exacte voorheffing: officiële sleutelformule 2026, of kalibreren met een loonbrief met voorheffing.
+- Voorheffing: sleutelformule ingebouwd; de belastingvrije som na de hervorming van juli 2026, de kinderverminderingen en het quotiënt voor 2026 nog te controleren met een loonbrief met voorheffing.
 - Vervangingsdagen voor 15/08/2026 en 01/11/2026 (instelbaar bij Feestdagen).
 - Fietsvergoeding per km.
 - Of wijzigings- en afbestelvergoeding onder RSZ vallen (instelbaar).

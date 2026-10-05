@@ -91,7 +91,7 @@
     mtcValue: 7.00, mtcOwn: 1.09,             // maaltijdcheque; eigen bijdrage per volle shift
     wijziging: 17.17, afbestelWeekend: 115.16,
     tax: {                                    // personenbelasting, inkomsten 2026 (aanslagjaar 2027)
-      periodsPerYear: 24, costRate: 0.30, costMax: 6070,
+      costRate: 0.30, costMax: 6070,
       brackets: [[16720, 0.25], [29510, 0.40], [51070, 0.45], [Infinity, 0.50]],
       taxFree: 11550,
       // belastingvrije som wordt niet met de gewone schalen verrekend maar met deze schaal (AJ 2017–2029)
@@ -151,6 +151,7 @@
     advance: 0, garnishment: 0, voluntary: 0, groupInsurance: 0,
     extraType: 'A',             // type van wijzigings- en afbestelvergoeding (nog te bevestigen)
     municipalRate: 6.9,         // aanvullende gemeentebelasting in % (Brugge, aanslagjaar 2026)
+    bvTaxFree: 0,               // eigen belastingvrije som voor de voorheffing (0 = bedrag uit de sleutelformule)
   };
 
   // --- feestdagen -------------------------------------------------------------
@@ -289,28 +290,61 @@
   // --- voorheffing (voorlopige schatting) -----------------------------------------
   // Aanname: Cewez behandelt elke halve maand als een half maandloon.
   // Enkel geldig voor een alleenstaande zonder personen ten laste.
-  const isAlone = (s) => !['gehuwd', 'wettelijk-samenwonend'].includes(s.civil)
-    && !s.spouseDependent && !Number(s.kids) && !Number(s.others);
+  // --- bedrijfsvoorheffing: sleutelformule van de FOD Financiën (bijlage III KB/WIB 92) -----
+  // Bedragen voor betalingen vanaf 1/1/2026. De tarieven bevatten al 7% gemeentebelasting.
+  // De verminderingen voor kinderen en het maximum van het huwelijksquotiënt voor 2026 werden niet
+  // gevonden: dat zijn de bedragen van 2024 x 11170/10580 (zelfde indexering als de belastingvrije som).
+  const WITHHOLDING = [{
+    from: '2026-01-01',
+    scale: [[16710, 0.2675], [29500, 0.4280], [51050, 0.4815], [Infinity, 0.5350]],
+    costRate: 0.30, costMax: 6070,
+    taxFree: 11170,
+    quotientRate: 0.30, quotientMax: 13788,
+    kidsReduction: [0, 621, 1660, 4396, 7614, 11098, 14582, 18104, 21968], extraKid: 3864,
+    werkbonusRate: 0.3314,                    // vermindering: 33,14% van de werkbonus (luik A)
+  }];
 
-  // personenbelasting op een jaarloon: forfaitaire beroepskosten, schalen, belastingvrije som
-  function incomeTaxOnYear(yearTaxable, t) {
-    const costs = Math.min(Math.max(0, yearTaxable) * t.costRate, t.costMax);
-    const base = Math.max(0, yearTaxable - costs);
-    let tax = 0, lower = 0;
-    for (const [upper, rate] of t.brackets) {
-      if (base > lower) tax += (Math.min(base, upper) - lower) * rate;
+  // basisschaal met afronding op de cent in elke stap (zoals in de sleutelformule)
+  function scaleTax(amount, scale) {
+    let cum = 0, lower = 0;
+    for (const [upper, rate] of scale) {
+      if (amount <= upper) return round2(cum + round2((amount - lower) * rate));
+      cum = round2(cum + (upper - lower) * rate);
       lower = upper;
     }
-    tax -= t.taxFree * t.brackets[0][1];
-    return { costs, base, tax: Math.max(0, tax) };
+    return cum;
   }
 
+  // Voorheffing op één uitbetaling. Cewez betaalt per halve maand: dat volgt de regel voor
+  // "betalingen per veertien dagen" (x 2 = maand, x 12 = jaar; maandbedrag / 2).
   function estimateWithholding(belastbaar, settings, date) {
     const s = { ...DEFAULT_SETTINGS, ...settings };
-    if (!isAlone(s)) return { amount: 0, calculated: false };
-    const t = validOn(PARAMS, date).tax;
-    const r = incomeTaxOnYear(belastbaar * t.periodsPerYear, t);
-    return { amount: round2(r.tax / t.periodsPerYear), calculated: true };
+    const w = validOn(WITHHOLDING, date);
+    const taxFree = Number(s.bvTaxFree) > 0 ? Number(s.bvTaxFree) : w.taxFree;
+    // A. bruto jaarinkomen, B. min forfaitaire beroepskosten
+    const month = round2(Math.max(0, belastbaar) * 2);
+    const year = round2(month * 12);
+    const costs = round2(Math.min(year * w.costRate, w.costMax));
+    const net = round2(year - costs);
+    // C. jaarbelasting: basisschaal min de belasting op de belastingvrije som
+    const taxFreeTax = scaleTax(taxFree, w.scale);
+    const couple = ['gehuwd', 'wettelijk-samenwonend'].includes(s.civil);
+    let basis;
+    if (couple && s.spouseDependent) {
+      // partner zonder eigen beroepsinkomen: 30% van het inkomen toegekend aan de partner
+      const share = round2(Math.min(net * w.quotientRate, w.quotientMax));
+      basis = scaleTax(share, w.scale) + scaleTax(round2(net - share), w.scale) - 2 * taxFreeTax;
+    } else {
+      basis = scaleTax(net, w.scale) - taxFreeTax;
+    }
+    const kids = Math.max(0, Math.round(Number(s.kids) || 0));
+    const kidsReduction = kids < w.kidsReduction.length ? w.kidsReduction[kids]
+      : w.kidsReduction[w.kidsReduction.length - 1] + (kids - w.kidsReduction.length + 1) * w.extraKid;
+    const yearTax = round2(Math.max(0, round2(basis) - kidsReduction));
+    // D. per maand, E. andere verminderingen (werkbonus), dan per halve maand
+    let monthTax = round2(yearTax / 12);
+    monthTax = round2(Math.max(0, monthTax - round2((Number(s.werkbonus) || 0) * 2 * w.werkbonusRate)));
+    return { amount: round2(monthTax / 2), calculated: true };
   }
 
   // --- belastingbrief (schatting van de aanslag personenbelasting) ------------------
@@ -505,7 +539,7 @@
     round2, addDays, weekday, periodOf, paymentDate,
     START_HOURS, RATE_ROWS, DEFAULT_RATE_PERIODS, FUNCTIONS, FUNCTION_GROUPS, functionOf, PARAMS, TRAVEL, PLACES, DEFAULT_SETTINGS,
     legalHolidays, holidays, holidayOn, tariffRow, rateFor, travelAllowance,
-    shiftLines, estimateWithholding, estimateAnnualTax, calcPeriod, calcAll,
+    WITHHOLDING, shiftLines, estimateWithholding, estimateAnnualTax, calcPeriod, calcAll,
     CLOTHING, CLOTHING_ITEMS, clothingPointsFor, clothingLedger,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

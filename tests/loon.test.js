@@ -69,13 +69,24 @@ test('uitbetalingsperiodes', () => {
   assert.equal(Loon.paymentDate(Loon.periodOf('2026-09-20')).date, '2026-10-05');
 });
 
-test('voorheffing-schatting', () => {
-  // 2000 x 24 = 48000; kosten 6070; basis 41930; belasting 14885 - 2887,50 = 11997,50; / 24
-  assert.equal(Loon.estimateWithholding(2000, {}, '2026-09-01').amount, 499.9);
-  assert.equal(Loon.estimateWithholding(236.58, {}, '2026-08-01').amount, 0);
-  const r = Loon.estimateWithholding(2000, { kids: 1 }, '2026-09-01');
-  assert.equal(r.calculated, false);
-  assert.equal(r.amount, 0);
+test('bedrijfsvoorheffing volgens de sleutelformule 2026', () => {
+  const bv = (belastbaar, settings = {}) => Loon.estimateWithholding(belastbaar, settings, '2026-09-16').amount;
+  // loonbrieven zonder voorheffing
+  assert.equal(bv(236.58), 0);   // augustus, periode A
+  assert.equal(bv(527.43), 0);   // september, periode A
+  // 1652,55 x 2 x 12 = 39661,20; - 6070 = 33591,20; schaal 9944,05 + 4091,20 x 48,15% = 11913,96
+  // - 11170 x 26,75% (2987,98) = 8925,98; / 12 = 743,83; / 2 = 371,92
+  assert.equal(bv(1652.55), 371.92);
+  // 2000: jaar 48000, netto 41930, schaal 15929,10 - 2987,98 = 12941,12; / 12 = 1078,43; / 2 = 539,22
+  assert.equal(bv(2000), 539.22);
+  // 1 kind: 12941,12 - 621 = 12320,12; / 12 = 1026,68; / 2 = 513,34
+  assert.equal(bv(2000, { kids: 1 }), 513.34);
+  // partner zonder inkomen: 30% = 12579 -> 3364,88 + 9880,28 - 2 x 2987,98 = 7269,20; / 12 = 605,77; / 2 = 302,89
+  assert.equal(bv(2000, { civil: 'gehuwd', spouseDependent: true }), 302.89);
+  // werkbonus 50 per halve maand: maand 167,01 - 33,14 = 133,87; / 2 = 66,94
+  assert.equal(bv(1000, { werkbonus: 50 }), 66.94);
+  // eigen belastingvrije som (bv. na de hervorming): 11550 x 26,75% = 3089,63 -> 8824,33 / 12 = 735,36 / 2 = 367,68
+  assert.equal(bv(1652.55, { bvTaxFree: 11550 }), 367.68);
 });
 
 test('halve shift, pool en maaltijdcheque', () => {

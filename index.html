@@ -599,19 +599,24 @@
         <option value="gescheiden">Gescheiden</option>
         <option value="weduwe">Weduwe / weduwnaar</option>
       </select>
-      <label class="check"><input type="checkbox" id="sSpouse" data-s="spouseDependent" data-t="bool"> Echtgeno(o)t(e) ten laste</label>
+      <label class="check"><input type="checkbox" id="sSpouse" data-s="spouseDependent" data-t="bool"> Partner heeft geen eigen beroepsinkomen</label>
       <div class="row2">
         <div><label for="sKids">Kinderen ten laste</label><input id="sKids" data-s="kids" data-t="num" inputmode="numeric"></div>
         <div><label for="sOthers">Anderen ten laste</label><input id="sOthers" data-s="others" data-t="num" inputmode="numeric"></div>
       </div>
       <label for="sWhMode">Voorheffing (belastingen)</label>
       <select id="sWhMode" data-s="withholdingMode">
-        <option value="schatting">Schatting door de app</option>
+        <option value="schatting">Sleutelformule (berekend door de app)</option>
         <option value="percentage">Eigen percentage (gevraagd aan Cewez)</option>
       </select>
       <div id="pctWrap">
         <label for="sWhPct">Percentage van het belastbaar bedrag</label>
         <input id="sWhPct" data-s="withholdingPct" data-t="num" inputmode="decimal" placeholder="bv. 25">
+      </div>
+      <div id="bvWrap">
+        <label for="sBvTaxFree">Belastingvrije som in de sleutelformule</label>
+        <input id="sBvTaxFree" data-s="bvTaxFree" data-t="num" inputmode="decimal" placeholder="11170">
+        <p class="hint">Leeg laten voor het bedrag van 2026 (€ 11.170). Pas het aan als de voorheffing op je loonbrief anders is, bv. na de belastinghervorming.</p>
       </div>
       <label for="sExtraWh">Extra bedrag afhouden per uitbetaling</label>
       <input id="sExtraWh" data-s="extraWithholding" data-t="num" inputmode="decimal" placeholder="0">
@@ -701,11 +706,11 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-05.3"></script>
+<script src="loon.js?v=2026-10-05.4"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-05.3';
+const APP_VERSION = '2026-10-05.4';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1779,6 +1784,7 @@ const APP_VERSION = '2026-10-05.3';
     $('placeWrap').hidden = settings.transport !== 'auto';
     $('bikeWrap').hidden = settings.transport !== 'fiets';
     $('pctWrap').hidden = settings.withholdingMode !== 'percentage';
+    $('bvWrap').hidden = settings.withholdingMode === 'percentage';
   }
   $('settingsBox').addEventListener('change', (ev) => {
     const el = ev.target.closest('[data-s]');
