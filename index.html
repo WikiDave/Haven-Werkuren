@@ -163,6 +163,7 @@
   .inset details.fold > summary h2 { font-size: 16px; }
   .more-day { margin-top: 12px; }
   .more-day > summary { font-weight: 600; color: var(--accent); cursor: pointer; padding: 8px 0; }
+  .payday { margin: 0 0 8px; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
   .leaveday { margin: 0 0 8px; padding: 10px 12px; border-radius: 10px; background: var(--leave); color: var(--leave-text); font-weight: 600; }
   .cal button .medmark {
     position: absolute; top: 3px; left: 4px; font-size: 11px; font-weight: 800; line-height: 1; color: #1a8f5a;
@@ -231,6 +232,18 @@
   .cal button.work { background: var(--accent-soft); border-color: transparent; }
   .cal button.work .n { color: var(--text); }
   .cal button.leave { background: var(--leave); border-color: transparent; }
+  .cal button .pay {
+    position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; padding: 0 2px; border-radius: 8px;
+    font-size: 10px; font-weight: 800; line-height: 15px; color: #fff; background: var(--accent);
+  }
+  .cal button.paid .dot { right: 20px; }
+  .cal-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 8px 0 0; font-size: 12px; color: var(--muted); }
+  .cal-legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .cal-legend i { display: inline-block; width: 14px; height: 14px; border-radius: 4px; font-style: normal; font-size: 10px; font-weight: 800; text-align: center; line-height: 14px; }
+  .cal-legend .lg-pay { background: var(--accent); color: #fff; border-radius: 7px; }
+  .cal-legend .lg-leave { background: var(--leave); }
+  .cal-legend .lg-med { color: #1a8f5a; font-size: 13px; }
+  .cal-legend .lg-ot { width: 6px; height: 6px; border-radius: 50%; background: var(--ot); }
   .cal button .lv { font-size: 11px; font-weight: 700; color: var(--leave-text); line-height: 1.1; }
   .cal button.today .n { color: var(--accent); font-weight: 700; text-decoration: underline; }
   .cal button.sel { outline: 2px solid var(--accent); outline-offset: -1px; }
@@ -401,6 +414,7 @@
     </div></div>
     <div class="cal-head"><span>ma</span><span>di</span><span>wo</span><span>do</span><span>vr</span><span>za</span><span>zo</span></div>
     <div class="cal" id="cal"></div>
+    <p class="cal-legend" id="calLegend"><span><i class="lg-pay">€</i>uitbetaling</span><span id="lgLeave"><i class="lg-leave"></i>verlof</span><span><i class="lg-med">+</i>medische controle</span><span><i class="lg-ot"></i>overuren</span></p>
     <div class="monthsum"><span id="sumLabel">Totaal bruto</span><b id="tTotalTop"></b></div>
   </section>
 
@@ -409,6 +423,7 @@
       <summary><h2 id="dayTitle"></h2></summary>
     <p class="hint" id="dayNote" hidden></p>
     <p class="leaveday" id="dayLeaveNote" hidden></p>
+    <p class="payday" id="dayPayNote" hidden></p>
     <ul class="list" id="list"></ul>
     <button type="button" class="btn ghost" id="dayLeave">Verlof op deze dag</button>
     <input type="hidden" id="date">
@@ -794,11 +809,11 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-05.6"></script>
+<script src="loon.js?v=2026-10-05.7"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-05.6';
+const APP_VERSION = '2026-10-05.7';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1398,7 +1413,24 @@ const APP_VERSION = '2026-10-05.6';
     }
   }
 
+  // uitbetalingen die in deze maand vallen: { datum: [periode, …] }
+  function paydaysIn(y, m) {
+    const out = {};
+    for (const delta of [-1, 0]) {
+      const d = new Date(y, m + delta, 1);
+      const ym = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+      for (const day of ['01', '16']) {
+        const per = Loon.periodOf(`${ym}-${day}`);
+        const pay = Loon.paymentDate(per, holidayOverrides);
+        if (pay.date.slice(0, 7) === `${y}-${pad(m + 1)}`) (out[pay.date] ||= []).push({ per, pay, r: calc.periods[per.key] });
+      }
+    }
+    return out;
+  }
+  const payTitle = (x) => `uitbetaling ${rangeText([x.per.start, x.per.end])}${x.r ? `: ${money(x.r.netto)}` : ''}${x.pay.approx ? ' (ongeveer)' : ''}`;
+
   function renderCalendar() {
+    const paydays = paydaysIn(viewYear, viewMonth);
     const first = new Date(viewYear, viewMonth, 1);
     const days = new Date(viewYear, viewMonth + 1, 0).getDate();
     const lead = (first.getDay() + 6) % 7; // maandag eerst
@@ -1409,7 +1441,8 @@ const APP_VERSION = '2026-10-05.6';
       const list = dayEntries(iso);
       const wd = (lead + day - 1) % 7;
       const lv = leaveOn(iso);
-      const cls = [wd >= 5 && 'we', holidayName(iso) && 'hol', list.length && 'work', lv && 'leave', iso === todayIso && 'today', iso === selected && 'sel']
+      const pay = paydays[iso];
+      const cls = [wd >= 5 && 'we', holidayName(iso) && 'hol', list.length && 'work', lv && 'leave', pay && 'paid', iso === todayIso && 'today', iso === selected && 'sel']
         .filter(Boolean).join(' ');
       let inner = `<span class="n">${day}</span>`;
       if (medChecks.some((m) => m.date === iso)) inner += '<span class="medmark" title="medische controle">+</span>';
@@ -1423,6 +1456,7 @@ const APP_VERSION = '2026-10-05.6';
         inner += `${mark}<span class="a">${Math.round(shown(t))}</span>`;
         if (t.otH) inner += '<span class="dot" title="overuren"></span>';
       } else if (lv) inner += '<span class="lv">verlof</span>';
+      if (pay) inner += `<span class="pay" title="${escapeHtml(pay.map(payTitle).join(', '))}">€</span>`;
       html += `<button class="${cls}" data-date="${iso}">${inner}</button>`;
     }
     $('cal').innerHTML = html;
@@ -1438,6 +1472,10 @@ const APP_VERSION = '2026-10-05.6';
     $('dayLeaveNote').hidden = !lv;
     if (lv) $('dayLeaveNote').textContent = `Verlof: ${LEAVE_TYPES[lv.type] || 'verlof'}`;
     $('dayLeave').hidden = !leaveEnabled();
+    $('lgLeave').hidden = !leaveEnabled();
+    const pays = paydaysIn(Number(selected.slice(0, 4)), Number(selected.slice(5, 7)) - 1)[selected];
+    $('dayPayNote').hidden = !pays;
+    if (pays) $('dayPayNote').textContent = pays.map((x) => payTitle(x).replace(/^u/, 'U')).join(' · ');
     $('dayLeave').textContent = lv ? 'Verlof op deze dag weghalen' : 'Verlof op deze dag';
     if (moved) {
       $('dayNote').textContent = moved.effective
