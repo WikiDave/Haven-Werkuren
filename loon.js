@@ -90,10 +90,18 @@
     internet: 0.80,                           // per volle shift, enkel erkend (pool)
     mtcValue: 7.00, mtcOwn: 1.09,             // maaltijdcheque; eigen bijdrage per volle shift
     wijziging: 17.17, afbestelWeekend: 115.16,
-    tax: {                                    // voorheffing-schatting, inkomsten 2026
+    tax: {                                    // personenbelasting, inkomsten 2026 (aanslagjaar 2027)
       periodsPerYear: 24, costRate: 0.30, costMax: 6070,
       brackets: [[16720, 0.25], [29510, 0.40], [51070, 0.45], [Infinity, 0.50]],
       taxFree: 11550,
+      // belastingvrije som wordt niet met de gewone schalen verrekend maar met deze schaal (AJ 2017–2029)
+      taxFreeScale: [[11750, 0.25], [16720, 0.30], [27860, 0.40], [51070, 0.45], [Infinity, 0.50]],
+      kidsSupplement: [0, 2130, 5130, 11440, 18510], extraKid: 7070, // totaal voor 0..4 kinderen, + per kind boven 4
+      under3: 740,                            // per kind jonger dan 3 jaar (zonder kinderopvangkosten)
+      otherDependent: 1980, singleParent: 1980,
+      kidsCreditMax: 550,                     // terugbetaalbaar belastingkrediet voor kinderen ten laste
+      quotientRate: 0.30, quotientMax: 11780, // huwelijksquotiënt
+      pension: [[1050, 0.30], [1350, 0.25]],  // pensioensparen: max storting, belastingvermindering
     },
   }];
 
@@ -306,20 +314,84 @@
   }
 
   // --- belastingbrief (schatting van de aanslag personenbelasting) ------------------
+  const byScale = (amount, scale) => {
+    let tax = 0, lower = 0;
+    for (const [upper, rate] of scale) {
+      if (amount > lower) tax += (Math.min(amount, upper) - lower) * rate;
+      lower = upper;
+    }
+    return tax;
+  };
+  const kidsSupplement = (kids, t) => (kids <= 4 ? t.kidsSupplement[kids] : t.kidsSupplement[4] + (kids - 4) * t.extraKid);
+  // pensioensparen: de gunstigste van 30% (tot 1050) of 25% (tot 1350)
+  const pensionReduction = (paid, t) => Math.max(0, ...t.pension.map(([max, rate]) => Math.min(paid, max) * rate));
+
   // belastbaar = jaartotaal belastbaar loon, voorheffing = jaartotaal ingehouden voorheffing.
-  // difference > 0: bijbetalen, < 0: terugkrijgen. Zonder fiscale werkbonus, aftrekken of partnerinkomen.
-  function estimateAnnualTax({ belastbaar, voorheffing, year, settings }) {
+  // details (allemaal optioneel): realCosts, kidsUnder3, partnerIncome, partnerWithholding,
+  //   pension, workBonus, otherReductions, taxFree, costMax (eigen bedragen voor dat jaar).
+  // difference > 0: bijbetalen, < 0: terugkrijgen.
+  function estimateAnnualTax({ belastbaar, voorheffing, year, settings, details = {} }) {
     const s = { ...DEFAULT_SETTINGS, ...settings };
-    if (!isAlone(s)) return { calculated: false };
-    const t = validOn(PARAMS, `${year}-12-31`).tax;
-    const r = incomeTaxOnYear(belastbaar, t);
-    const stateTax = round2(r.tax);
+    const d = Object.fromEntries(['realCosts', 'kidsUnder3', 'partnerIncome', 'partnerWithholding', 'pension',
+      'workBonus', 'otherReductions', 'taxFree', 'costMax'].map((k) => [k, Math.max(0, Number(details[k]) || 0)]));
+    const t = { ...validOn(PARAMS, `${year}-12-31`).tax };
+    if (d.taxFree > 0) t.taxFree = d.taxFree;
+    if (d.costMax > 0) t.costMax = d.costMax;
+    const couple = ['gehuwd', 'wettelijk-samenwonend'].includes(s.civil);
+    const kids = Math.max(0, Math.round(Number(s.kids) || 0));
+    const others = Math.max(0, Math.round(Number(s.others) || 0));
+
+    // netto beroepsinkomen: forfaitaire of werkelijke beroepskosten
+    const netOf = (gross, real) => {
+      const forfait = Math.min(Math.max(0, gross) * t.costRate, t.costMax);
+      const costs = real > 0 ? real : forfait;
+      return { gross: Math.max(0, gross), costs, net: Math.max(0, gross - costs) };
+    };
+    const me = netOf(belastbaar, d.realCosts);
+    const partner = couple ? netOf(d.partnerIncome, 0) : null;
+
+    // gezamenlijke aanslag: huwelijksquotiënt naar de partner met het laagste inkomen
+    let mine = me.net, theirs = partner ? partner.net : 0, quotient = 0;
+    if (couple) {
+      const total = mine + theirs;
+      quotient = Math.max(0, Math.min(total * t.quotientRate - Math.min(mine, theirs), t.quotientMax));
+      if (mine >= theirs) { mine -= quotient; theirs += quotient; } else { theirs -= quotient; mine += quotient; }
+    }
+
+    // toeslagen op de belastingvrije som (bij een koppel voor de partner met het hoogste inkomen)
+    const supplementKids = kidsSupplement(kids, t) + Math.min(d.kidsUnder3, kids) * t.under3;
+    const supplements = supplementKids + others * t.otherDependent + (!couple && kids > 0 ? t.singleParent : 0);
+    const meHighest = !couple || mine >= theirs;
+    const person = (income, withSupplements) => {
+      const taxFree = t.taxFree + (withSupplements ? supplements : 0);
+      const gross = byScale(income, t.brackets);
+      const reduction = byScale(taxFree, t.taxFreeScale);
+      // niet gebruikte vermindering door kinderen wordt (deels) terugbetaald
+      const kidsPart = withSupplements ? reduction - byScale(taxFree - supplementKids, t.taxFreeScale) : 0;
+      const unused = Math.max(0, reduction - gross);
+      return { taxFree, gross, reduction, tax: Math.max(0, gross - reduction), kidsCredit: Math.min(t.kidsCreditMax, unused, kidsPart) };
+    };
+    const a = person(mine, meHighest);
+    const b = couple ? person(theirs, !meHighest) : { taxFree: 0, gross: 0, reduction: 0, tax: 0, kidsCredit: 0 };
+
+    const stateTax = round2(a.tax + b.tax);
+    const pension = round2(pensionReduction(d.pension, t));
+    const reductions = round2(Math.min(stateTax, pension + d.otherReductions));
+    const afterReductions = round2(stateTax - reductions);
     const municipalRate = Number(s.municipalRate) || 0;
-    const municipal = round2(stateTax * municipalRate / 100);
-    const total = round2(stateTax + municipal);
+    const municipal = round2(afterReductions * municipalRate / 100);
+    const kidsCredit = round2(a.kidsCredit + b.kidsCredit);
+    const workBonus = round2(d.workBonus);
+    const total = round2(afterReductions + municipal - kidsCredit - workBonus);
+    const paid = round2(voorheffing + (couple ? d.partnerWithholding : 0));
     return {
-      calculated: true, year, belastbaar: round2(belastbaar), costs: round2(r.costs), netTaxable: round2(r.base),
-      stateTax, municipalRate, municipal, total, voorheffing: round2(voorheffing), difference: round2(total - voorheffing),
+      calculated: true, year, couple,
+      belastbaar: round2(me.gross), costs: round2(me.costs), realCosts: d.realCosts > 0, netTaxable: round2(me.net),
+      partnerNet: partner ? round2(partner.net) : 0, quotient: round2(quotient),
+      taxFree: round2(a.taxFree + b.taxFree), grossTax: round2(a.gross + b.gross), taxFreeReduction: round2(Math.min(a.gross, a.reduction) + Math.min(b.gross, b.reduction)),
+      stateTax, pension, otherReductions: round2(d.otherReductions), reductions,
+      municipalRate, municipal, kidsCredit, workBonus, total,
+      voorheffing: paid, difference: round2(total - paid),
     };
   }
 

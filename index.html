@@ -151,6 +151,7 @@
   .taxresult.back { background: #e3f4ea; color: #146c43; }
   .taxresult.pay { background: var(--accent-soft); color: var(--ot); }
   @media (prefers-color-scheme: dark) { .taxresult.back { background: #17352a; color: #7fd6a4; } }
+  .taxh { font-size: 15px; margin: 18px 0 2px; }
   .li-amt { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .del {
     border: 0; background: transparent; color: var(--danger); width: 36px; height: 36px;
@@ -479,12 +480,48 @@
     <p class="taxresult" id="taxResult"></p>
     <table class="slip-t" id="taxTable"></table>
     <details id="taxExtraBox">
-      <summary>Inkomen dat niet in de app staat</summary>
-      <p class="hint">Bv. loon van voor je de app gebruikte, vakantiegeld, uitkeringen of een andere job. Je vindt de bedragen op je loonfiches (281.10, 281.13).</p>
+      <summary>Jouw gegevens invullen (nauwkeuriger)</summary>
+      <p class="hint">Vul in wat je weet; lege velden worden niet meegeteld. Alles blijft op je gsm.</p>
+
+      <h3 class="taxh">1. Je loonfiche van Cewez</h3>
+      <p class="hint">Heb je je loonfiche (281.10) al? Die bedragen zijn het nauwkeurigst en vervangen de bedragen uit de app.</p>
       <div class="row2">
-        <div><label for="taxExtraInc">Extra belastbaar inkomen</label><input id="taxExtraInc" inputmode="decimal" placeholder="0"></div>
-        <div><label for="taxExtraWh">Extra betaalde voorheffing</label><input id="taxExtraWh" inputmode="decimal" placeholder="0"></div>
+        <div><label for="tx-ficheIncome">Belastbaar loon (code 1250)</label><input id="tx-ficheIncome" data-tx="ficheIncome" inputmode="decimal" placeholder="uit de app"></div>
+        <div><label for="tx-ficheWithholding">Bedrijfsvoorheffing (code 1286)</label><input id="tx-ficheWithholding" data-tx="ficheWithholding" inputmode="decimal" placeholder="uit de app"></div>
       </div>
+      <label for="tx-workBonus">Fiscale werkbonus (op je loonfiche)</label>
+      <input id="tx-workBonus" data-tx="workBonus" inputmode="decimal" placeholder="0">
+
+      <h3 class="taxh">2. Ander inkomen</h3>
+      <p class="hint">Bv. loon van een andere job, uitkeringen of vakantiegeld (loonfiches 281.10, 281.13).</p>
+      <div class="row2">
+        <div><label for="tx-income">Extra belastbaar inkomen</label><input id="tx-income" data-tx="income" inputmode="decimal" placeholder="0"></div>
+        <div><label for="tx-withholding">Voorheffing daarop</label><input id="tx-withholding" data-tx="withholding" inputmode="decimal" placeholder="0"></div>
+      </div>
+
+      <h3 class="taxh">3. Gezin</h3>
+      <p class="hint" id="taxFamily"></p>
+      <label for="tx-kidsUnder3">Kinderen jonger dan 3 jaar (zonder kosten kinderopvang)</label>
+      <input id="tx-kidsUnder3" data-tx="kidsUnder3" inputmode="numeric" placeholder="0">
+      <div class="row2" id="taxPartner">
+        <div><label for="tx-partnerIncome">Belastbaar inkomen partner</label><input id="tx-partnerIncome" data-tx="partnerIncome" inputmode="decimal" placeholder="0"></div>
+        <div><label for="tx-partnerWithholding">Voorheffing partner</label><input id="tx-partnerWithholding" data-tx="partnerWithholding" inputmode="decimal" placeholder="0"></div>
+      </div>
+
+      <h3 class="taxh">4. Aftrekken en verminderingen</h3>
+      <label for="tx-pension">Pensioensparen gestort dit jaar</label>
+      <input id="tx-pension" data-tx="pension" inputmode="decimal" placeholder="0">
+      <label for="tx-otherReductions">Andere belastingverminderingen (bv. giften, dienstencheques)</label>
+      <input id="tx-otherReductions" data-tx="otherReductions" inputmode="decimal" placeholder="0">
+      <label for="tx-realCosts">Werkelijke beroepskosten (laat leeg voor het forfait)</label>
+      <input id="tx-realCosts" data-tx="realCosts" inputmode="decimal" placeholder="forfait">
+
+      <h3 class="taxh">5. Bedragen van de belasting (alleen als ze veranderd zijn)</h3>
+      <div class="row2">
+        <div><label for="tx-taxFree">Belastingvrije som</label><input id="tx-taxFree" data-tx="taxFree" inputmode="decimal"></div>
+        <div><label for="tx-costMax">Max. forfaitaire beroepskosten</label><input id="tx-costMax" data-tx="costMax" inputmode="decimal"></div>
+      </div>
+      <button type="button" class="btn ghost" id="taxClear">Gegevens van dit jaar wissen</button>
     </details>
     <p class="hint" id="taxHint"></p>
     </details>
@@ -664,11 +701,11 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-05.2"></script>
+<script src="loon.js?v=2026-10-05.3"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-05.2';
+const APP_VERSION = '2026-10-05.3';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1394,29 +1431,36 @@ const APP_VERSION = '2026-10-05.2';
   // --- belastingbrief (schatting) -------------------------------------------
   const numIn = (v) => (String(v ?? '').trim() ? Number(String(v).replace(',', '.')) : 0);
   const numOut = (n) => (n ? String(n).replace('.', ',') : '');
+  const TAX_FIELDS = ['ficheIncome', 'ficheWithholding', 'workBonus', 'income', 'withholding', 'kidsUnder3',
+    'partnerIncome', 'partnerWithholding', 'pension', 'otherReductions', 'realCosts', 'taxFree', 'costMax'];
+  const CIVIL_NAMES = { ongehuwd: 'ongehuwd', gehuwd: 'gehuwd', 'wettelijk-samenwonend': 'wettelijk samenwonend', gescheiden: 'gescheiden', weduwe: 'weduwe / weduwnaar' };
   function renderTax() {
     const y = String(taxYear);
     $('taxYear').textContent = `${y} · brief in ${taxYear + 1}`;
     const periodsOfYear = Object.values(calc.periods).filter((r) => r.period.start.startsWith(y));
-    const extra = taxExtras[y] || {};
+    const d = taxExtras[y] || {};
+    const has = (k) => Number(d[k]) > 0 || (k.startsWith('fiche') && String(d[k] ?? '') !== '' && Number(d[k]) === 0);
     const appTaxable = round2(periodsOfYear.reduce((t, r) => t + r.belastbaar, 0));
     const appWithheld = round2(periodsOfYear.reduce((t, r) => t + r.voorheffing, 0));
-    const r = Loon.estimateAnnualTax({
-      belastbaar: appTaxable + (Number(extra.income) || 0),
-      voorheffing: appWithheld + (Number(extra.withholding) || 0),
-      year: taxYear, settings,
-    });
-    $('taxExtraInc').value = numOut(extra.income);
-    $('taxExtraWh').value = numOut(extra.withholding);
-    const empty = !periodsOfYear.length && !extra.income;
+    const useFiche = has('ficheIncome');
+    const taxable = (useFiche ? Number(d.ficheIncome) : appTaxable) + (Number(d.income) || 0);
+    const withheld = (has('ficheWithholding') ? Number(d.ficheWithholding) : appWithheld) + (Number(d.withholding) || 0);
+    const r = Loon.estimateAnnualTax({ belastbaar: taxable, voorheffing: withheld, year: taxYear, settings, details: d });
+    const t = Loon.PARAMS[Loon.PARAMS.length - 1].tax;
+
+    // formulier invullen
+    for (const k of TAX_FIELDS) $('tx-' + k).value = numOut(d[k]);
+    $('tx-taxFree').placeholder = numOut(t.taxFree);
+    $('tx-costMax').placeholder = numOut(t.costMax);
+    $('taxPartner').hidden = !r.couple;
+    $('taxFamily').textContent = `Je gezinssituatie stel je in bij Netto-instellingen. Nu: ${CIVIL_NAMES[settings.civil] || settings.civil}, `
+      + `${Number(settings.kids) || 0} kind(eren) ten laste, ${Number(settings.others) || 0} andere persoon/personen ten laste.`
+      + (r.couple ? ' Vul hieronder het inkomen van je partner in (gezamenlijke aanslag).' : '');
+
     const row = (label, amount, cls = '') => `<tr class="${cls}"><td>${label}</td><td>${money(amount)}</td></tr>`;
-    if (empty) {
+    if (!periodsOfYear.length && !taxable) {
       $('taxResult').className = 'taxresult';
       $('taxResult').textContent = `Nog geen gegevens voor ${y}.`;
-      $('taxTable').innerHTML = '';
-    } else if (!r.calculated) {
-      $('taxResult').className = 'taxresult';
-      $('taxResult').textContent = 'Niet berekend: de schatting werkt enkel voor een alleenstaande zonder personen ten laste.';
       $('taxTable').innerHTML = '';
     } else {
       const diff = r.difference;
@@ -1425,26 +1469,46 @@ const APP_VERSION = '2026-10-05.2';
         : diff > 0.5 ? `Je moet ongeveer ${money(diff)} bijbetalen.`
         : 'Ongeveer € 0: je voorheffing dekt je belasting.';
       $('taxTable').innerHTML = [
-        row(`Belastbaar loon in de app (${periodsOfYear.length} uitbetaling${periodsOfYear.length === 1 ? '' : 'en'})`, appTaxable),
-        extra.income ? row('Extra inkomen (niet in de app)', extra.income) : '',
-        row('Forfaitaire beroepskosten', -r.costs),
+        useFiche ? row('Belastbaar loon (loonfiche)', Number(d.ficheIncome))
+          : row(`Belastbaar loon in de app (${periodsOfYear.length} uitbetaling${periodsOfYear.length === 1 ? '' : 'en'})`, appTaxable),
+        d.income ? row('Ander inkomen', Number(d.income)) : '',
+        row(r.realCosts ? 'Werkelijke beroepskosten' : 'Forfaitaire beroepskosten', -r.costs),
         row('Netto belastbaar inkomen', r.netTaxable, 'mid'),
-        row('Belasting (federaal en Vlaams)', r.stateTax),
+        r.couple ? row('Netto inkomen partner', r.partnerNet) : '',
+        r.quotient ? row('Huwelijksquotiënt (naar laagste inkomen)', r.quotient, 'sub') : '',
+        row('Belasting volgens de schalen', r.grossTax),
+        row(`Belastingvrije som (${money(r.taxFree)})`, -r.taxFreeReduction),
+        row('Belasting (federaal en Vlaams)', r.stateTax, 'mid'),
+        r.pension ? row('Vermindering pensioensparen', -Math.min(r.pension, r.reductions)) : '',
+        r.otherReductions ? row('Andere verminderingen', -Math.max(0, r.reductions - r.pension)) : '',
         row(`Gemeentebelasting ${String(r.municipalRate).replace('.', ',')}%`, r.municipal),
+        r.kidsCredit ? row('Belastingkrediet kinderen', -r.kidsCredit) : '',
+        r.workBonus ? row('Fiscale werkbonus', -r.workBonus) : '',
         row('Totaal verschuldigd', r.total, 'mid'),
-        row('Al betaalde voorheffing', -r.voorheffing),
+        row(r.couple && d.partnerWithholding ? 'Al betaalde voorheffing (jullie samen)' : 'Al betaalde voorheffing', -r.voorheffing),
         `<tr class="tot"><td>${diff < 0 ? 'Terug te krijgen' : 'Bij te betalen'} <span class="est">schatting</span></td><td>${money(Math.abs(diff))}</td></tr>`,
       ].join('');
     }
-    $('taxHint').textContent = `Ruwe schatting van je aanslag personenbelasting (inkomstenjaar ${y}, aanslagjaar ${taxYear + 1}), met de belastingschalen, `
-      + 'de belastingvrije som en de forfaitaire beroepskosten. De fiscale werkbonus, aftrekken (bv. pensioensparen) en het inkomen van een partner zitten er niet in. '
-      + (settings.withholdingMode === 'percentage' ? '' : 'De voorheffing in de app is zelf ook een schatting. ')
-      + 'Je echte aanslag kan dus verschillen.';
+    const missing = [!useFiche && 'je loonfiche', !d.workBonus && 'de fiscale werkbonus'].filter(Boolean);
+    $('taxHint').textContent = `Schatting van je aanslag personenbelasting (inkomstenjaar ${y}, aanslagjaar ${taxYear + 1}). `
+      + (missing.length ? `Hoe meer je invult bij "Jouw gegevens" (bv. ${missing.join(' en ')}), hoe nauwkeuriger. ` : '')
+      + (!useFiche && settings.withholdingMode !== 'percentage' ? 'De voorheffing in de app is zelf ook een schatting. ' : '')
+      + 'Je echte aanslag kan verschillen.';
   }
-  $('taxExtraBox').addEventListener('change', () => {
-    const income = numIn($('taxExtraInc').value), withholding = numIn($('taxExtraWh').value);
-    if (![income, withholding].every((n) => Number.isFinite(n) && n >= 0)) { renderTax(); return alert('Vul een geldig bedrag in.'); }
-    taxExtras[taxYear] = { income, withholding };
+  $('taxExtraBox').addEventListener('change', (ev) => {
+    const el = ev.target.closest('[data-tx]');
+    if (!el) return;
+    const n = numIn(el.value);
+    if (!Number.isFinite(n) || n < 0) { renderTax(); return alert('Vul een geldig bedrag in.'); }
+    const d = { ...(taxExtras[taxYear] || {}) };
+    if (el.value.trim() === '') delete d[el.dataset.tx]; else d[el.dataset.tx] = n;
+    taxExtras[taxYear] = d;
+    save(KEY_TAX_EXTRA, taxExtras);
+    renderTax();
+  });
+  $('taxClear').addEventListener('click', () => {
+    if (!confirm(`Alle ingevulde gegevens voor ${taxYear} wissen?`)) return;
+    delete taxExtras[taxYear];
     save(KEY_TAX_EXTRA, taxExtras);
     renderTax();
   });

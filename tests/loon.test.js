@@ -185,5 +185,39 @@ test('belastingbrief: schatting van de aanslag', () => {
   const low = Loon.estimateAnnualTax({ belastbaar: 8000, voorheffing: 150, year: 2026, settings: {} });
   assert.equal(low.total, 0);
   assert.equal(low.difference, -150);     // alles terug
-  assert.equal(Loon.estimateAnnualTax({ belastbaar: 30000, voorheffing: 0, year: 2026, settings: { kids: 1 } }).calculated, false);
+});
+
+test('belastingbrief: kinderen, partner, pensioensparen en eigen gegevens', () => {
+  const est = (settings, details, belastbaar = 30000, voorheffing = 4000) =>
+    Loon.estimateAnnualTax({ belastbaar, voorheffing, year: 2026, settings, details });
+  // alleenstaande met 1 kind: belastingvrije som 11550 + 2130 + 1980 = 15660
+  // vermindering via aparte schaal: 2937,50 + (15660 - 11750) x 30% = 4110,50; belasting 7064 - 4110,50 = 2953,50
+  const kid = est({ kids: 1 });
+  assert.equal(kid.taxFree, 15660);
+  assert.equal(kid.stateTax, 2953.5);
+  assert.equal(kid.municipal, 203.79);
+  assert.equal(kid.total, 3157.29);
+  // gehuwd, partner zonder inkomen: huwelijksquotiënt 30% van 23930 = 7179
+  const couple = est({ civil: 'gehuwd' });
+  assert.equal(couple.quotient, 7179);
+  assert.equal(couple.stateTax, 1304.9);
+  assert.equal(couple.total, 1394.94);
+  // partner met eigen loon en voorheffing: geen quotiënt nodig, voorheffing van beiden telt mee
+  const both = est({ civil: 'gehuwd' }, { partnerIncome: 30000, partnerWithholding: 4000 });
+  assert.equal(both.quotient, 0);
+  assert.equal(both.voorheffing, 8000);
+  assert.equal(both.stateTax, 8353);
+  // pensioensparen 1050 -> 315 vermindering; 1350 -> 337,50
+  assert.equal(est({}, { pension: 1050 }).pension, 315);
+  assert.equal(est({}, { pension: 1350 }).pension, 337.5);
+  assert.equal(est({}, { pension: 1100 }).pension, 315);   // 30% van 1050 is gunstiger dan 25% van 1100
+  assert.equal(est({}, { pension: 1050 }).stateTax, 4176.5);
+  assert.equal(est({}, { pension: 1050 }).total, 4127.94); // (4176,50 - 315) x 1,069
+  // werkelijke beroepskosten en eigen belastingvrije som
+  assert.equal(est({}, { realCosts: 2000 }).netTaxable, 28000);
+  assert.equal(est({}, { taxFree: 11180 }).taxFreeReduction, 2795);
+  // fiscale werkbonus en kinderkrediet zijn terugbetaalbaar
+  assert.equal(est({}, { workBonus: 500 }, 8000, 0).difference, -500);
+  const lowKids = est({ kids: 2 }, {}, 8000, 0);
+  assert.equal(lowKids.kidsCredit, 550);
 });
