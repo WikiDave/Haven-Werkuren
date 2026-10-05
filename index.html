@@ -27,6 +27,7 @@
     }
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
     font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -134,6 +135,18 @@
   .disclaimer p { margin: 0; }
   .disclaimer p + p { margin-top: 8px; }
   .disclaimer b, .disclaimer-text b { color: var(--text); }
+  .medstatus { margin: 0 0 4px; padding: 12px 14px; border-radius: 10px; background: var(--bg); font-weight: 600; }
+  .medstatus.warn { color: var(--ot); background: var(--accent-soft); }
+  .medstatus.bad { color: #fff; background: var(--danger); }
+  .medbanner {
+    display: block; width: 100%; margin: 12px 0 0; padding: 12px 14px; border: 0; border-radius: 12px;
+    font: inherit; font-weight: 600; text-align: left; cursor: pointer; color: #fff; background: var(--ot);
+  }
+  .medbanner.bad { background: var(--danger); }
+  .cal button .medmark {
+    position: absolute; top: 3px; left: 4px; font-size: 11px; font-weight: 800; line-height: 1; color: #1a8f5a;
+  }
+  .cal button .medmark.due { color: var(--ot); }
   .li-amt { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .del {
     border: 0; background: transparent; color: var(--danger); width: 36px; height: 36px;
@@ -329,6 +342,8 @@
     <form method="dialog"><button class="btn" value="ok">Begrepen</button></form>
   </dialog>
 
+  <button type="button" class="medbanner" id="medBanner" hidden></button>
+
   <section class="card">
     <div class="monthbar">
       <button id="prev" aria-label="Vorige maand">‹</button>
@@ -446,6 +461,20 @@
     <details class="fold" data-fold="uitbetalingen" open>
       <summary><h2>Uitbetalingen</h2></summary>
     <div id="slips"></div>
+    </details>
+  </section>
+
+  <section class="card" id="medCard">
+    <details class="fold" data-fold="medisch" open>
+      <summary><h2>Medische controle</h2></summary>
+    <p class="medstatus" id="medStatus"></p>
+    <label for="medDate">Datum van je controle</label>
+    <input type="date" id="medDate">
+    <label for="medNote">Notitie (optioneel)</label>
+    <input id="medNote" placeholder="bv. Attentia, Noordzeestraat 148">
+    <button type="button" class="btn" id="medAdd">Controle opslaan</button>
+    <ul class="list" id="medList"></ul>
+    <p class="hint">De controle gebeurt één keer per jaar. De app rekent de volgende datum uit en waarschuwt je een maand op voorhand.</p>
     </details>
   </section>
 
@@ -606,11 +635,11 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-02.15"></script>
+<script src="loon.js?v=2026-10-05.1"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-02.15';
+const APP_VERSION = '2026-10-05.1';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -711,6 +740,7 @@ const APP_VERSION = '2026-10-02.15';
   const KEY_LAST_WORK = 'haven-werkuren.lastWork';
   const KEY_LAST_FUNC = 'haven-werkuren.lastFunction';
   const KEY_COUNTED = 'haven-werkuren.deviceCounted';
+  const KEY_MEDICAL = 'haven-werkuren.medicalChecks';
   const KEY_PURCHASES = 'haven-werkuren.clothingPurchases';
   const KEY_CLOTH_START = 'haven-werkuren.clothingStart';
   const KEY_FOLDS = 'haven-werkuren.folds';
@@ -745,6 +775,7 @@ const APP_VERSION = '2026-10-02.15';
   let holidayOverrides = load(KEY_HOLIDAYS, {});
   let showMode = load(KEY_MODE, 'bruto');
   let purchases = load(KEY_PURCHASES, []);
+  let medChecks = load(KEY_MEDICAL, []); // [{ id, date, note }]
   let clothingStart = load(KEY_CLOTH_START, { date: '', points: 0 });
   let companyLocations = load(KEY_CO_LOCS, {}); // door jou aangepaste plaatsen per bedrijf
   let companyPins = load(KEY_CO_PIN, {});         // spelden per plaats: "bedrijf/plaats"
@@ -1179,6 +1210,8 @@ const APP_VERSION = '2026-10-02.15';
       const cls = [wd >= 5 && 'we', holidayName(iso) && 'hol', list.length && 'work', iso === todayIso && 'today', iso === selected && 'sel']
         .filter(Boolean).join(' ');
       let inner = `<span class="n">${day}</span>`;
+      if (medChecks.some((m) => m.date === iso)) inner += '<span class="medmark" title="medische controle">+</span>';
+      else if (iso === nextMedDate()) inner += '<span class="medmark due" title="volgende medische controle">+</span>';
       if (list.length) {
         const t = totals(list);
         const withCo = list.filter((e) => e.company || e.companyName);
@@ -1196,7 +1229,8 @@ const APP_VERSION = '2026-10-02.15';
   function renderDay() {
     const hol = holidayName(selected);
     const moved = movedHoliday(selected);
-    $('dayTitle').textContent = fmtDate(selected, { weekday: 'long', day: 'numeric', month: 'long' }) + (hol ? ` · ${hol}` : '');
+    $('dayTitle').textContent = fmtDate(selected, { weekday: 'long', day: 'numeric', month: 'long' }) + (hol ? ` · ${hol}` : '')
+      + (medChecks.some((m) => m.date === selected) ? ' · medische controle' : selected === nextMedDate() ? ' · volgende medische controle' : '');
     $('dayNote').hidden = !moved;
     if (moved) {
       $('dayNote').textContent = moved.effective
@@ -1309,6 +1343,7 @@ const APP_VERSION = '2026-10-02.15';
 
     $('slips').innerHTML = slipHtml('A') + slipHtml('B');
     renderClothing();
+    renderMedical();
 
     renderCalendar();
     renderDay();
@@ -1321,6 +1356,67 @@ const APP_VERSION = '2026-10-02.15';
     const m = ev.target.closest('[data-m]')?.dataset.m;
     if (!m) return;
     showMode = m; save(KEY_MODE, m); render();
+  });
+
+  // --- medische controle (1 keer per jaar) --------------------------------
+  const MED_WARN_DAYS = 30;
+  const lastMedCheck = () => medChecks.map((m) => m.date).sort().pop() || '';
+  function nextMedDate() {
+    const last = lastMedCheck();
+    if (!last) return '';
+    const d = new Date(last + 'T12:00');
+    const day = d.getDate();
+    d.setFullYear(d.getFullYear() + 1);
+    if (d.getDate() !== day) d.setDate(0); // 29 februari -> 28 februari
+    return isoDate(d);
+  }
+  const daysUntil = (iso) => Math.round((new Date(iso + 'T12:00') - new Date(isoDate(today) + 'T12:00')) / 86400000);
+  function medState() {
+    const next = nextMedDate();
+    if (!next) return { level: 'none', next };
+    const days = daysUntil(next);
+    return { level: days < 0 ? 'bad' : days <= MED_WARN_DAYS ? 'warn' : 'ok', next, days };
+  }
+  const dayWord = (n) => `${n} ${Math.abs(n) === 1 ? 'dag' : 'dagen'}`;
+  function renderMedical() {
+    const st = medState();
+    const when = st.next ? fmtDate(st.next, { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+    $('medStatus').className = 'medstatus' + (st.level === 'warn' ? ' warn' : st.level === 'bad' ? ' bad' : '');
+    $('medStatus').textContent = st.level === 'none' ? 'Nog geen controle ingevuld. Vul de datum van je laatste controle in.'
+      : st.level === 'bad' ? `Je medische controle is te laat: die moest voor ${when} (${dayWord(-st.days)} geleden).`
+      : st.level === 'warn' ? `Binnenkort: je volgende controle moet voor ${when} (nog ${dayWord(st.days)}).`
+      : `Volgende controle voor ${when} (nog ${dayWord(st.days)}).`;
+    $('medBanner').hidden = !['warn', 'bad'].includes(st.level);
+    $('medBanner').className = 'medbanner' + (st.level === 'bad' ? ' bad' : '');
+    $('medBanner').textContent = st.level === 'bad'
+      ? `Medische controle te laat (sinds ${when}). Tik voor details.`
+      : `Medische controle binnenkort: voor ${when} (nog ${dayWord(st.days || 0)}).`;
+    const list = [...medChecks].sort((a, b) => b.date.localeCompare(a.date));
+    $('medList').innerHTML = list.map((m) => `<li>
+      <div class="li-main"><div class="d">${fmtDate(m.date, { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+        ${m.note ? `<div class="m">${escapeHtml(m.note)}</div>` : ''}</div>
+      <button class="del" data-mid="${m.id}" aria-label="Verwijderen">✕</button></li>`).join('');
+    $('medList').hidden = !list.length;
+  }
+  $('medAdd').addEventListener('click', () => {
+    const date = $('medDate').value;
+    if (!date) return alert('Kies de datum van je controle.');
+    if (medChecks.some((m) => m.date === date)) return alert('Deze datum staat er al.');
+    medChecks.push({ id: 'm' + Date.now().toString(36), date, note: $('medNote').value.trim() });
+    save(KEY_MEDICAL, medChecks);
+    $('medNote').value = '';
+    render();
+  });
+  $('medList').addEventListener('click', (ev) => {
+    const id = ev.target.closest('[data-mid]')?.dataset.mid;
+    if (!id || !confirm('Deze controle verwijderen?')) return;
+    medChecks = medChecks.filter((m) => m.id !== id);
+    save(KEY_MEDICAL, medChecks);
+    render();
+  });
+  $('medBanner').addEventListener('click', () => {
+    document.querySelector('[data-fold="medisch"]').open = true;
+    $('medCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
   // --- kledijpunten -------------------------------------------------------
@@ -1640,7 +1736,7 @@ const APP_VERSION = '2026-10-02.15';
   }
   $('exportJson').addEventListener('click', () => {
     download(`werkuren-backup-${isoDate(new Date())}.json`,
-      JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation }, null, 2), 'application/json');
+      JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, medChecks }, null, 2), 'application/json');
   });
   $('importBtn').addEventListener('click', () => $('importFile').click());
   $('importFile').addEventListener('change', async (ev) => {
@@ -1657,13 +1753,14 @@ const APP_VERSION = '2026-10-02.15';
       if (Array.isArray(data.customCompanies)) customCompanies = data.customCompanies;
       if (Array.isArray(data.hiddenCompanies)) hiddenCompanies = data.hiddenCompanies;
       if (Array.isArray(data.purchases)) purchases = data.purchases;
+      if (Array.isArray(data.medChecks)) medChecks = data.medChecks;
       if (data.clothingStart) clothingStart = data.clothingStart;
       if (data.companyLocations) companyLocations = data.companyLocations;
       if (data.lastLocation) lastLocation = data.lastLocation;
       if (data.companyPins) companyPins = data.companyPins;
       save(KEY_ENTRIES, entries); save(KEY_PERIODS, periods); save(KEY_SETTINGS, settings); save(KEY_HOLIDAYS, holidayOverrides);
       save(KEY_CUSTOM_CO, customCompanies); save(KEY_HIDDEN_CO, hiddenCompanies);
-      save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation);
+      save(KEY_MEDICAL, medChecks); save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation);
       renderCompanyPicker(); renderSettings(); renderHolidays(); renderRates(); render();
     } catch { alert('Dit is geen geldig back-upbestand.'); }
     ev.target.value = '';
@@ -1717,6 +1814,7 @@ const APP_VERSION = '2026-10-02.15';
     Loon.FUNCTIONS.filter((f) => f.group === g).map((f) => `<option value="${f.id}">${f.label}</option>`).join('')}</optgroup>`).join('');
   $('func').value = load(KEY_LAST_FUNC, 'alle');
   $('clDate').value = isoDate(today);
+  $('medDate').value = isoDate(today);
   renderSettings();
   renderHolidays();
   renderRates();
