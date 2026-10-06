@@ -82,3 +82,7 @@ Ontwerp "Kaai": een donkere havenband bovenaan met de volgende uitbetaling, een 
 ## Werkaanbod
 
 De kaart "Werkaanbod" toont de tekorten per shift (vandaag en morgen), de drukte per bedrijf deze week en de bedrijven die havenarbeiders zoeken. De app haalt die gegevens bij het openen op van de openbare pagina's [Tekorten](https://cewez.be/tekorten/) en [Tewerkstelling](https://cewez.be/tewerkstelling/) van Cewez (via de WordPress-API van cewez.be); er wordt niets van de gebruiker meegestuurd. `aanbod.js` leest de tabellen (getest in `tests/aanbod.test.js` met de pagina's van 6 oktober 2026). Verandert Cewez de opmaak van die pagina's, dan moet `aanbod.js` mee aangepast worden. De telefoonnummers van de aanwervers komen van [Contactgegevens aanwervers](https://cewez.be/havenarbeider/contactgegevens-aanwervers/).
+
+## Kaaien
+
+Het vak "Kaaien" opent de plannen van de haven (kaainummers en straten, bezoekersplan, QR-codes van de bedrijfsingangen) als PDF op cewez.be (Wegwijs in de haven). De 14 bedrijfsingangen met hun GPS-punten komen uit die QR-codes; elke ingang heeft een knop voor Google Maps en Waze. Bij elk bedrijf staan ook de ingangen en de link naar de onthaalbrochure.
