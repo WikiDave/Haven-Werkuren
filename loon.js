@@ -87,7 +87,7 @@
     rszFactor: 1.08, rszRate: 0.1307,        // RSZ werknemer: 13,07% op 108% van basis RSZ
     premie: 5.28, premieHalf: 2.64,           // vaste premie per volle / halve shift
     kledij: 1.59,                             // per shift, ook halve
-    internet: 0.80,                           // per volle shift, enkel erkend (pool)
+    internet: 0.80,                           // per volle shift, enkel erkend (losse pool en time table)
     mtcValue: 7.00, mtcOwn: 1.09,             // maaltijdcheque; eigen bijdrage per volle shift
     wijziging: 17.17, afbestelWeekend: 115.16,
   }];
@@ -144,7 +144,7 @@
   const PLACES = Object.keys(TRAVEL[TRAVEL.length - 1].table).sort((a, b) => a.localeCompare(b, 'nl'));
 
   const DEFAULT_SETTINGS = {
-    status: 'gelegenheid',      // 'gelegenheid' | 'pool'
+    status: 'gelegenheid',      // 'gelegenheid' (rode kaart) | 'pool' (losse pool) | 'timetable'
     place: 'Assebroek',
     transport: 'auto',          // 'auto' (eigen vervoer) | 'fiets'
     bikeKm: 0, bikeRate: 0,     // fiets: km per shift x bedrag per km
@@ -261,7 +261,7 @@
     if (entry.wijziging) add('wijziging', 'Wijzigingsvergoeding', p.wijziging, s.extraType);
     add('kledij', 'Kledijvergoeding', p.kledij, 'D');
     add('vervoer', s.transport === 'fiets' ? 'Fietsvergoeding' : 'Eigen vervoer', travelAllowance(entry.date, s), 'D');
-    if (full && s.status === 'pool') add('internet', 'Internetvergoeding', p.internet, 'D');
+    if (full && (s.status === 'pool' || s.status === 'timetable')) add('internet', 'Internetvergoeding', p.internet, 'D');
     if (full) add('mtc', 'Maaltijdcheque eigen bijdrage', p.mtcOwn, 'M');
     return { row, lines };
   }
@@ -561,6 +561,17 @@
   }
   const isoToday = () => toIso(new Date());
 
+  // --- gewerkte dagen (bv. 30 dagen voor de Alfapas) -------------------------------
+  // elke datum met minstens één echte shift telt één keer; afbestellingen tellen niet
+  function workedDays(entries, from, to) {
+    const days = new Set();
+    for (const e of entries) {
+      if (e.kind === 'afbestel' || (from && e.date < from) || (to && e.date > to)) continue;
+      days.add(e.date);
+    }
+    return [...days].sort();
+  }
+
   // --- verlof ---------------------------------------------------------------------
   // verlofdagen tussen twee datums: zondagen en feestdagen tellen niet mee, zaterdagen alleen als je die vraagt
   function leaveDays(from, to, { saturdays = false, overrides = {} } = {}) {
@@ -580,7 +591,7 @@
     START_HOURS, RATE_ROWS, DEFAULT_RATE_PERIODS, FUNCTIONS, FUNCTION_GROUPS, functionOf, PARAMS, TRAVEL, PLACES, DEFAULT_SETTINGS,
     legalHolidays, holidays, holidayOn, tariffRow, rateFor, travelAllowance,
     DEFAULT_WITHHOLDING, DEFAULT_INCOME_TAX, setTaxTables, getTaxTables, normalizeTable, shiftLines, estimateWithholding, estimateAnnualTax, calcPeriod, calcAll,
-    CLOTHING, CLOTHING_ITEMS, clothingPointsFor, clothingLedger, leaveDays,
+    CLOTHING, CLOTHING_ITEMS, clothingPointsFor, clothingLedger, leaveDays, workedDays,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Loon = api;

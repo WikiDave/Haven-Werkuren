@@ -116,6 +116,7 @@ test('belasting.json is gelijk aan de standaardbedragen in loon.js', () => {
 test('halve shift, pool en maaltijdcheque', () => {
   const full = Loon.shiftLines(shift('2026-09-23', '06'), ctx({ status: 'pool' })).lines;
   assert.equal(full.find((l) => l.key === 'internet').amount, 0.8);
+  assert.equal(Loon.shiftLines(shift('2026-09-23', '06'), ctx({ status: 'timetable' })).lines.find((l) => l.key === 'internet').amount, 0.8);
   assert.equal(full.find((l) => l.key === 'mtc').amount, 1.09);
   const half = Loon.shiftLines(shift('2026-09-23', '06', { kind: 'half' }), ctx({ status: 'pool' })).lines;
   assert.equal(half.find((l) => l.key === 'premie').amount, 2.64);
@@ -264,4 +265,13 @@ test('verlofdagen: geen zondagen en feestdagen, zaterdagen alleen op vraag', () 
   assert.equal(Loon.leaveDays('2026-12-21', '2026-12-31', { saturdays: true }).length, 9);
   assert.deepEqual(Loon.leaveDays('2026-10-07'), ['2026-10-07']);
   assert.deepEqual(Loon.leaveDays('2026-10-11', '2026-10-11'), []); // zondag
+});
+
+test('gewerkte dagen voor de Alfapas: elke dag één keer, afbestellingen niet', () => {
+  const entries = [
+    { date: '2026-09-01', kind: 'full' }, { date: '2026-09-01', kind: 'half' },
+    { date: '2026-09-02', kind: 'afbestel' }, { date: '2026-09-03', kind: 'full' },
+    { date: '2026-08-31', kind: 'full' }, { date: '2026-10-07', kind: 'full' },
+  ];
+  assert.deepEqual(Loon.workedDays(entries, '2026-09-01', '2026-10-06'), ['2026-09-01', '2026-09-03']);
 });

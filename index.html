@@ -143,6 +143,7 @@
     font: inherit; font-weight: 600; text-align: left; cursor: pointer; color: #fff; background: var(--ot);
   }
   .medbanner.bad { background: var(--danger); }
+  .medbanner.open { background: var(--accent); }
   .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .tile {
     display: flex; flex-direction: column; gap: 2px; min-height: 44px; padding: 12px; border: 0; border-radius: 12px;
@@ -177,6 +178,7 @@
     position: absolute; top: 3px; left: 4px; font-size: 11px; font-weight: 800; line-height: 1; color: #1a8f5a;
   }
   .cal button .medmark.due { color: var(--ot); }
+  .cal button .medmark.from { color: var(--accent); }
   .taxresult { margin: 10px 0 0; padding: 14px; border-radius: 12px; font-size: 17px; font-weight: 700; background: var(--bg); }
   .taxresult.back { background: #e3f4ea; color: #146c43; }
   .taxresult.pay { background: var(--accent-soft); color: var(--ot); }
@@ -436,6 +438,7 @@
       <button type="button" class="tile" data-go="sumCard" id="dMonthTile"><span class="k" id="dMonthK">Netto deze maand</span><span class="v" id="dMonth"></span><span class="m" id="dMonthM"></span></button>
       <button type="button" class="tile" data-go="clothCard" id="dClothTile"><span class="k">Kledijpunten</span><span class="v" id="dCloth"></span><span class="m" id="dClothM"></span></button>
       <button type="button" class="tile" data-go="medCard" id="dMedTile"><span class="k">Medische controle</span><span class="v" id="dMed"></span><span class="m" id="dMedM"></span></button>
+      <button type="button" class="tile" data-go="setCard" data-open="netto" id="dAlfaTile" hidden><span class="k">Alfapas</span><span class="v" id="dAlfa"></span><span class="m" id="dAlfaM"></span></button>
       <button type="button" class="tile leave" data-go="leaveCard" id="dLeaveTile"><span class="k">Verlof</span><span class="v" id="dLeave"></span><span class="m" id="dLeaveM"></span></button>
     </div>
     <button type="button" class="btn ghost scanbtn" data-scan>Loonbrief of belastingpapier fotograferen</button>
@@ -453,7 +456,7 @@
     </div></div>
     <div class="cal-head"><span>ma</span><span>di</span><span>wo</span><span>do</span><span>vr</span><span>za</span><span>zo</span></div>
     <div class="cal" id="cal"></div>
-    <p class="cal-legend" id="calLegend"><span><i class="lg-pay">€</i>uitbetaling</span><span id="lgLeave"><i class="lg-leave"></i>verlof</span><span><i class="lg-med">+</i>medische controle</span><span><i class="lg-ot"></i>overuren</span></p>
+    <p class="cal-legend" id="calLegend"><span><i class="lg-pay">€</i>uitbetaling</span><span id="lgLeave"><i class="lg-leave"></i>verlof</span><span><i class="lg-med" style="color:var(--accent)">+</i>controle kan vanaf</span><span><i class="lg-med" style="color:var(--ot)">+</i>controle ten laatste</span><span><i class="lg-med">+</i>controle gedaan</span><span><i class="lg-ot"></i>overuren</span></p>
     <div class="monthsum"><span id="sumLabel">Totaal bruto</span><b id="tTotalTop"></b></div>
   </section>
 
@@ -634,7 +637,7 @@
     <input id="medNote" placeholder="bv. Attentia, Noordzeestraat 148">
     <button type="button" class="btn" id="medAdd">Controle opslaan</button>
     <ul class="list" id="medList"></ul>
-    <p class="hint">De controle gebeurt één keer per jaar. De app rekent de volgende datum uit en waarschuwt je een maand op voorhand.</p>
+    <p class="hint">De volgende controle kan vanaf 10 maanden na de vorige en moet ten laatste na 12 maanden. De app toont wanneer je kunt gaan en waarschuwt je een maand voor het einde.</p>
     </details>
   </section>
 
@@ -699,10 +702,16 @@
         <p class="hint">Hiermee rekent de app je netto uit. Je gegevens blijven op dit toestel.</p>
         <label for="sStatus">Statuut</label>
         <select id="sStatus" data-s="status">
-          <option value="gelegenheid">Gelegenheidsarbeider</option>
-          <option value="pool">Erkend (pool)</option>
+          <option value="gelegenheid">Rode kaart (gelegenheidshavenarbeider)</option>
+          <option value="pool">Losse pool (erkend, opgebeld of zelf bellen voor werk)</option>
+          <option value="timetable">Time table (erkend, vast bij één bedrijf)</option>
         </select>
-        <label class="check"><input type="checkbox" id="sRed" data-s="redCard" data-t="bool"> Rode kaart (geen verlof)</label>
+        <p class="hint" id="statusHint"></p>
+      <div id="alfaWrap">
+        <label for="sAlfa">Alfapas: gewerkte dagen tellen vanaf</label>
+        <input type="date" id="sAlfa" data-s="alfaStart">
+        <p class="hint">Voor de Alfapas moet je 30 dagen gewerkt hebben. De app telt elke dag met een shift één keer (afbestellingen niet).</p>
+      </div>
         <label for="sTransport">Vervoer</label>
         <select id="sTransport" data-s="transport">
           <option value="auto">Eigen vervoer</option>
@@ -851,12 +860,12 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-06.1"></script>
-<script src="scan.js?v=2026-10-06.1"></script>
+<script src="loon.js?v=2026-10-06.4"></script>
+<script src="scan.js?v=2026-10-06.4"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-06.1';
+const APP_VERSION = '2026-10-06.4';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1037,6 +1046,11 @@ const APP_VERSION = '2026-10-06.1';
     if (changed) { save(KEY_TAX_USER, taxUser); save(KEY_TAX_EXTRA, taxExtras); }
   })();
   applyTaxTables();
+  // vroeger een apart vinkje "Rode kaart"; nu is dat het statuut
+  if ('redCard' in settings) {
+    if (settings.redCard) settings.status = 'gelegenheid';
+    delete settings.redCard; save(KEY_SETTINGS, settings);
+  }
   let taxYear = new Date().getFullYear();
   let clothingStart = load(KEY_CLOTH_START, { date: '', points: 0 });
   let companyLocations = load(KEY_CO_LOCS, {}); // door jou aangepaste plaatsen per bedrijf
@@ -1493,7 +1507,8 @@ const APP_VERSION = '2026-10-06.1';
         .filter(Boolean).join(' ');
       let inner = `<span class="n">${day}</span>`;
       if (medChecks.some((m) => m.date === iso)) inner += '<span class="medmark" title="medische controle">+</span>';
-      else if (iso === nextMedDate()) inner += '<span class="medmark due" title="volgende medische controle">+</span>';
+      else if (iso === nextMedDate()) inner += '<span class="medmark due" title="medische controle: ten laatste vandaag">+</span>';
+      else if (iso === medFromDate()) inner += '<span class="medmark from" title="medische controle: kan vanaf vandaag">+</span>';
       if (list.length) {
         const t = totals(list);
         const withCo = list.filter((e) => e.company || e.companyName);
@@ -1513,7 +1528,9 @@ const APP_VERSION = '2026-10-06.1';
     const hol = holidayName(selected);
     const moved = movedHoliday(selected);
     $('dayTitle').textContent = fmtDate(selected, { weekday: 'long', day: 'numeric', month: 'long' }) + (hol ? ` · ${hol}` : '')
-      + (medChecks.some((m) => m.date === selected) ? ' · medische controle' : selected === nextMedDate() ? ' · volgende medische controle' : '');
+      + (medChecks.some((m) => m.date === selected) ? ' · medische controle'
+        : selected === nextMedDate() ? ' · medische controle ten laatste'
+        : selected === medFromDate() ? ' · medische controle kan vanaf nu' : '');
     $('dayNote').hidden = !moved;
     const lv = leaveOn(selected);
     $('dayLeaveNote').hidden = !lv;
@@ -1758,36 +1775,43 @@ const APP_VERSION = '2026-10-06.1';
   // --- medische controle (1 keer per jaar) --------------------------------
   const MED_WARN_DAYS = 30;
   const lastMedCheck = () => medChecks.map((m) => m.date).sort().pop() || '';
-  function nextMedDate() {
-    const last = lastMedCheck();
-    if (!last) return '';
-    const d = new Date(last + 'T12:00');
+  // de volgende controle mag ten vroegste 10 maanden en moet ten laatste 12 maanden na de vorige
+  const MED_FROM_MONTHS = 10, MED_DUE_MONTHS = 12;
+  function addMonthsIso(iso, n) {
+    const d = new Date(iso + 'T12:00');
     const day = d.getDate();
-    d.setFullYear(d.getFullYear() + 1);
-    if (d.getDate() !== day) d.setDate(0); // 29 februari -> 28 februari
+    d.setDate(1); d.setMonth(d.getMonth() + n);
+    d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate())); // 31 -> laatste dag van de maand
     return isoDate(d);
   }
+  const nextMedDate = () => (lastMedCheck() ? addMonthsIso(lastMedCheck(), MED_DUE_MONTHS) : '');
+  const medFromDate = () => (lastMedCheck() ? addMonthsIso(lastMedCheck(), MED_FROM_MONTHS) : '');
   const daysUntil = (iso) => Math.round((new Date(iso + 'T12:00') - new Date(isoDate(today) + 'T12:00')) / 86400000);
   function medState() {
     const next = nextMedDate();
     if (!next) return { level: 'none', next };
     const days = daysUntil(next);
-    return { level: days < 0 ? 'bad' : days <= MED_WARN_DAYS ? 'warn' : 'ok', next, days };
+    const from = medFromDate();
+    const open = daysUntil(from) <= 0;
+    return { level: days < 0 ? 'bad' : days <= MED_WARN_DAYS ? 'warn' : open ? 'open' : 'ok', next, from, days, fromDays: daysUntil(from) };
   }
   const dayWord = (n) => `${n} ${Math.abs(n) === 1 ? 'dag' : 'dagen'}`;
   function renderMedical() {
     const st = medState();
     const when = st.next ? fmtDate(st.next, { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+    const from = st.from ? fmtDate(st.from, { day: 'numeric', month: 'long', year: 'numeric' }) : '';
     $('medStatus').className = 'medstatus' + (st.level === 'warn' ? ' warn' : st.level === 'bad' ? ' bad' : '');
     $('medStatus').textContent = st.level === 'none' ? 'Nog geen controle ingevuld. Vul de datum van je laatste controle in.'
       : st.level === 'bad' ? `Je medische controle is te laat: die moest voor ${when} (${dayWord(-st.days)} geleden).`
       : st.level === 'warn' ? `Binnenkort: je volgende controle moet voor ${when} (nog ${dayWord(st.days)}).`
-      : `Volgende controle voor ${when} (nog ${dayWord(st.days)}).`;
-    $('medBanner').hidden = !['warn', 'bad'].includes(st.level);
-    $('medBanner').className = 'medbanner' + (st.level === 'bad' ? ' bad' : '');
+      : st.level === 'open' ? `Je volgende controle kan nu: ten laatste op ${when} (nog ${dayWord(st.days)}).`
+      : `Volgende controle tussen ${from} en ${when} (kan over ${dayWord(st.fromDays)}).`;
+    $('medBanner').hidden = !['open', 'warn', 'bad'].includes(st.level);
+    $('medBanner').className = 'medbanner' + (st.level === 'bad' ? ' bad' : st.level === 'open' ? ' open' : '');
     $('medBanner').textContent = st.level === 'bad'
       ? `Medische controle te laat (sinds ${when}). Tik voor details.`
-      : `Medische controle binnenkort: voor ${when} (nog ${dayWord(st.days || 0)}).`;
+      : st.level === 'open' ? `Medische controle kan nu, ten laatste op ${when}.`
+      : `Medische controle binnenkort: ten laatste op ${when} (nog ${dayWord(st.days || 0)}).`;
     const list = [...medChecks].sort((a, b) => b.date.localeCompare(a.date));
     $('medList').innerHTML = list.map((m) => `<li>
       <div class="li-main"><div class="d">${fmtDate(m.date, { day: 'numeric', month: 'long', year: 'numeric' })}</div>
@@ -1818,7 +1842,7 @@ const APP_VERSION = '2026-10-06.1';
 
   // --- verlof ---------------------------------------------------------------
   const LEAVE_TYPES = { vakantie: 'jaarlijkse vakantie', 'anciënniteit': 'anciënniteitsverlof', ander: 'ander verlof' };
-  const leaveEnabled = () => !settings.redCard; // rode kaart: geen verlof
+  const leaveEnabled = () => settings.status !== 'gelegenheid'; // rode kaart: geen verlof, wel Alfapas-teller
   const leaveOn = (iso) => (leaveEnabled() ? leave.find((l) => l.date === iso) : undefined);
   const newGroupId = () => 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const saveLeave = () => { leave.sort((a, b) => a.date.localeCompare(b.date)); save(KEY_LEAVE, leave); };
@@ -1946,12 +1970,27 @@ const APP_VERSION = '2026-10-06.1';
     if (st.level === 'none') { $('dMed').textContent = '—'; $('dMedM').textContent = 'datum nog invullen'; }
     else {
       $('dMed').textContent = fmtDate(st.next, { day: 'numeric', month: 'short', year: 'numeric' });
-      $('dMedM').textContent = st.days < 0 ? `${dayWord(-st.days)} te laat` : `nog ${dayWord(st.days)}`;
+      $('dMedM').textContent = st.days < 0 ? `${dayWord(-st.days)} te laat`
+        : st.level === 'ok' ? `ten laatste · kan vanaf ${fmtDate(st.from, { day: 'numeric', month: 'short' })}`
+        : `ten laatste · kan nu (nog ${dayWord(st.days)})`;
     }
 
     const on = leaveEnabled();
     $('dLeaveTile').hidden = !on;
-    $('dMedTile').classList.toggle('wide', !on);
+    $('dAlfaTile').hidden = on;
+    if (!on) {
+      const ALFA_DAYS = 30;
+      if (!settings.alfaStart) { $('dAlfa').textContent = `0 / ${ALFA_DAYS}`; $('dAlfaM').textContent = 'tik om de startdatum in te vullen'; }
+      else {
+        const days = Loon.workedDays(entries, settings.alfaStart, todayIso);
+        const n = days.length;
+        $('dAlfa').textContent = n >= ALFA_DAYS ? `${ALFA_DAYS} / ${ALFA_DAYS} ✓` : `${n} / ${ALFA_DAYS}`;
+        $('dAlfaM').textContent = n >= ALFA_DAYS
+          ? `bereikt op ${fmtDate(days[ALFA_DAYS - 1], { day: 'numeric', month: 'short', year: 'numeric' })}`
+          : `gewerkte dagen sinds ${fmtDate(settings.alfaStart, { day: 'numeric', month: 'short', year: 'numeric' })} · nog ${ALFA_DAYS - n}`;
+      }
+      $('dAlfaTile').className = 'tile' + (settings.alfaStart && Loon.workedDays(entries, settings.alfaStart, todayIso).length >= ALFA_DAYS ? ' leave' : '');
+    }
     if (on) {
       const ls = leaveStats();
       $('dLeave').textContent = ls.left !== null ? `${ls.left} over` : dayCount(ls.count);
@@ -1965,6 +2004,8 @@ const APP_VERSION = '2026-10-06.1';
     const card = $(id);
     const fold = card.querySelector('details.fold');
     if (fold) fold.open = true;
+    const inner = ev.target.closest('[data-open]')?.dataset.open;
+    if (inner) document.querySelector(`[data-fold="${inner}"]`).open = true;
     card.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
@@ -2470,6 +2511,10 @@ const APP_VERSION = '2026-10-06.1';
     $('placeWrap').hidden = settings.transport !== 'auto';
     $('bikeWrap').hidden = settings.transport !== 'fiets';
     $('pctWrap').hidden = settings.withholdingMode !== 'percentage';
+    $('alfaWrap').hidden = settings.status !== 'gelegenheid';
+    $('statusHint').textContent = settings.status === 'gelegenheid'
+      ? 'Rode kaart: geen verlof; bovenaan zie je de Alfapas-teller.'
+      : 'Erkend: verlof bijhouden en internetvergoeding per volle shift.';
     $('bvHint').hidden = settings.withholdingMode === 'percentage';
   }
   $('settingsBox').addEventListener('change', (ev) => {
