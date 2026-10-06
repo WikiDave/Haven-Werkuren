@@ -6,7 +6,7 @@ const CORE = [
   'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css',
   'vendor/leaflet/images/marker-icon.png', 'vendor/leaflet/images/marker-icon-2x.png',
   'vendor/leaflet/images/marker-shadow.png', 'vendor/leaflet/images/layers.png',
-  'icons/icon-192.png', 'icons/apple-touch-icon.png', 'icons/qr-app.png',
+  'icons/icon-192.png', 'vendor/fonts/barlow-condensed-500.woff2', 'vendor/fonts/barlow-condensed-600.woff2', 'vendor/fonts/barlow-condensed-700.woff2', 'vendor/fonts/public-sans.woff2', 'icons/apple-touch-icon.png', 'icons/qr-app.png',
 ];
 
 self.addEventListener('install', (event) => {

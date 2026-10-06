@@ -74,3 +74,7 @@ Met de knop "Loonbrief of belastingpapier fotograferen" leest de app een foto va
 - aanslagbiljet: toont het echte bedrag naast de schatting.
 
 De herkenning is afgestemd op de gewone opmaak van die papieren. Wordt een bedrag niet (goed) gelezen, stuur dan een foto met verborgen naam en rijksregisternummer, of de "Gelezen tekst" uit het venster, via "Fout melden".
+
+## Ontwerp
+
+Ontwerp "Kaai": een donkere havenband bovenaan met de volgende uitbetaling, een geel-zwarte veiligheidsstreep en smalle signalisatieletters. Lettertypes: [Barlow Condensed](https://fonts.google.com/specimen/Barlow+Condensed) en [Public Sans](https://fonts.google.com/specimen/Public+Sans) (SIL Open Font License), in `vendor/fonts/` zodat ze ook offline werken.
