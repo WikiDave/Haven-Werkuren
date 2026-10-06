@@ -121,6 +121,39 @@
   #callList li { padding: 12px 0; border-top: 1px solid var(--line); }
   #callList .callhead { display: flex; align-items: center; gap: 10px; font-weight: 600; }
   #callList .none { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  /* werkaanbod van Cewez */
+  .wk-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .wk-top .hint { margin: 0; }
+  .wk-info { font-size: 14px; margin: 10px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--bg); }
+  .wk-day { margin-top: 16px; }
+  .wk-dayh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding-bottom: 6px; border-bottom: 2px solid var(--text); }
+  .wk-dayh b { font-size: 17px; }
+  .wk-dayh span { font-size: 13px; color: var(--muted); }
+  .wk-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .wk-row .li-logo { width: 36px; height: 36px; }
+  .wk-name { font-weight: 600; font-size: 15px; }
+  .wk-func { font-size: 13px; color: var(--muted); }
+  .wk-chip { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); margin-left: 4px; }
+  .wk-start { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+  .wk-count { min-width: 44px; text-align: center; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--accent); line-height: 1; }
+  .wk-count small { display: block; font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .wk-call { display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; }
+  .wk-call svg { width: 14px; height: 14px; }
+  .wk-busy { overflow-x: auto; margin-top: 8px; }
+  .wk-busy table { border-collapse: separate; border-spacing: 3px; width: 100%; font-size: 12px; }
+  .wk-busy th { font-weight: 600; color: var(--muted); text-align: center; padding: 2px; }
+  .wk-busy th.now { color: var(--text); }
+  .wk-busy td:first-child { font-weight: 600; white-space: nowrap; padding-right: 4px; }
+  .wk-busy td.lv { text-align: center; padding: 6px 1px; border-radius: 4px; white-space: nowrap; font-size: 11px; font-weight: 600; }
+  .wk-legend { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; font-size: 12px; }
+  .wk-legend span { padding: 2px 6px; border-radius: 4px; }
+  #wkWant li { align-items: flex-start; }
+  .lv-kalm { background: var(--leave); color: var(--leave-text); }
+  .lv-gewoon { background: var(--bg); color: var(--muted); }
+  .lv-druk { background: var(--accent-soft); color: var(--accent); }
+  .lv-zeer { background: var(--accent); color: var(--card); }
+  .wk-busy td.now { outline: 2px solid var(--text); outline-offset: -2px; }
+  #workCard details:not(.fold) { margin-top: 14px; }
   .linkbtn { border: 0; background: transparent; color: var(--accent); font-weight: 600; padding: 8px 0; cursor: pointer; }
   header { display: flex; align-items: flex-start; gap: 12px; }
   header > div:first-child { flex: 1; }
@@ -671,6 +704,19 @@
     <button type="button" class="btn ghost callopen" id="callOpen">Bedrijven bellen voor werk</button>
   </section>
 
+  <section class="card" id="workCard">
+    <details class="fold" data-fold="aanbod" open>
+      <summary><h2>Werkaanbod</h2></summary>
+    <div class="wk-top"><p class="hint" id="wkState"></p><button type="button" class="linkbtn" id="wkRefresh">Vernieuwen</button></div>
+    <p class="wk-info" id="wkInfo" hidden></p>
+    <a class="btn ghost" href="https://my.cewez.be" target="_blank" rel="noopener">Naar my.cewez.be (MyJob)</a>
+    <div id="wkDays"></div>
+    <details id="wkBusyBox" hidden><summary>Drukte deze week</summary><div class="wk-busy" id="wkBusy"></div></details>
+    <details id="wkWantBox" hidden><summary>Havenarbeiders gezocht</summary><ul class="list" id="wkWant"></ul></details>
+    <p class="hint">Bron: <a href="https://cewez.be/tekorten/" target="_blank" rel="noopener">cewez.be › Tekorten</a> en <a href="https://cewez.be/tewerkstelling/" target="_blank" rel="noopener">Tewerkstelling</a>. De app haalt die pagina's op als je hem opent; er wordt niets van jou meegestuurd. Bij tekorten neem je contact op met de firma.</p>
+    </details>
+  </section>
+
   <section class="card">
     <div class="monthbar">
       <button id="prev" aria-label="Vorige maand">‹</button>
@@ -1088,12 +1134,13 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-06.8"></script>
-<script src="scan.js?v=2026-10-06.8"></script>
+<script src="loon.js?v=2026-10-06.9"></script>
+<script src="scan.js?v=2026-10-06.9"></script>
+<script src="aanbod.js?v=2026-10-06.9"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-06.8';
+const APP_VERSION = '2026-10-06.9';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1209,6 +1256,7 @@ const APP_VERSION = '2026-10-06.8';
   const KEY_LAST_LOC = 'haven-werkuren.lastLocation';
   const KEY_CO_PIN = 'haven-werkuren.companyPins';
   const KEY_CO_PHONE = 'haven-werkuren.companyPhones';
+  const KEY_AANBOD = 'haven-werkuren.werkaanbod'; // laatst opgehaald werkaanbod van cewez.be
   const load = (k, fallback) => {
     try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fallback; } catch { return fallback; }
   };
@@ -2258,6 +2306,100 @@ const APP_VERSION = '2026-10-06.8';
     render();
   });
 
+  // --- werkaanbod van cewez.be --------------------------------------------------
+  let aanbod = load(KEY_AANBOD, null); // { fetched, tekorten: {...}, tewerk: {...} }
+  let aanbodBusy = false, aanbodError = '';
+  const hhmm = (ms) => new Date(ms).toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' });
+  async function getJson(url) {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 12000);
+    try {
+      const res = await fetch(url, { cache: 'no-store', signal: ctl.signal });
+      if (!res.ok) throw new Error(String(res.status));
+      return await res.json();
+    } finally { clearTimeout(timer); }
+  }
+  async function refreshAanbod() {
+    if (aanbodBusy) return;
+    aanbodBusy = true; aanbodError = ''; renderAanbod();
+    try {
+      const [a, b] = await Promise.all([getJson(Aanbod.SOURCES.tekorten.api), getJson(Aanbod.SOURCES.tewerkstelling.api)]);
+      aanbod = {
+        fetched: Date.now(),
+        tekorten: { modified: a.modified, ...Aanbod.parseTekorten(a.content?.rendered || '') },
+        tewerk: { modified: b.modified, ...Aanbod.parseTewerkstelling(b.content?.rendered || '') },
+      };
+      save(KEY_AANBOD, aanbod);
+    } catch {
+      aanbodError = navigator.onLine === false ? 'Geen verbinding.' : 'cewez.be kon niet geladen worden.';
+    }
+    aanbodBusy = false;
+    renderAanbod();
+  }
+  const LEVEL_CLASS = { kalm: 'lv-kalm', gewoon: 'lv-gewoon', druk: 'lv-druk', 'zeer druk': 'lv-zeer' };
+  const LEVEL_SHORT = { kalm: 'kalm', gewoon: 'gew.', druk: 'druk', 'zeer druk': 'zeer' };
+  function renderAanbod() {
+    const todayIso = isoDate(today);
+    const tk = aanbod?.tekorten;
+    $('wkState').textContent = aanbodBusy ? 'Werkaanbod ophalen bij cewez.be…'
+      : !aanbod ? (aanbodError ? `${aanbodError} Probeer opnieuw met Vernieuwen.` : 'Nog niet opgehaald.')
+      : `${tk?.asOf ? `Tekorten op ${fmtDate(tk.asOf, { day: 'numeric', month: 'long' })}` : 'Tekorten'}`
+        + (tk?.modified ? ` · door Cewez bijgewerkt om ${tk.modified.slice(11, 16)}` : '')
+        + ` · opgehaald ${new Date(aanbod.fetched).toDateString() === today.toDateString() ? `om ${hhmm(aanbod.fetched)}` : `op ${fmtDate(isoDate(new Date(aanbod.fetched)), { day: 'numeric', month: 'short' })}`}`
+        + (aanbodError ? ` (${aanbodError.toLowerCase().replace(/\.$/, '')})` : '');
+    $('wkRefresh').disabled = aanbodBusy;
+    $('wkInfo').hidden = !tk?.info;
+    $('wkInfo').textContent = tk?.info || '';
+    // tekorten per dag; voorbije dagen weglaten
+    const rows = (tk?.rows || []).filter((r) => r.date >= todayIso);
+    const byDay = {};
+    for (const r of rows) (byDay[r.date] ||= []).push(r);
+    const dayName = (d) => (d === todayIso ? 'Vandaag' : d === isoDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)) ? 'Morgen' : '')
+      + ` ${fmtDate(d, { weekday: 'short', day: 'numeric', month: 'short' })}`;
+    $('wkDays').innerHTML = !aanbod ? '' : !rows.length
+      ? '<p class="empty">Geen tekorten voor vandaag of later.</p>'
+      : Object.keys(byDay).sort().map((d) => {
+          const list = byDay[d].sort((a, b) => a.start.localeCompare(b.start) || a.firma.localeCompare(b.firma));
+          const sum = list.reduce((t, r) => t + r.count, 0);
+          return `<div class="wk-day"><div class="wk-dayh"><b>${dayName(d).trim()}</b><span>${sum} ${sum === 1 ? 'plaats' : 'plaatsen'}</span></div>`
+            + list.map((r) => {
+              const co = Aanbod.companyIdFor(r.firma);
+              const c = co && companyById(co);
+              const ph = co ? phonesOf(co).find((p) => p.number) : null;
+              return `<div class="wk-row">${c ? logoHtml(co, '', 'li-logo') : '<span class="logo li-logo">?</span>'}
+                <div class="li-main"><div class="wk-name">${escapeHtml(c?.short || r.firma)}</div>
+                  <div class="wk-func">${escapeHtml(r.func.toLowerCase())}${r.vrij ? `<span class="wk-chip" title="vrijstellingen">${escapeHtml(r.vrij)}</span>` : ''}</div>
+                  ${ph ? `<a class="wk-call" href="${telHref(ph.number)}">${PHONE_ICON}${escapeHtml(ph.number)}</a>` : ''}</div>
+                <div class="wk-start">${Number(r.start)}u</div>
+                <div class="wk-count">${r.count}<small>${r.count === 1 ? 'plaats' : 'pl.'}</small></div></div>`;
+            }).join('') + '</div>';
+        }).join('');
+    // drukte deze week
+    const tw = aanbod?.tewerk;
+    $('wkBusyBox').hidden = !tw?.busy?.length;
+    if (tw?.busy?.length) {
+      const head = tw.days.map((d) => `<th class="${d === todayIso ? 'now' : ''}">${fmtDate(d, { weekday: 'short' }).replace('.', '')}<br>${Number(d.slice(8))}</th>`).join('');
+      $('wkBusy').innerHTML = `<table><thead><tr><th></th>${head}</tr></thead><tbody>${tw.busy.map((b) => {
+        const co = Aanbod.companyIdFor(b.firma);
+        return `<tr><td>${escapeHtml(companyById(co)?.short || b.firma)}</td>${b.levels.map((l, i) => `<td class="lv ${LEVEL_CLASS[l] || ''}${tw.days[i] === todayIso ? ' now' : ''}" title="${escapeHtml(l)}">${escapeHtml(LEVEL_SHORT[l] || l)}</td>`).join('')}</tr>`;
+      }).join('')}</tbody></table>
+        <div class="wk-legend">${Object.entries(LEVEL_CLASS).map(([l, c]) => `<span class="${c}">${l}</span>`).join('')}</div>`;
+    }
+    // havenarbeiders gezocht
+    $('wkWantBox').hidden = !tw?.wanted?.length;
+    $('wkWant').innerHTML = (tw?.wanted || []).map((w) => {
+      const co = Aanbod.companyIdFor(w.firma);
+      return `<li>${co ? logoHtml(co, '', 'li-logo') : '<span class="logo li-logo">?</span>'}<div class="li-main">
+        <div class="d">${escapeHtml(companyById(co)?.name || w.firma)}</div>
+        <div class="m">${escapeHtml(w.offer)}${w.items.length ? ` ${escapeHtml(w.items.join(', ').toLowerCase())}` : ''}</div>
+        <div class="calls">${w.phones.map((n) => `<a class="callbtn" href="${telHref(n)}">${PHONE_ICON}<span>Bellen <small>${escapeHtml(n)}</small></span></a>`).join('')}</div></div></li>`;
+    }).join('');
+  }
+  $('wkRefresh').addEventListener('click', refreshAanbod);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && (!aanbod || Date.now() - aanbod.fetched > 10 * 60 * 1000)) refreshAanbod();
+  });
+
   // --- snel overzicht bovenaan ----------------------------------------------
   function renderDash() {
     const todayIso = isoDate(today);
@@ -3042,6 +3184,8 @@ const APP_VERSION = '2026-10-06.8';
   selectDay(isoDate(today), false);
   renderTaxTables();
   refreshTaxTables();
+  renderAanbod();
+  refreshAanbod();
   countDevice();
   // uitleg bij elke start van de app
   openWelcome();

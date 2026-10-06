@@ -78,3 +78,7 @@ De herkenning is afgestemd op de gewone opmaak van die papieren. Wordt een bedra
 ## Ontwerp
 
 Ontwerp "Kaai": een donkere havenband bovenaan met de volgende uitbetaling, een geel-zwarte veiligheidsstreep en smalle signalisatieletters. Lettertypes: [Barlow Condensed](https://fonts.google.com/specimen/Barlow+Condensed) en [Public Sans](https://fonts.google.com/specimen/Public+Sans) (SIL Open Font License), in `vendor/fonts/` zodat ze ook offline werken.
+
+## Werkaanbod
+
+De kaart "Werkaanbod" toont de tekorten per shift (vandaag en morgen), de drukte per bedrijf deze week en de bedrijven die havenarbeiders zoeken. De app haalt die gegevens bij het openen op van de openbare pagina's [Tekorten](https://cewez.be/tekorten/) en [Tewerkstelling](https://cewez.be/tewerkstelling/) van Cewez (via de WordPress-API van cewez.be); er wordt niets van de gebruiker meegestuurd. `aanbod.js` leest de tabellen (getest in `tests/aanbod.test.js` met de pagina's van 6 oktober 2026). Verandert Cewez de opmaak van die pagina's, dan moet `aanbod.js` mee aangepast worden. De telefoonnummers van de aanwervers komen van [Contactgegevens aanwervers](https://cewez.be/havenarbeider/contactgegevens-aanwervers/).
