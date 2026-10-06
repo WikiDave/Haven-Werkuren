@@ -115,7 +115,8 @@
   }
   a.callbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   a.callbtn svg { width: 18px; height: 18px; flex: none; }
-  a.callbtn small { font-weight: 500; opacity: .85; }
+  a.callbtn > span { display: flex; flex-direction: column; line-height: 1.2; }
+  a.callbtn small { font-weight: 500; opacity: .85; white-space: nowrap; font-size: 14px; }
   #callList { list-style: none; margin: 8px 0 0; padding: 0; }
   #callList li { padding: 12px 0; border-top: 1px solid var(--line); }
   #callList .callhead { display: flex; align-items: center; gap: 10px; font-weight: 600; }
@@ -1087,12 +1088,12 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-06.7"></script>
-<script src="scan.js?v=2026-10-06.7"></script>
+<script src="loon.js?v=2026-10-06.8"></script>
+<script src="scan.js?v=2026-10-06.8"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-06.7';
+const APP_VERSION = '2026-10-06.8';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1366,8 +1367,32 @@ const APP_VERSION = '2026-10-06.7';
   const companyById = (id) => DEFAULT_COMPANIES.find((c) => c.id === id) || customCompanies.find((c) => c.id === id);
   const visibleCompanies = () => [...DEFAULT_COMPANIES, ...customCompanies].filter((c) => !hiddenCompanies.includes(c.id));
   // --- telefoonnummers om te bellen voor werk ---
-  // Standaardnummers per bedrijf: [label, nummer]. Alleen nummers die zeker kloppen; de rest vul je zelf in.
-  const DEFAULT_PHONES = {};
+  // Standaardnummers per bedrijf: [label, nummer]. Eigen aanpassingen (Bedrijven beheren) gaan voor.
+  // Nummers van de aanwervers volgens Cewez (cewez.be › Havenarbeider › Contactgegevens aanwervers, oktober 2026).
+  const DEFAULT_PHONES = {
+    ecs: [['Aanwerving', '0473 90 09 32']],
+    'sea-invest': [['Aanwerving Z. Cornelis', '050 54 31 65'], ['Gratis nummer (ziekte melden)', '0800 99 591']],
+    borlix: [['Aanwerving', '050 54 48 61']],
+    cldn: [['Aanwerving M. Feys', '050 55 71 81'], ['Gratis nummer (ziekte melden)', '0800 16 435']],
+    cosco: [['Aanwerving D. Vermeire', '050 50 26 30'], ['Aanwerving F. Dejonghe', '050 50 26 32'], ['Gratis nummer (ziekte melden)', '0800 11 039']],
+    depre: [['Aanwerving', '050 33 34 22']],
+    'dp-world': [['Aanwerving S. De Vos', '0471 92 63 00']],
+    hoppe: [['Aanwerving N. Loeman', '050 82 73 43']],
+    ico: [['Aanwerving A. Vlietinck', '050 72 53 39'], ['Aanwerving F. Depoorter', '050 72 53 40'], ['Aanwerving P. Degroote', '050 72 52 06'], ['Gratis nummer (ziekte melden)', '0800 92 529']],
+    intertrans: [['Aanwerving I. Vanbelle', '050 36 49 47']],
+    logghe: [['Aanwerving G. Vanderstraeten', '059 50 08 75']],
+    minne: [['Aanwerving F. Coens', '0497 42 03 84']],
+    ndq: [['Aanwerving N. Dehaemers', '050 33 42 84']],
+    ossco: [['Aanwerving K. Lingier', '0490 57 29 09']],
+    'po-ferries': [['Aanwerving K. Lemmens', '050 54 22 67'], ['Gratis nummer (ziekte melden)', '0800 95 132']],
+    psa: [['Aanwerving E. Devoldere', '050 25 21 32'], ['Gratis nummer (ziekte melden)', '0800 94 160']],
+    sst: [['Aanwerving', '050 33 76 02']],
+    seabridge: [['Aanwerving', '050 36 70 80'], ['Aanwerving', '03 233 78 65']],
+    'van-der-vlist': [['Aanwerving T. Bollenberg', '0476 97 67 24']],
+    verhelst: [['Aanwerving K. Neirynck', '059 33 11 33']],
+    wwl: [['Aanwerving K. Neirinck', '050 64 22 05'], ['Aanwerving', '050 64 22 00'], ['Gratis nummer (ziekte melden)', '0800 62 550']],
+    zfl: [['Aanwerving S. Becaus', '050 55 11 25']],
+  };
   const phonesOf = (co) => companyPhones[co]
     || (DEFAULT_PHONES[co] || []).map(([label, number], i) => ({ id: 'd' + i, label, number }));
   const savePhones = (co, list) => { companyPhones[co] = list; save(KEY_CO_PHONE, companyPhones); };
