@@ -604,6 +604,7 @@
   .sheet-x { top: 16px; }
 
   .disclaimer { border-style: solid; border-radius: 10px; }
+  .usage { margin: 4px 0 8px; text-align: center; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
   .slip-h:only-child { margin-bottom: -10px; }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -1186,16 +1187,17 @@
     <p>Dit is een <b>hobbyproject</b> van een havenarbeider, <b>David Schütt</b>, gebouwd met behulp van AI (Claude). Het heeft <b>niets te maken met Cewez</b>. De bedragen en informatie kunnen fout zijn: controleer altijd je loonbrief.</p>
     <p>De app werkt offline op je gsm: je uren, je loon en al je gegevens blijven op je toestel en worden nergens gedeeld. Er wordt alleen geteld hoe vaak de link gedeeld wordt en op hoeveel toestellen de app geopend is, zonder namen of gegevens.</p>
   </footer>
+  <p class="usage" id="usage" hidden></p>
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-06.15"></script>
-<script src="scan.js?v=2026-10-06.15"></script>
-<script src="aanbod.js?v=2026-10-06.15"></script>
+<script src="loon.js?v=2026-10-06.16"></script>
+<script src="scan.js?v=2026-10-06.16"></script>
+<script src="aanbod.js?v=2026-10-06.16"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-06.15';
+const APP_VERSION = '2026-10-06.16';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -2797,6 +2799,16 @@ const APP_VERSION = '2026-10-06.15';
       save(KEY_COUNTED, true);
     } catch { /* offline: volgende keer opnieuw proberen */ }
   }
+  // klein onderaan: op hoeveel toestellen de app gebruikt wordt en hoe vaak hij gedeeld is
+  async function showUsage() {
+    try {
+      const get = async (key) => (await (await fetch(`${COUNTER_URL}/get/${key}`, { cache: 'no-store' })).json()).value;
+      const [devices, shares] = await Promise.all([get(COUNTER_KEY), get(SHARE_KEY)]);
+      if (!Number.isFinite(devices)) return;
+      $('usage').textContent = `Gebruikt op ${devices} toestellen · ${Number(shares) || 0} keer gedeeld`;
+      $('usage').hidden = false;
+    } catch { /* geen verbinding: niets tonen */ }
+  }
 
   // --- fout melden (GitHub-issue) --------------------------------------------
   const ISSUE_URL = 'https://github.com/WikiDave/Cewez-Calculator/issues/new';
@@ -3374,7 +3386,7 @@ const APP_VERSION = '2026-10-06.15';
   refreshTaxTables();
   renderAanbod();
   refreshAanbod();
-  countDevice();
+  countDevice().finally(showUsage);
   // uitleg bij elke start van de app
   openWelcome();
 })();
