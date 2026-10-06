@@ -116,6 +116,7 @@ test('belasting.json is gelijk aan de standaardbedragen in loon.js', () => {
 test('halve shift, pool en maaltijdcheque', () => {
   const full = Loon.shiftLines(shift('2026-09-23', '06'), ctx({ status: 'pool' })).lines;
   assert.equal(full.find((l) => l.key === 'internet').amount, 0.8);
+  assert.equal(Loon.shiftLines(shift('2026-09-23', '06'), ctx({ status: 'timetable' })).lines.find((l) => l.key === 'internet').amount, 0.8);
   assert.equal(full.find((l) => l.key === 'mtc').amount, 1.09);
   const half = Loon.shiftLines(shift('2026-09-23', '06', { kind: 'half' }), ctx({ status: 'pool' })).lines;
   assert.equal(half.find((l) => l.key === 'premie').amount, 2.64);

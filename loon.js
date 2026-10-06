@@ -87,7 +87,7 @@
     rszFactor: 1.08, rszRate: 0.1307,        // RSZ werknemer: 13,07% op 108% van basis RSZ
     premie: 5.28, premieHalf: 2.64,           // vaste premie per volle / halve shift
     kledij: 1.59,                             // per shift, ook halve
-    internet: 0.80,                           // per volle shift, enkel erkend (pool)
+    internet: 0.80,                           // per volle shift, enkel erkend (losse pool en time table)
     mtcValue: 7.00, mtcOwn: 1.09,             // maaltijdcheque; eigen bijdrage per volle shift
     wijziging: 17.17, afbestelWeekend: 115.16,
   }];
@@ -144,7 +144,7 @@
   const PLACES = Object.keys(TRAVEL[TRAVEL.length - 1].table).sort((a, b) => a.localeCompare(b, 'nl'));
 
   const DEFAULT_SETTINGS = {
-    status: 'gelegenheid',      // 'gelegenheid' | 'pool'
+    status: 'gelegenheid',      // 'gelegenheid' (rode kaart) | 'pool' (losse pool) | 'timetable'
     place: 'Assebroek',
     transport: 'auto',          // 'auto' (eigen vervoer) | 'fiets'
     bikeKm: 0, bikeRate: 0,     // fiets: km per shift x bedrag per km
@@ -261,7 +261,7 @@
     if (entry.wijziging) add('wijziging', 'Wijzigingsvergoeding', p.wijziging, s.extraType);
     add('kledij', 'Kledijvergoeding', p.kledij, 'D');
     add('vervoer', s.transport === 'fiets' ? 'Fietsvergoeding' : 'Eigen vervoer', travelAllowance(entry.date, s), 'D');
-    if (full && s.status === 'pool') add('internet', 'Internetvergoeding', p.internet, 'D');
+    if (full && (s.status === 'pool' || s.status === 'timetable')) add('internet', 'Internetvergoeding', p.internet, 'D');
     if (full) add('mtc', 'Maaltijdcheque eigen bijdrage', p.mtcOwn, 'M');
     return { row, lines };
   }

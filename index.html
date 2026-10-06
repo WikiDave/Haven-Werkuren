@@ -702,10 +702,11 @@
         <p class="hint">Hiermee rekent de app je netto uit. Je gegevens blijven op dit toestel.</p>
         <label for="sStatus">Statuut</label>
         <select id="sStatus" data-s="status">
-          <option value="gelegenheid">Gelegenheidsarbeider</option>
-          <option value="pool">Erkend (pool)</option>
+          <option value="gelegenheid">Rode kaart (gelegenheidshavenarbeider)</option>
+          <option value="pool">Losse pool (erkend, opgebeld of zelf bellen voor werk)</option>
+          <option value="timetable">Time table (erkend, vast bij één bedrijf)</option>
         </select>
-        <label class="check"><input type="checkbox" id="sRed" data-s="redCard" data-t="bool"> Rode kaart (geen verlof)</label>
+        <p class="hint" id="statusHint"></p>
       <div id="alfaWrap">
         <label for="sAlfa">Alfapas: gewerkte dagen tellen vanaf</label>
         <input type="date" id="sAlfa" data-s="alfaStart">
@@ -859,12 +860,12 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-06.3"></script>
-<script src="scan.js?v=2026-10-06.3"></script>
+<script src="loon.js?v=2026-10-06.4"></script>
+<script src="scan.js?v=2026-10-06.4"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-06.3';
+const APP_VERSION = '2026-10-06.4';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1045,6 +1046,11 @@ const APP_VERSION = '2026-10-06.3';
     if (changed) { save(KEY_TAX_USER, taxUser); save(KEY_TAX_EXTRA, taxExtras); }
   })();
   applyTaxTables();
+  // vroeger een apart vinkje "Rode kaart"; nu is dat het statuut
+  if ('redCard' in settings) {
+    if (settings.redCard) settings.status = 'gelegenheid';
+    delete settings.redCard; save(KEY_SETTINGS, settings);
+  }
   let taxYear = new Date().getFullYear();
   let clothingStart = load(KEY_CLOTH_START, { date: '', points: 0 });
   let companyLocations = load(KEY_CO_LOCS, {}); // door jou aangepaste plaatsen per bedrijf
@@ -1836,7 +1842,7 @@ const APP_VERSION = '2026-10-06.3';
 
   // --- verlof ---------------------------------------------------------------
   const LEAVE_TYPES = { vakantie: 'jaarlijkse vakantie', 'anciënniteit': 'anciënniteitsverlof', ander: 'ander verlof' };
-  const leaveEnabled = () => !settings.redCard; // rode kaart: geen verlof
+  const leaveEnabled = () => settings.status !== 'gelegenheid'; // rode kaart: geen verlof, wel Alfapas-teller
   const leaveOn = (iso) => (leaveEnabled() ? leave.find((l) => l.date === iso) : undefined);
   const newGroupId = () => 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const saveLeave = () => { leave.sort((a, b) => a.date.localeCompare(b.date)); save(KEY_LEAVE, leave); };
@@ -2505,7 +2511,10 @@ const APP_VERSION = '2026-10-06.3';
     $('placeWrap').hidden = settings.transport !== 'auto';
     $('bikeWrap').hidden = settings.transport !== 'fiets';
     $('pctWrap').hidden = settings.withholdingMode !== 'percentage';
-    $('alfaWrap').hidden = !settings.redCard;
+    $('alfaWrap').hidden = settings.status !== 'gelegenheid';
+    $('statusHint').textContent = settings.status === 'gelegenheid'
+      ? 'Rode kaart: geen verlof; bovenaan zie je de Alfapas-teller.'
+      : 'Erkend: verlof bijhouden en internetvergoeding per volle shift.';
     $('bvHint').hidden = settings.withholdingMode === 'percentage';
   }
   $('settingsBox').addEventListener('change', (ev) => {
