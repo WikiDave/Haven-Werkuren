@@ -80,7 +80,15 @@
   .li-main .m { font-size: 13px; color: var(--muted); }
   .where { font-size: 14px; margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--bg); }
   .where a, .li-main a { color: var(--accent); font-weight: 600; }
-  #coList li { align-items: flex-start; }
+  /* bedrijf: logo, naam en verwijderknop bovenaan; plaatsen over de volle breedte eronder */
+  #coList li { display: grid; grid-template-columns: 36px 1fr 36px; gap: 2px 10px; align-items: center; }
+  #coList li.empty { display: block; }
+  #coList .li-logo { grid-column: 1; grid-row: 1; }
+  #coList .li-main { display: contents; }
+  #coList .li-main .d { grid-column: 2; grid-row: 1; min-width: 0; }
+  #coList li > .del { grid-column: 3; grid-row: 1; }
+  #coList .locrow, #coList .linkbtn { grid-column: 1 / -1; justify-self: stretch; }
+  #coList .linkbtn { justify-self: start; }
   #coList input { min-height: 38px; padding: 6px 10px; margin-top: 6px; font-size: 14px; }
   .mapbox { margin-top: 10px; }
   .mapbox summary { font-weight: 600; color: var(--accent); }
@@ -290,6 +298,9 @@
   }
   .check input { width: 22px; height: 22px; min-height: 0; margin: 0; flex: none; accent-color: var(--accent); }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+  /* naast elkaar: vakjes op één lijn, ook als een label over twee regels loopt */
+  .row2 > div { display: flex; flex-direction: column; justify-content: flex-end; min-width: 0; }
+  .btn + details, .scanbtn + details { margin-top: 14px; }
   .est {
     display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase;
     color: var(--ot); border: 1px solid currentColor; border-radius: 999px; padding: 1px 6px; vertical-align: middle;
@@ -860,12 +871,12 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-06.4"></script>
-<script src="scan.js?v=2026-10-06.4"></script>
+<script src="loon.js?v=2026-10-06.5"></script>
+<script src="scan.js?v=2026-10-06.5"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-06.4';
+const APP_VERSION = '2026-10-06.5';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
