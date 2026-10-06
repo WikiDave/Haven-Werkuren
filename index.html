@@ -179,6 +179,14 @@
   .ci-week span { flex: 1; min-width: 0; font-size: 11px; font-weight: 600; padding: 4px 2px; border-radius: 4px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ci-week span small { display: block; font-weight: 500; font-size: 10px; opacity: .8; }
   .ci-body textarea { min-height: 70px; font-size: 14px; }
+  /* kaaien: plannen en bedrijfsingangen */
+  .plans { display: grid; gap: 8px; }
+  .plans a.btn { margin-top: 0; flex-direction: column; align-items: flex-start; justify-content: center; text-align: left; gap: 2px; padding: 10px 14px; }
+  .plans a.btn small { font-weight: 500; opacity: .8; text-transform: none; letter-spacing: 0; font-family: var(--body, inherit); font-size: 12px; }
+  #kaaiList li { align-items: flex-start; }
+  .navbtns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .navbtns a { display: inline-flex; align-items: center; min-height: 40px; padding: 6px 12px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: 14px; text-decoration: none; }
+  .navbtns a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .linkbtn { border: 0; background: transparent; color: var(--accent); font-weight: 600; padding: 8px 0; cursor: pointer; }
   header { display: flex; align-items: flex-start; gap: 12px; }
   header > div:first-child { flex: 1; }
@@ -994,6 +1002,20 @@
         <div id="coInfo"></div>
       </details>
     </section>
+    <section class="inset grp" id="kaaiCard">
+      <details class="fold" data-fold="kaaien">
+        <summary><h2>Kaaien</h2></summary>
+        <p class="hint">Plannen van de haven van Zeebrugge (Port of Antwerp-Bruges, via cewez.be › Wegwijs in de haven). Ze openen als PDF: zoom in met twee vingers.</p>
+        <div class="plans">
+          <a class="btn ghost" href="https://cewez.be/wp-content/uploads/2025/05/Port-of-zeebrugge_kaainrs_straten_zeebrugge_2025.pdf" target="_blank" rel="noopener">Kaainummers en straten <small>luchtfoto met alle kaaien</small></a>
+          <a class="btn ghost" href="https://cewez.be/wp-content/uploads/2025/05/Zeebrugge_bezoekersplan.pdf" target="_blank" rel="noopener">Bezoekersplan <small>docks en terminals</small></a>
+          <a class="btn ghost" href="https://cewez.be/wp-content/uploads/2025/02/N-702-nlpage_content_FileFile_3.pdf" target="_blank" rel="noopener">QR-codes bedrijfsingangen <small>PDF van Cewez</small></a>
+        </div>
+        <h3 class="taxh">Bedrijfsingangen</h3>
+        <p class="hint">De ingangen uit de QR-codes van Cewez. Tik op Google Maps of Waze om er naartoe te rijden. Bij CLdN Britanniadok en Canadakaai zegt Cewez: opgelet met Waze.</p>
+        <ul class="list" id="kaaiList"></ul>
+      </details>
+    </section>
     <section class="inset grp" id="setCard">
       <details class="fold" data-fold="instellingen">
         <summary><h2>Instellingen</h2></summary>
@@ -1164,13 +1186,13 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-06.13"></script>
-<script src="scan.js?v=2026-10-06.13"></script>
-<script src="aanbod.js?v=2026-10-06.13"></script>
+<script src="loon.js?v=2026-10-06.14"></script>
+<script src="scan.js?v=2026-10-06.14"></script>
+<script src="aanbod.js?v=2026-10-06.14"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-06.13';
+const APP_VERSION = '2026-10-06.14';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -2067,6 +2089,7 @@ const APP_VERSION = '2026-10-06.13';
     renderTax();
     renderDash();
     renderCoInfo();
+    renderKaaien();
 
     renderCalendar();
     renderDay();
@@ -2439,6 +2462,51 @@ const APP_VERSION = '2026-10-06.13';
     if (document.visibilityState === 'visible' && (!aanbod || Date.now() - aanbod.fetched > 10 * 60 * 1000)) refreshAanbod();
   });
 
+  // --- kaaien: bedrijfsingangen (uit de QR-codes van Cewez, cewez.be › Wegwijs in de haven) ---
+  const ENTRANCES = [
+    ['psa', 'PSA Terminal', '', 51.3503965, 3.1752312],
+    ['cldn', 'CLdN Albert II-dok', 'Albert II-laan 127-129, 8380 Zeebrugge', 51.3520265, 3.1854665],
+    ['cosco', 'CSP Zeebrugge (Cosco)', '', 51.3398891, 3.1783711],
+    ['po-ferries', 'P&O / OCZ', 'New Yorklaan 11, 8380 Zeebrugge', 51.3295516, 3.1862095],
+    ['cldn', 'CLdN Britanniadok', '', 51.33998909, 3.22666526, 'opgelet met Waze'],
+    ['ico', 'ICO CTO', 'Kiwiweg 80, 8380 Zeebrugge', 51.3280555, 3.2184614],
+    ['sea-invest', 'BNFW', 'Kiwiweg 120, 8380 Zeebrugge', 51.3197232, 3.219319],
+    ['wwl', 'Wallenius (kaai 530)', 'Alfred Ronsestraat 100, 8380 Zeebrugge', 51.3146944, 3.2364956],
+    ['ico', 'ICO Hanze', 'Margareta van Oostenrijkstraat 1, 8380 Zeebrugge', 51.2927367, 3.2450967],
+    ['ico', 'ICO Bastenaken', 'Margareta van Oostenrijkstraat 100, 8380 Zeebrugge', 51.3013316, 3.2228315],
+    ['cldn', 'CLdN Canadakaai', '', 51.30775319, 3.238585, 'opgelet met Waze'],
+    ['seabridge', 'Seabridge Koffieweg', 'Koffieweg 10, 8380 Zeebrugge', 51.2946257, 3.2255441],
+    ['depre', 'Depre & SST', 'Britse Kaai 8, 8000 Brugge', 51.2277223, 3.2236907],
+    ['', 'Intervest warehouses / Zonnepanelen Aertssen', '', 51.2851413, 3.2248718],
+  ].map(([co, name, address, lat, lng, note]) => ({ co, name, address, lat, lng, note }));
+  const gmapsUrl = (e) => `https://www.google.com/maps/dir/?api=1&destination=${e.lat},${e.lng}`;
+  const wazeUrl = (e) => `https://waze.com/ul?ll=${e.lat},${e.lng}&navigate=yes`;
+  const navButtons = (e) => `<div class="navbtns"><a href="${gmapsUrl(e)}" target="_blank" rel="noopener">Google Maps</a><a href="${wazeUrl(e)}" target="_blank" rel="noopener">Waze</a></div>`;
+  // onthaalbrochures van de havenfirma's (cewez.be › Wegwijs in de haven)
+  const BROCHURES = {
+    'sea-invest': 'https://cewez.be/wp-content/uploads/2026/02/onthaal-brochure-BNFW.pdf',
+    cldn: 'https://cewez.be/wp-content/uploads/2025/07/Onthaalbrochure-havenarbeiders-Zeebrugge-CLDN.pdf',
+    cosco: 'https://cewez.be/wp-content/uploads/2026/05/Onthaalbrochure-CSP.pdf',
+    'dp-world': 'https://cewez.be/wp-content/uploads/2025/12/onthaalbrochure-HA-DPW-Zeebrugge-2025.pdf',
+    depre: 'https://cewez.be/wp-content/uploads/2025/06/DSH-Onthaalbrochure-2024.pdf',
+    hoppe: 'https://cewez.be/wp-content/uploads/2026/04/Hoppe-onthaalbrochure-2026.pdf',
+    ico: 'https://cewez.be/wp-content/uploads/2025/04/Onthaalbrochure-ICO.pdf',
+    intertrans: 'https://cewez.be/wp-content/uploads/2025/07/Onboardingsbrochure_havenarbeiders-intertrans.pdf',
+    ndq: 'https://cewez.be/wp-content/uploads/2025/06/NDQ-20250516-NDQ-2D05-onthaalbrochure_2.pdf',
+    ossco: 'https://cewez.be/wp-content/uploads/2025/06/OSSCO-Onthaalbrochure-nieuwe-medewerkers-20231130.pdf',
+    'po-ferries': 'https://cewez.be/wp-content/uploads/2025/07/Onthaal-PO-ferries-versie-2025-Reyn-Hungenaert_.pdf',
+    psa: 'https://cewez.be/wp-content/uploads/2025/09/20250731-v19-PSAZ-Onthaalbrochure-havenarbeid.pdf',
+    seabridge: 'https://cewez.be/wp-content/uploads/2025/04/Onthaalbrochure-Seabridge.pdf',
+    'van-der-vlist': 'https://cewez.be/wp-content/uploads/2025/06/Vandervlist-Onthaalbrochure-2024.pdf',
+    wwl: 'https://cewez.be/wp-content/uploads/2025/06/EU_ZEE_HRM_01.002-Welkom-brochure-arbeiders-WW.pdf',
+  };
+  function renderKaaien() {
+    $('kaaiList').innerHTML = ENTRANCES.map((e) => `<li>${e.co ? logoHtml(e.co, '', 'li-logo') : '<span class="logo li-logo">P</span>'}
+      <div class="li-main"><div class="d">${escapeHtml(e.name)}</div>
+        ${e.address || e.note ? `<div class="m">${escapeHtml([e.address, e.note].filter(Boolean).join(' · '))}</div>` : ''}
+        ${navButtons(e)}</div></li>`).join('');
+  }
+
   // --- bedrijven: extra info per bedrijf ------------------------------------------
   const openInfo = new Set(); // welke vakken open staan, blijft zo na opnieuw tekenen
   function renderCoInfo() {
@@ -2467,7 +2535,9 @@ const APP_VERSION = '2026-10-06.13';
           ${shortSum ? `<span class="ci-badge" title="tekorten vandaag en morgen">${shortSum} pl.</span>` : ''}</summary>
         <div class="ci-body">
           <div><h4>Adres</h4>${places || '<p>Nog geen adres. Vul het in bij Instellingen › Bedrijven beheren.</p>'}</div>
+          ${ENTRANCES.some((e) => e.co === c.id) ? `<div><h4>Ingang${ENTRANCES.filter((e) => e.co === c.id).length > 1 ? 'en' : ''}</h4>${ENTRANCES.filter((e) => e.co === c.id).map((e) => `<p class="ci-place"><b>${escapeHtml(e.name)}</b>${e.note ? ` · ${escapeHtml(e.note)}` : ''}</p>${navButtons(e)}`).join('')}</div>` : ''}
           <div><h4>Bellen</h4>${calls ? `<div class="calls">${calls}</div>` : '<p>Nog geen nummer.</p>'}</div>
+          ${BROCHURES[c.id] ? `<div><h4>Onthaalbrochure</h4><div class="navbtns"><a href="${BROCHURES[c.id]}" target="_blank" rel="noopener">Brochure openen (PDF)</a></div></div>` : ''}
           ${short.length || busy || wanted ? `<div><h4>Werkaanbod (cewez.be)</h4>
             ${short.length ? `<p>${short.sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start)).map((r) => `${r.date === todayIso ? 'vandaag' : fmtDate(r.date, { weekday: 'short' })} ${Number(r.start)}u: <b>${r.count}</b> ${escapeHtml(r.func.toLowerCase())}${r.vrij ? ` (${escapeHtml(r.vrij)})` : ''}`).join('<br>')}</p>` : '<p>Geen tekorten.</p>'}
             ${busy ? `<div class="ci-week" style="margin-top:8px">${busy.levels.map((l, i) => `<span class="${LEVEL_CLASS[l] || ''}">${escapeHtml(l)}<small>${fmtDate(tw.days[i], { weekday: 'short' }).replace('.', '')}</small></span>`).join('')}</div>` : ''}
