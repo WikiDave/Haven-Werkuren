@@ -87,7 +87,7 @@
   #coList .li-main { display: contents; }
   #coList .li-main .d { grid-column: 2; grid-row: 1; min-width: 0; }
   #coList li > .del { grid-column: 3; grid-row: 1; }
-  #coList .locrow, #coList .linkbtn { grid-column: 1 / -1; justify-self: stretch; }
+  #coList .locrow, #coList .phonerow, #coList .linkbtn { grid-column: 1 / -1; justify-self: stretch; }
   #coList .linkbtn { justify-self: start; }
   #coList input { min-height: 38px; padding: 6px 10px; margin-top: 6px; font-size: 14px; }
   .mapbox { margin-top: 10px; }
@@ -103,6 +103,57 @@
   .locrow input { margin-top: 0 !important; grid-column: 1; }
   .locrow input[data-field="name"] { font-weight: 600; }
   .locrow .del { grid-column: 2; grid-row: 1 / span 2; }
+  .phonerow {
+    display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) 36px; gap: 6px; align-items: center;
+    margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line);
+  }
+  .phonerow input { margin-top: 0 !important; }
+  .calls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  a.callbtn {
+    display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 14px; border-radius: 8px;
+    background: var(--accent-soft); color: var(--accent); font-weight: 600; text-decoration: none; font-variant-numeric: tabular-nums;
+  }
+  a.callbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  a.callbtn svg { width: 18px; height: 18px; flex: none; }
+  a.callbtn > span { display: flex; flex-direction: column; line-height: 1.2; }
+  a.callbtn small { font-weight: 500; opacity: .85; white-space: nowrap; font-size: 14px; }
+  #callList { list-style: none; margin: 8px 0 0; padding: 0; }
+  #callList li { padding: 12px 0; border-top: 1px solid var(--line); }
+  #callList .callhead { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+  #callList .none { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  /* werkaanbod van Cewez */
+  .wk-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .wk-top .hint { margin: 0; }
+  .wk-info { font-size: 14px; margin: 10px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--bg); }
+  .wk-day { margin-top: 16px; }
+  .wk-dayh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding-bottom: 6px; border-bottom: 2px solid var(--text); }
+  .wk-dayh b { font-size: 17px; }
+  .wk-dayh span { font-size: 13px; color: var(--muted); }
+  .wk-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .wk-row .li-logo { width: 36px; height: 36px; }
+  .wk-name { font-weight: 600; font-size: 15px; }
+  .wk-func { font-size: 13px; color: var(--muted); }
+  .wk-chip { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); margin-left: 4px; }
+  .wk-start { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+  .wk-count { min-width: 44px; text-align: center; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--accent); line-height: 1; }
+  .wk-count small { display: block; font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .wk-call { display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; }
+  .wk-call svg { width: 14px; height: 14px; }
+  .wk-busy { overflow-x: auto; margin-top: 8px; }
+  .wk-busy table { border-collapse: separate; border-spacing: 3px; width: 100%; font-size: 12px; }
+  .wk-busy th { font-weight: 600; color: var(--muted); text-align: center; padding: 2px; }
+  .wk-busy th.now { color: var(--text); }
+  .wk-busy td:first-child { font-weight: 600; white-space: nowrap; padding-right: 4px; }
+  .wk-busy td.lv { text-align: center; padding: 6px 1px; border-radius: 4px; white-space: nowrap; font-size: 11px; font-weight: 600; }
+  .wk-legend { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; font-size: 12px; }
+  .wk-legend span { padding: 2px 6px; border-radius: 4px; }
+  #wkWant li { align-items: flex-start; }
+  .lv-kalm { background: var(--leave); color: var(--leave-text); }
+  .lv-gewoon { background: var(--bg); color: var(--muted); }
+  .lv-druk { background: var(--accent-soft); color: var(--accent); }
+  .lv-zeer { background: var(--accent); color: var(--card); }
+  .wk-busy td.now { outline: 2px solid var(--text); outline-offset: -2px; }
+  #workCard details:not(.fold) { margin-top: 14px; }
   .linkbtn { border: 0; background: transparent; color: var(--accent); font-weight: 600; padding: 8px 0; cursor: pointer; }
   header { display: flex; align-items: flex-start; gap: 12px; }
   header > div:first-child { flex: 1; }
@@ -450,6 +501,7 @@
     outline: 2px solid var(--signal); outline-offset: 2px;
   }
   #dash .btn.scanbtn { background: var(--signal); color: var(--on-signal); }
+  #dash .btn.callopen { background: var(--harbour-2); color: var(--on-harbour); font-family: var(--display); text-transform: uppercase; letter-spacing: .05em; font-size: 15px; margin-top: 10px; min-height: 44px; }
 
   /* maandbalk en bruto/netto als één schakelaar */
   .monthbar button { border-radius: 8px; background: var(--bg); border-color: transparent; color: var(--text); }
@@ -549,6 +601,14 @@
     <p class="hint" id="bugMsg" hidden></p>
   </dialog>
 
+  <dialog class="sheet" id="callDialog" aria-labelledby="callTitle">
+    <form method="dialog" class="sheet-x"><button value="close" aria-label="Sluiten">✕</button></form>
+    <h2 id="callTitle">Bellen voor werk</h2>
+    <p class="hint">Tik op een nummer om te bellen. Nummers toevoegen of aanpassen doe je bij <b>Instellingen › Bedrijven beheren</b>.</p>
+    <ul id="callList"></ul>
+    <button type="button" class="btn ghost" id="callEdit">Nummers toevoegen of aanpassen</button>
+  </dialog>
+
   <dialog class="sheet" id="scanDialog" aria-labelledby="scanTitle">
     <form method="dialog" class="sheet-x"><button value="close" aria-label="Sluiten">✕</button></form>
     <h2 id="scanTitle">Papier fotograferen</h2>
@@ -641,6 +701,22 @@
       <button type="button" class="tile leave" data-go="leaveCard" id="dLeaveTile"><span class="k">Verlof</span><span class="v" id="dLeave"></span><span class="m" id="dLeaveM"></span></button>
     </div>
     <button type="button" class="btn ghost scanbtn" data-scan>Loonbrief of belastingpapier fotograferen</button>
+    <button type="button" class="btn ghost callopen" id="callOpen">Bedrijven bellen voor werk</button>
+  </section>
+
+  <section class="card" id="workCard">
+    <details class="fold" data-fold="aanbod" open>
+      <summary><h2>Werkaanbod</h2></summary>
+    <div class="wk-top"><p class="hint" id="wkState"></p><button type="button" class="linkbtn" id="wkRefresh">Vernieuwen</button></div>
+    <p class="wk-info" id="wkInfo" hidden></p>
+    <a class="btn ghost" id="wkMyJob" href="https://my.cewez.be" target="_blank" rel="noopener">Naar my.cewez.be (MyJob)</a>
+    <p class="wk-info" id="wkRed" hidden>Met een rode kaart heb je geen account op my.cewez.be. Zie je een tekort dat je past, bel dan zelf de firma met de belknop bij de shift.</p>
+    <div id="wkDays"></div>
+    <a class="btn ghost" id="wkSite" href="https://cewez.be/tekorten/" target="_blank" rel="noopener" hidden>Tekorten bekijken op cewez.be</a>
+    <details id="wkBusyBox" hidden><summary>Drukte deze week</summary><div class="wk-busy" id="wkBusy"></div></details>
+    <details id="wkWantBox" hidden><summary>Havenarbeiders gezocht</summary><ul class="list" id="wkWant"></ul></details>
+    <p class="hint">Bron: <a href="https://cewez.be/tekorten/" target="_blank" rel="noopener">cewez.be › Tekorten</a> en <a href="https://cewez.be/tewerkstelling/" target="_blank" rel="noopener">Tewerkstelling</a>. De app haalt die pagina's op als je hem opent; er wordt niets van jou meegestuurd. Bij tekorten neem je contact op met de firma.</p>
+    </details>
   </section>
 
   <section class="card">
@@ -686,6 +762,7 @@
       <select id="loc"></select>
     </div>
     <p class="where" id="coWhere" hidden></p>
+    <div class="calls" id="coCalls" hidden></div>
     <details class="mapbox" id="mapBox" hidden>
       <summary>Kaai op de kaart</summary>
       <p class="hint" id="mapHint"></p>
@@ -989,7 +1066,7 @@
     <section class="inset">
       <details class="fold" data-fold="bedrijven">
         <summary><h2>Bedrijven beheren</h2></summary>
-        <p class="hint">Per bedrijf staan de plaatsen (kantoor, terminal, kaai) met hun adres. Pas ze aan of voeg er toe; bij een dag kies je de plaats en zet je op de kaart een spelt per plaats. Verwijderen haalt het bedrijf alleen uit de keuzelijst; dagen die je al opgeslagen hebt, blijven bewaard.</p>
+        <p class="hint">Per bedrijf staan de plaatsen (kantoor, terminal, kaai) met hun adres, en de telefoonnummers om te bellen voor werk. Pas ze aan of voeg er toe; bij een dag kies je de plaats en zet je op de kaart een spelt per plaats. Verwijderen haalt het bedrijf alleen uit de keuzelijst; dagen die je al opgeslagen hebt, blijven bewaard.</p>
         <ul class="list" id="coList"></ul>
         <button class="btn ghost" id="coRestore" hidden>Verwijderde bedrijven terugzetten</button>
       </details>
@@ -1059,12 +1136,13 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-06.6"></script>
-<script src="scan.js?v=2026-10-06.6"></script>
+<script src="loon.js?v=2026-10-06.11"></script>
+<script src="scan.js?v=2026-10-06.11"></script>
+<script src="aanbod.js?v=2026-10-06.11"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-06.6';
+const APP_VERSION = '2026-10-06.11';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1179,6 +1257,8 @@ const APP_VERSION = '2026-10-06.6';
   const KEY_CO_LOCS = 'haven-werkuren.companyLocations';
   const KEY_LAST_LOC = 'haven-werkuren.lastLocation';
   const KEY_CO_PIN = 'haven-werkuren.companyPins';
+  const KEY_CO_PHONE = 'haven-werkuren.companyPhones';
+  const KEY_AANBOD = 'haven-werkuren.werkaanbod'; // laatst opgehaald werkaanbod van cewez.be
   const load = (k, fallback) => {
     try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fallback; } catch { return fallback; }
   };
@@ -1255,6 +1335,7 @@ const APP_VERSION = '2026-10-06.6';
   let companyLocations = load(KEY_CO_LOCS, {}); // door jou aangepaste plaatsen per bedrijf
   let companyPins = load(KEY_CO_PIN, {});         // spelden per plaats: "bedrijf/plaats"
   let lastLocation = load(KEY_LAST_LOC, {});      // laatst gekozen plaats per bedrijf
+  let companyPhones = load(KEY_CO_PHONE, {});     // telefoonnummers per bedrijf: [{ id, label, number }]
   // oudere gegevens: één adres en één spelt per bedrijf omzetten naar de eerste plaats
   (() => {
     const old = load(KEY_CO_ADDR, null);
@@ -1335,6 +1416,39 @@ const APP_VERSION = '2026-10-06.6';
   // ook verborgen bedrijven opzoeken, zodat oude dagen hun logo houden
   const companyById = (id) => DEFAULT_COMPANIES.find((c) => c.id === id) || customCompanies.find((c) => c.id === id);
   const visibleCompanies = () => [...DEFAULT_COMPANIES, ...customCompanies].filter((c) => !hiddenCompanies.includes(c.id));
+  // --- telefoonnummers om te bellen voor werk ---
+  // Standaardnummers per bedrijf: [label, nummer]. Eigen aanpassingen (Bedrijven beheren) gaan voor.
+  // Nummers van de aanwervers volgens Cewez (cewez.be › Havenarbeider › Contactgegevens aanwervers, oktober 2026).
+  const DEFAULT_PHONES = {
+    ecs: [['Aanwerving', '0473 90 09 32']],
+    'sea-invest': [['Aanwerving Z. Cornelis', '050 54 31 65'], ['Gratis nummer (ziekte melden)', '0800 99 591']],
+    borlix: [['Aanwerving', '050 54 48 61']],
+    cldn: [['Aanwerving M. Feys', '050 55 71 81'], ['Gratis nummer (ziekte melden)', '0800 16 435']],
+    cosco: [['Aanwerving D. Vermeire', '050 50 26 30'], ['Aanwerving F. Dejonghe', '050 50 26 32'], ['Gratis nummer (ziekte melden)', '0800 11 039']],
+    depre: [['Aanwerving', '050 33 34 22']],
+    'dp-world': [['Aanwerving S. De Vos', '0471 92 63 00']],
+    hoppe: [['Aanwerving N. Loeman', '050 82 73 43']],
+    ico: [['Aanwerving A. Vlietinck', '050 72 53 39'], ['Aanwerving F. Depoorter', '050 72 53 40'], ['Aanwerving P. Degroote', '050 72 52 06'], ['Gratis nummer (ziekte melden)', '0800 92 529']],
+    intertrans: [['Aanwerving I. Vanbelle', '050 36 49 47']],
+    logghe: [['Aanwerving G. Vanderstraeten', '059 50 08 75']],
+    minne: [['Aanwerving F. Coens', '0497 42 03 84']],
+    ndq: [['Aanwerving N. Dehaemers', '050 33 42 84']],
+    ossco: [['Aanwerving K. Lingier', '0490 57 29 09']],
+    'po-ferries': [['Aanwerving K. Lemmens', '050 54 22 67'], ['Gratis nummer (ziekte melden)', '0800 95 132']],
+    psa: [['Aanwerving E. Devoldere', '050 25 21 32'], ['Gratis nummer (ziekte melden)', '0800 94 160']],
+    sst: [['Aanwerving', '050 33 76 02']],
+    seabridge: [['Aanwerving', '050 36 70 80'], ['Aanwerving', '03 233 78 65']],
+    'van-der-vlist': [['Aanwerving T. Bollenberg', '0476 97 67 24']],
+    verhelst: [['Aanwerving K. Neirynck', '059 33 11 33']],
+    wwl: [['Aanwerving K. Neirinck', '050 64 22 05'], ['Aanwerving', '050 64 22 00'], ['Gratis nummer (ziekte melden)', '0800 62 550']],
+    zfl: [['Aanwerving S. Becaus', '050 55 11 25']],
+  };
+  const phonesOf = (co) => companyPhones[co]
+    || (DEFAULT_PHONES[co] || []).map(([label, number], i) => ({ id: 'd' + i, label, number }));
+  const savePhones = (co, list) => { companyPhones[co] = list; save(KEY_CO_PHONE, companyPhones); };
+  const PHONE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>';
+  const telHref = (n) => 'tel:' + String(n).replace(/[^\d+]/g, '');
+  const callButtons = (co) => phonesOf(co).filter((p) => p.number).map((p) => `<a class="callbtn" href="${telHref(p.number)}">${PHONE_ICON}<span>${escapeHtml(p.label || 'Bellen')} <small>${escapeHtml(p.number)}</small></span></a>`).join('');
   const initials = (name) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 
   // logo als <img>, of initialen als er geen logo is
@@ -1396,6 +1510,8 @@ const APP_VERSION = '2026-10-06.6';
       : place?.address || pinned
         ? `${escapeHtml(place?.name || sel.name)}: ${escapeHtml(place?.address || 'eigen spelt op de kaart')}${pinned && place?.address ? ' · spelt gezet' : ''} · ${routeLink(companyId, loc)}`
         : `Nog geen adres voor ${escapeHtml(sel.name)}. Vul het in bij Bedrijven beheren, of zet een spelt op de kaart.`;
+    $('coCalls').innerHTML = sel ? callButtons(companyId) : '';
+    $('coCalls').hidden = !$('coCalls').innerHTML;
     $('mapBox').hidden = !sel;
     updateMap();
 
@@ -1406,7 +1522,13 @@ const APP_VERSION = '2026-10-06.6';
             <input data-co="${c.id}" data-loc="${escapeHtml(l.id)}" data-field="address" value="${escapeHtml(l.address)}" placeholder="Adres" aria-label="Adres plaats">
             <button type="button" class="del" data-delloc="${escapeHtml(l.id)}" data-co="${c.id}" aria-label="Plaats verwijderen">✕</button>
           </div>`).join('')}
-          <button type="button" class="linkbtn" data-addloc="${c.id}">+ Plaats toevoegen</button></div>
+          <button type="button" class="linkbtn" data-addloc="${c.id}">+ Plaats toevoegen</button>
+          ${phonesOf(c.id).map((ph) => `<div class="phonerow">
+            <input data-pco="${c.id}" data-pid="${escapeHtml(ph.id)}" data-pfield="label" value="${escapeHtml(ph.label)}" placeholder="bv. Planning" aria-label="Naam nummer">
+            <input type="tel" data-pco="${c.id}" data-pid="${escapeHtml(ph.id)}" data-pfield="number" value="${escapeHtml(ph.number)}" placeholder="bv. 050 12 34 56" aria-label="Telefoonnummer">
+            <button type="button" class="del" data-delphone="${escapeHtml(ph.id)}" data-pco="${c.id}" aria-label="Nummer verwijderen">✕</button>
+          </div>`).join('')}
+          <button type="button" class="linkbtn" data-addphone="${c.id}">+ Telefoonnummer toevoegen</button></div>
         <button class="del" data-delco="${c.id}" aria-label="Bedrijf verwijderen">✕</button></li>`).join('')
       : '<li class="empty">Geen bedrijven.</li>');
     $('coRestore').hidden = !hiddenCompanies.length;
@@ -1490,6 +1612,56 @@ const APP_VERSION = '2026-10-06.6';
       save(KEY_CO_PIN, companyPins);
       renderCompanyPicker(); render();
     }
+  });
+  $('coList').addEventListener('change', (ev) => {
+    const el = ev.target.closest('[data-pfield]');
+    if (!el) return;
+    const co = el.dataset.pco;
+    const list = structuredClone(phonesOf(co));
+    const ph = list.find((x) => x.id === el.dataset.pid);
+    if (!ph) return;
+    const v = el.value.trim();
+    if (el.dataset.pfield === 'number' && v && !/^[+\d][\d\s./()-]{5,}$/.test(v)) { alert('Dat lijkt geen telefoonnummer. Gebruik cijfers, spaties en eventueel + vooraan.'); el.value = ph.number; return; }
+    ph[el.dataset.pfield] = v;
+    savePhones(co, list);
+    renderCompanyPicker();
+  });
+  $('coList').addEventListener('click', (ev) => {
+    const add = ev.target.closest('[data-addphone]');
+    const del = ev.target.closest('[data-delphone]');
+    if (add) {
+      const co = add.dataset.addphone;
+      savePhones(co, [...structuredClone(phonesOf(co)), { id: 'n' + Date.now().toString(36), label: '', number: '' }]);
+      renderCompanyPicker();
+      const inputs = $('coList').querySelectorAll(`[data-pco="${co}"][data-pfield="number"]`);
+      inputs[inputs.length - 1]?.focus();
+    } else if (del) {
+      const co = del.dataset.pco;
+      const ph = phonesOf(co).find((x) => x.id === del.dataset.delphone);
+      if (ph?.number && !confirm(`Nummer ${ph.number} verwijderen?`)) return;
+      savePhones(co, phonesOf(co).filter((x) => x.id !== del.dataset.delphone));
+      renderCompanyPicker();
+    }
+  });
+  // bellen voor werk: alle bedrijven met hun nummers
+  function renderCallList() {
+    const used = {};
+    for (const e of entries) if (e.company) used[e.company] = (used[e.company] || 0) + 1;
+    const list = visibleCompanies().map((c, i) => ({ c, i, n: phonesOf(c.id).filter((p) => p.number).length }))
+      .sort((a, b) => (b.n > 0) - (a.n > 0) || (used[b.c.id] || 0) - (used[a.c.id] || 0) || a.i - b.i);
+    $('callList').innerHTML = list.map(({ c, n }) => `<li><div class="callhead">${logoHtml(c.id, '', 'li-logo')}<span>${escapeHtml(c.name)}</span></div>
+      ${n ? `<div class="calls">${callButtons(c.id)}</div>` : '<div class="none">Nog geen nummer.</div>'}</li>`).join('');
+  }
+  $('callOpen').addEventListener('click', () => {
+    renderCallList();
+    if (typeof $('callDialog').showModal === 'function') $('callDialog').showModal();
+    else $('callDialog').setAttribute('open', '');
+  });
+  $('callEdit').addEventListener('click', () => {
+    $('callDialog').close?.();
+    document.querySelector('[data-fold="instellingen"]').open = true;
+    document.querySelector('[data-fold="bedrijven"]').open = true;
+    $('coList').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
   $('coRestore').addEventListener('click', () => {
     hiddenCompanies = [];
@@ -2136,6 +2308,106 @@ const APP_VERSION = '2026-10-06.6';
     render();
   });
 
+  // --- werkaanbod van cewez.be --------------------------------------------------
+  let aanbod = load(KEY_AANBOD, null); // { fetched, tekorten: {...}, tewerk: {...} }
+  let aanbodBusy = false, aanbodError = '';
+  const hhmm = (ms) => new Date(ms).toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' });
+  async function getJson(url) {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 12000);
+    try {
+      const res = await fetch(url, { cache: 'no-store', signal: ctl.signal });
+      if (!res.ok) throw new Error(String(res.status));
+      return await res.json();
+    } finally { clearTimeout(timer); }
+  }
+  async function refreshAanbod() {
+    if (aanbodBusy) return;
+    aanbodBusy = true; aanbodError = ''; renderAanbod();
+    try {
+      const [a, b] = await Promise.all([getJson(Aanbod.SOURCES.tekorten.api), getJson(Aanbod.SOURCES.tewerkstelling.api)]);
+      aanbod = {
+        fetched: Date.now(),
+        tekorten: { modified: a.modified, ...Aanbod.parseTekorten(a.content?.rendered || '') },
+        tewerk: { modified: b.modified, ...Aanbod.parseTewerkstelling(b.content?.rendered || '') },
+      };
+      save(KEY_AANBOD, aanbod);
+    } catch {
+      aanbodError = navigator.onLine === false ? 'Geen verbinding.' : 'cewez.be kon niet geladen worden.';
+    }
+    aanbodBusy = false;
+    renderAanbod();
+  }
+  const LEVEL_CLASS = { kalm: 'lv-kalm', gewoon: 'lv-gewoon', druk: 'lv-druk', 'zeer druk': 'lv-zeer' };
+  const LEVEL_SHORT = { kalm: 'kalm', gewoon: 'gew.', druk: 'druk', 'zeer druk': 'zeer' };
+  function renderAanbod() {
+    const todayIso = isoDate(today);
+    const tk = aanbod?.tekorten;
+    $('wkState').textContent = aanbodBusy ? 'Werkaanbod ophalen bij cewez.be…'
+      : !aanbod ? (aanbodError ? `${aanbodError} Probeer opnieuw met Vernieuwen.` : 'Nog niet opgehaald.')
+      : `${tk?.asOf ? `Tekorten op ${fmtDate(tk.asOf, { day: 'numeric', month: 'long' })}` : 'Tekorten'}`
+        + (tk?.modified ? ` · door Cewez bijgewerkt om ${tk.modified.slice(11, 16)}` : '')
+        + ` · opgehaald ${new Date(aanbod.fetched).toDateString() === today.toDateString() ? `om ${hhmm(aanbod.fetched)}` : `op ${fmtDate(isoDate(new Date(aanbod.fetched)), { day: 'numeric', month: 'short' })}`}`
+        + (aanbodError ? ` (${aanbodError.toLowerCase().replace(/\.$/, '')})` : '');
+    $('wkRefresh').disabled = aanbodBusy;
+    // lukt het ophalen niet, dan kan je de tekorten altijd nog op de site zelf bekijken
+    $('wkSite').hidden = aanbodBusy || (!!aanbod && !aanbodError);
+    // my.cewez.be (MyJob) is er alleen voor erkende havenarbeiders: losse pool en time table
+    const red = settings.status === 'gelegenheid';
+    $('wkMyJob').hidden = red;
+    $('wkRed').hidden = !red;
+    $('wkInfo').hidden = red || !tk?.info;
+    $('wkInfo').textContent = tk?.info || '';
+    // tekorten per dag; voorbije dagen weglaten
+    const rows = (tk?.rows || []).filter((r) => r.date >= todayIso);
+    const byDay = {};
+    for (const r of rows) (byDay[r.date] ||= []).push(r);
+    const dayName = (d) => (d === todayIso ? 'Vandaag' : d === isoDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)) ? 'Morgen' : '')
+      + ` ${fmtDate(d, { weekday: 'short', day: 'numeric', month: 'short' })}`;
+    $('wkDays').innerHTML = !aanbod ? '' : !rows.length
+      ? '<p class="empty">Geen tekorten voor vandaag of later.</p>'
+      : Object.keys(byDay).sort().map((d) => {
+          const list = byDay[d].sort((a, b) => a.start.localeCompare(b.start) || a.firma.localeCompare(b.firma));
+          const sum = list.reduce((t, r) => t + r.count, 0);
+          return `<div class="wk-day"><div class="wk-dayh"><b>${dayName(d).trim()}</b><span>${sum} ${sum === 1 ? 'plaats' : 'plaatsen'}</span></div>`
+            + list.map((r) => {
+              const co = Aanbod.companyIdFor(r.firma);
+              const c = co && companyById(co);
+              const ph = co ? phonesOf(co).find((p) => p.number) : null;
+              return `<div class="wk-row">${c ? logoHtml(co, '', 'li-logo') : '<span class="logo li-logo">?</span>'}
+                <div class="li-main"><div class="wk-name">${escapeHtml(c?.short || r.firma)}</div>
+                  <div class="wk-func">${escapeHtml(r.func.toLowerCase())}${r.vrij ? `<span class="wk-chip" title="vrijstellingen">${escapeHtml(r.vrij)}</span>` : ''}</div>
+                  ${ph ? `<a class="wk-call" href="${telHref(ph.number)}">${PHONE_ICON}${escapeHtml(ph.number)}</a>` : ''}</div>
+                <div class="wk-start">${Number(r.start)}u</div>
+                <div class="wk-count">${r.count}<small>${r.count === 1 ? 'plaats' : 'pl.'}</small></div></div>`;
+            }).join('') + '</div>';
+        }).join('');
+    // drukte deze week
+    const tw = aanbod?.tewerk;
+    $('wkBusyBox').hidden = !tw?.busy?.length;
+    if (tw?.busy?.length) {
+      const head = tw.days.map((d) => `<th class="${d === todayIso ? 'now' : ''}">${fmtDate(d, { weekday: 'short' }).replace('.', '')}<br>${Number(d.slice(8))}</th>`).join('');
+      $('wkBusy').innerHTML = `<table><thead><tr><th></th>${head}</tr></thead><tbody>${tw.busy.map((b) => {
+        const co = Aanbod.companyIdFor(b.firma);
+        return `<tr><td>${escapeHtml(companyById(co)?.short || b.firma)}</td>${b.levels.map((l, i) => `<td class="lv ${LEVEL_CLASS[l] || ''}${tw.days[i] === todayIso ? ' now' : ''}" title="${escapeHtml(l)}">${escapeHtml(LEVEL_SHORT[l] || l)}</td>`).join('')}</tr>`;
+      }).join('')}</tbody></table>
+        <div class="wk-legend">${Object.entries(LEVEL_CLASS).map(([l, c]) => `<span class="${c}">${l}</span>`).join('')}</div>`;
+    }
+    // havenarbeiders gezocht
+    $('wkWantBox').hidden = !tw?.wanted?.length;
+    $('wkWant').innerHTML = (tw?.wanted || []).map((w) => {
+      const co = Aanbod.companyIdFor(w.firma);
+      return `<li>${co ? logoHtml(co, '', 'li-logo') : '<span class="logo li-logo">?</span>'}<div class="li-main">
+        <div class="d">${escapeHtml(companyById(co)?.name || w.firma)}</div>
+        <div class="m">${escapeHtml(w.offer)}${w.items.length ? ` ${escapeHtml(w.items.join(', ').toLowerCase())}` : ''}</div>
+        <div class="calls">${w.phones.map((n) => `<a class="callbtn" href="${telHref(n)}">${PHONE_ICON}<span>Bellen <small>${escapeHtml(n)}</small></span></a>`).join('')}</div></div></li>`;
+    }).join('');
+  }
+  $('wkRefresh').addEventListener('click', refreshAanbod);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && (!aanbod || Date.now() - aanbod.fetched > 10 * 60 * 1000)) refreshAanbod();
+  });
+
   // --- snel overzicht bovenaan ----------------------------------------------
   function renderDash() {
     const todayIso = isoDate(today);
@@ -2729,7 +3001,7 @@ const APP_VERSION = '2026-10-06.6';
     }
     settings[el.dataset.s] = v;
     save(KEY_SETTINGS, settings);
-    renderSettings(); render();
+    renderSettings(); render(); renderAanbod();
   });
 
   // --- feestdagen ---------------------------------------------------------
@@ -2829,7 +3101,7 @@ const APP_VERSION = '2026-10-06.6';
   }
   $('exportJson').addEventListener('click', () => {
     download(`werkuren-backup-${isoDate(new Date())}.json`,
-      JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, medChecks, leave, payslips, taxActual, taxExtras, taxUser }, null, 2), 'application/json');
+      JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, companyPhones, medChecks, leave, payslips, taxActual, taxExtras, taxUser }, null, 2), 'application/json');
   });
   $('importBtn').addEventListener('click', () => $('importFile').click());
   $('importFile').addEventListener('change', async (ev) => {
@@ -2848,6 +3120,7 @@ const APP_VERSION = '2026-10-06.6';
       if (Array.isArray(data.purchases)) purchases = data.purchases;
       if (Array.isArray(data.medChecks)) medChecks = data.medChecks;
       if (Array.isArray(data.leave)) leave = data.leave;
+      if (data.companyPhones) companyPhones = data.companyPhones;
       if (data.payslips) payslips = data.payslips;
       if (data.taxActual) taxActual = data.taxActual;
       if (data.taxExtras) taxExtras = data.taxExtras;
@@ -2858,7 +3131,7 @@ const APP_VERSION = '2026-10-06.6';
       if (data.companyPins) companyPins = data.companyPins;
       save(KEY_ENTRIES, entries); save(KEY_PERIODS, periods); save(KEY_SETTINGS, settings); save(KEY_HOLIDAYS, holidayOverrides);
       save(KEY_CUSTOM_CO, customCompanies); save(KEY_HIDDEN_CO, hiddenCompanies);
-      save(KEY_MEDICAL, medChecks); save(KEY_LEAVE, leave); save(KEY_PAYSLIPS, payslips); save(KEY_TAX_ACTUAL, taxActual); save(KEY_TAX_EXTRA, taxExtras); save(KEY_TAX_USER, taxUser); save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation);
+      save(KEY_MEDICAL, medChecks); save(KEY_LEAVE, leave); save(KEY_PAYSLIPS, payslips); save(KEY_TAX_ACTUAL, taxActual); save(KEY_TAX_EXTRA, taxExtras); save(KEY_TAX_USER, taxUser); save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation); save(KEY_CO_PHONE, companyPhones);
       renderCompanyPicker(); renderSettings(); renderTaxTables(); renderHolidays(); renderRates(); render();
     } catch { alert('Dit is geen geldig back-upbestand.'); }
     ev.target.value = '';
@@ -2919,6 +3192,8 @@ const APP_VERSION = '2026-10-06.6';
   selectDay(isoDate(today), false);
   renderTaxTables();
   refreshTaxTables();
+  renderAanbod();
+  refreshAanbod();
   countDevice();
   // uitleg bij elke start van de app
   openWelcome();
