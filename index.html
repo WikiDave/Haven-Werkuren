@@ -709,7 +709,8 @@
       <summary><h2>Werkaanbod</h2></summary>
     <div class="wk-top"><p class="hint" id="wkState"></p><button type="button" class="linkbtn" id="wkRefresh">Vernieuwen</button></div>
     <p class="wk-info" id="wkInfo" hidden></p>
-    <a class="btn ghost" href="https://my.cewez.be" target="_blank" rel="noopener">Naar my.cewez.be (MyJob)</a>
+    <a class="btn ghost" id="wkMyJob" href="https://my.cewez.be" target="_blank" rel="noopener">Naar my.cewez.be (MyJob)</a>
+    <p class="wk-info" id="wkRed" hidden>Met een rode kaart heb je geen account op my.cewez.be. Zie je een tekort dat je past, bel dan zelf de firma met de belknop bij de shift.</p>
     <div id="wkDays"></div>
     <details id="wkBusyBox" hidden><summary>Drukte deze week</summary><div class="wk-busy" id="wkBusy"></div></details>
     <details id="wkWantBox" hidden><summary>Havenarbeiders gezocht</summary><ul class="list" id="wkWant"></ul></details>
@@ -1134,13 +1135,13 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-06.9"></script>
-<script src="scan.js?v=2026-10-06.9"></script>
-<script src="aanbod.js?v=2026-10-06.9"></script>
+<script src="loon.js?v=2026-10-06.10"></script>
+<script src="scan.js?v=2026-10-06.10"></script>
+<script src="aanbod.js?v=2026-10-06.10"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-06.9';
+const APP_VERSION = '2026-10-06.10';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -2348,7 +2349,11 @@ const APP_VERSION = '2026-10-06.9';
         + ` · opgehaald ${new Date(aanbod.fetched).toDateString() === today.toDateString() ? `om ${hhmm(aanbod.fetched)}` : `op ${fmtDate(isoDate(new Date(aanbod.fetched)), { day: 'numeric', month: 'short' })}`}`
         + (aanbodError ? ` (${aanbodError.toLowerCase().replace(/\.$/, '')})` : '');
     $('wkRefresh').disabled = aanbodBusy;
-    $('wkInfo').hidden = !tk?.info;
+    // my.cewez.be (MyJob) is er alleen voor erkende havenarbeiders: losse pool en time table
+    const red = settings.status === 'gelegenheid';
+    $('wkMyJob').hidden = red;
+    $('wkRed').hidden = !red;
+    $('wkInfo').hidden = red || !tk?.info;
     $('wkInfo').textContent = tk?.info || '';
     // tekorten per dag; voorbije dagen weglaten
     const rows = (tk?.rows || []).filter((r) => r.date >= todayIso);
@@ -2993,7 +2998,7 @@ const APP_VERSION = '2026-10-06.9';
     }
     settings[el.dataset.s] = v;
     save(KEY_SETTINGS, settings);
-    renderSettings(); render();
+    renderSettings(); render(); renderAanbod();
   });
 
   // --- feestdagen ---------------------------------------------------------
