@@ -561,6 +561,17 @@
   }
   const isoToday = () => toIso(new Date());
 
+  // --- gewerkte dagen (bv. 30 dagen voor de Alfapas) -------------------------------
+  // elke datum met minstens één echte shift telt één keer; afbestellingen tellen niet
+  function workedDays(entries, from, to) {
+    const days = new Set();
+    for (const e of entries) {
+      if (e.kind === 'afbestel' || (from && e.date < from) || (to && e.date > to)) continue;
+      days.add(e.date);
+    }
+    return [...days].sort();
+  }
+
   // --- verlof ---------------------------------------------------------------------
   // verlofdagen tussen twee datums: zondagen en feestdagen tellen niet mee, zaterdagen alleen als je die vraagt
   function leaveDays(from, to, { saturdays = false, overrides = {} } = {}) {
@@ -580,7 +591,7 @@
     START_HOURS, RATE_ROWS, DEFAULT_RATE_PERIODS, FUNCTIONS, FUNCTION_GROUPS, functionOf, PARAMS, TRAVEL, PLACES, DEFAULT_SETTINGS,
     legalHolidays, holidays, holidayOn, tariffRow, rateFor, travelAllowance,
     DEFAULT_WITHHOLDING, DEFAULT_INCOME_TAX, setTaxTables, getTaxTables, normalizeTable, shiftLines, estimateWithholding, estimateAnnualTax, calcPeriod, calcAll,
-    CLOTHING, CLOTHING_ITEMS, clothingPointsFor, clothingLedger, leaveDays,
+    CLOTHING, CLOTHING_ITEMS, clothingPointsFor, clothingLedger, leaveDays, workedDays,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Loon = api;

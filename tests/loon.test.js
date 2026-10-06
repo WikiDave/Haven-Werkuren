@@ -265,3 +265,12 @@ test('verlofdagen: geen zondagen en feestdagen, zaterdagen alleen op vraag', () 
   assert.deepEqual(Loon.leaveDays('2026-10-07'), ['2026-10-07']);
   assert.deepEqual(Loon.leaveDays('2026-10-11', '2026-10-11'), []); // zondag
 });
+
+test('gewerkte dagen voor de Alfapas: elke dag één keer, afbestellingen niet', () => {
+  const entries = [
+    { date: '2026-09-01', kind: 'full' }, { date: '2026-09-01', kind: 'half' },
+    { date: '2026-09-02', kind: 'afbestel' }, { date: '2026-09-03', kind: 'full' },
+    { date: '2026-08-31', kind: 'full' }, { date: '2026-10-07', kind: 'full' },
+  ];
+  assert.deepEqual(Loon.workedDays(entries, '2026-09-01', '2026-10-06'), ['2026-09-01', '2026-09-03']);
+});

@@ -438,6 +438,7 @@
       <button type="button" class="tile" data-go="sumCard" id="dMonthTile"><span class="k" id="dMonthK">Netto deze maand</span><span class="v" id="dMonth"></span><span class="m" id="dMonthM"></span></button>
       <button type="button" class="tile" data-go="clothCard" id="dClothTile"><span class="k">Kledijpunten</span><span class="v" id="dCloth"></span><span class="m" id="dClothM"></span></button>
       <button type="button" class="tile" data-go="medCard" id="dMedTile"><span class="k">Medische controle</span><span class="v" id="dMed"></span><span class="m" id="dMedM"></span></button>
+      <button type="button" class="tile" data-go="setCard" data-open="netto" id="dAlfaTile" hidden><span class="k">Alfapas</span><span class="v" id="dAlfa"></span><span class="m" id="dAlfaM"></span></button>
       <button type="button" class="tile leave" data-go="leaveCard" id="dLeaveTile"><span class="k">Verlof</span><span class="v" id="dLeave"></span><span class="m" id="dLeaveM"></span></button>
     </div>
     <button type="button" class="btn ghost scanbtn" data-scan>Loonbrief of belastingpapier fotograferen</button>
@@ -705,6 +706,11 @@
           <option value="pool">Erkend (pool)</option>
         </select>
         <label class="check"><input type="checkbox" id="sRed" data-s="redCard" data-t="bool"> Rode kaart (geen verlof)</label>
+      <div id="alfaWrap">
+        <label for="sAlfa">Alfapas: gewerkte dagen tellen vanaf</label>
+        <input type="date" id="sAlfa" data-s="alfaStart">
+        <p class="hint">Voor de Alfapas moet je 30 dagen gewerkt hebben. De app telt elke dag met een shift één keer (afbestellingen niet).</p>
+      </div>
         <label for="sTransport">Vervoer</label>
         <select id="sTransport" data-s="transport">
           <option value="auto">Eigen vervoer</option>
@@ -1965,7 +1971,20 @@ const APP_VERSION = '2026-10-06.2';
 
     const on = leaveEnabled();
     $('dLeaveTile').hidden = !on;
-    $('dMedTile').classList.toggle('wide', !on);
+    $('dAlfaTile').hidden = on;
+    if (!on) {
+      const ALFA_DAYS = 30;
+      if (!settings.alfaStart) { $('dAlfa').textContent = `0 / ${ALFA_DAYS}`; $('dAlfaM').textContent = 'tik om de startdatum in te vullen'; }
+      else {
+        const days = Loon.workedDays(entries, settings.alfaStart, todayIso);
+        const n = days.length;
+        $('dAlfa').textContent = n >= ALFA_DAYS ? `${ALFA_DAYS} / ${ALFA_DAYS} ✓` : `${n} / ${ALFA_DAYS}`;
+        $('dAlfaM').textContent = n >= ALFA_DAYS
+          ? `bereikt op ${fmtDate(days[ALFA_DAYS - 1], { day: 'numeric', month: 'short', year: 'numeric' })}`
+          : `gewerkte dagen sinds ${fmtDate(settings.alfaStart, { day: 'numeric', month: 'short', year: 'numeric' })} · nog ${ALFA_DAYS - n}`;
+      }
+      $('dAlfaTile').className = 'tile' + (settings.alfaStart && Loon.workedDays(entries, settings.alfaStart, todayIso).length >= ALFA_DAYS ? ' leave' : '');
+    }
     if (on) {
       const ls = leaveStats();
       $('dLeave').textContent = ls.left !== null ? `${ls.left} over` : dayCount(ls.count);
@@ -1979,6 +1998,8 @@ const APP_VERSION = '2026-10-06.2';
     const card = $(id);
     const fold = card.querySelector('details.fold');
     if (fold) fold.open = true;
+    const inner = ev.target.closest('[data-open]')?.dataset.open;
+    if (inner) document.querySelector(`[data-fold="${inner}"]`).open = true;
     card.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
@@ -2484,6 +2505,7 @@ const APP_VERSION = '2026-10-06.2';
     $('placeWrap').hidden = settings.transport !== 'auto';
     $('bikeWrap').hidden = settings.transport !== 'fiets';
     $('pctWrap').hidden = settings.withholdingMode !== 'percentage';
+    $('alfaWrap').hidden = !settings.redCard;
     $('bvHint').hidden = settings.withholdingMode === 'percentage';
   }
   $('settingsBox').addEventListener('change', (ev) => {
