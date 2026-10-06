@@ -246,6 +246,8 @@
   .tile.leave .v { color: var(--leave-text); }
   .inset { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 12px; }
   .inset details.fold > summary h2 { font-size: 16px; }
+  /* alles behalve kalender en dag samen in één kaart, elk onderdeel inklapbaar */
+  #moreCard > .grp:first-child { border-top: 0; margin-top: 0; padding-top: 0; }
   .more-day { margin-top: 12px; }
   .more-day > summary { font-weight: 600; color: var(--accent); cursor: pointer; padding: 8px 0; }
   .payday { margin: 0 0 8px; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
@@ -729,21 +731,6 @@
     <button type="button" class="btn ghost callopen" id="callOpen">Bedrijven bellen voor werk</button>
   </section>
 
-  <section class="card" id="workCard">
-    <details class="fold" data-fold="aanbod" open>
-      <summary><h2>Werkaanbod</h2></summary>
-    <div class="wk-top"><p class="hint" id="wkState"></p><button type="button" class="linkbtn" id="wkRefresh">Vernieuwen</button></div>
-    <p class="wk-info" id="wkInfo" hidden></p>
-    <a class="btn ghost" id="wkMyJob" href="https://my.cewez.be" target="_blank" rel="noopener">Naar my.cewez.be (MyJob)</a>
-    <p class="wk-info" id="wkRed" hidden>Met een rode kaart heb je geen account op my.cewez.be. Zie je een tekort dat je past, bel dan zelf de firma met de belknop bij de shift.</p>
-    <div id="wkDays"></div>
-    <a class="btn ghost" id="wkSite" href="https://cewez.be/tekorten/" target="_blank" rel="noopener" hidden>Tekorten bekijken op cewez.be</a>
-    <details id="wkBusyBox" hidden><summary>Drukte deze week</summary><div class="wk-busy" id="wkBusy"></div></details>
-    <details id="wkWantBox" hidden><summary>Havenarbeiders gezocht</summary><ul class="list" id="wkWant"></ul></details>
-    <p class="hint">Bron: <a href="https://cewez.be/tekorten/" target="_blank" rel="noopener">cewez.be › Tekorten</a> en <a href="https://cewez.be/tewerkstelling/" target="_blank" rel="noopener">Tewerkstelling</a>. De app haalt die pagina's op als je hem opent; er wordt niets van jou meegestuurd. Bij tekorten neem je contact op met de firma.</p>
-    </details>
-  </section>
-
   <section class="card">
     <div class="monthbar">
       <button id="prev" aria-label="Vorige maand">‹</button>
@@ -761,8 +748,7 @@
   </section>
 
   <section class="card" id="dayCard">
-    <details class="fold" data-fold="dag" open>
-      <summary><h2 id="dayTitle"></h2></summary>
+    <h2 id="dayTitle"></h2>
     <p class="hint" id="dayNote" hidden></p>
     <p class="leaveday" id="dayLeaveNote" hidden></p>
     <p class="payday" id="dayPayNote" hidden></p>
@@ -842,326 +828,335 @@
 
     <div class="preview"><span>Deze shift bruto<br><span class="net" id="previewNet"></span></span><b id="preview">€ 0,00</b></div>
     <button class="btn" id="add">Opslaan</button>
-    </details>
   </section>
 
-  <section class="card" id="sumCard">
-    <details class="fold" data-fold="overzicht" open>
-      <summary><h2 id="sumTitle"></h2></summary>
-    <div class="totals">
-      <div class="stat big"><div class="k">Bruto deze maand</div><div class="v" id="tTotal"></div></div>
-      <div class="stat big"><div class="k">Netto deze maand <span class="est" id="tNetEst" hidden>schatting</span></div><div class="v" id="tNet"></div></div>
-      <div class="stat"><div class="k">Shiften</div><div class="v" id="tShifts"></div></div>
-      <div class="stat"><div class="k">Overuren</div><div class="v ot" id="tOtH"></div></div>
-    </div>
-    <ul class="list" id="perCo"></ul>
-    <p class="hint" id="yearLine"></p>
-    </details>
-  </section>
-
-  <section class="card" id="slipCard">
-    <details class="fold" data-fold="uitbetalingen" open>
-      <summary><h2>Uitbetalingen</h2></summary>
-    <div id="slips"></div>
-    <button type="button" class="btn ghost scanbtn" data-scan="loonbrief">Loonbrief fotograferen</button>
-    </details>
-  </section>
-
-  <section class="card" id="taxCard">
-    <details class="fold" data-fold="belasting">
-      <summary><h2>Belastingbrief</h2></summary>
-    <div class="yearbar">
-      <button id="taxPrev" aria-label="Vorig jaar">‹</button>
-      <b id="taxYear"></b>
-      <button id="taxNext" aria-label="Volgend jaar">›</button>
-    </div>
-    <p class="taxresult" id="taxResult"></p>
-    <p class="slipcheck" id="taxActual" hidden></p>
-    <table class="slip-t" id="taxTable"></table>
-    <button type="button" class="btn ghost scanbtn" data-scan="fiche">Loonfiche of aanslagbiljet fotograferen</button>
-    <details id="taxExtraBox">
-      <summary>Jouw gegevens invullen (nauwkeuriger)</summary>
-      <p class="hint">Vul in wat je weet; lege velden worden niet meegeteld. Alles blijft op je gsm.</p>
-
-      <h3 class="taxh">1. Je loonfiche van Cewez</h3>
-      <p class="hint">Heb je je loonfiche (281.10) al? Die bedragen zijn het nauwkeurigst en vervangen de bedragen uit de app.</p>
+  <section class="card" id="moreCard">
+    <section class="inset grp" id="sumCard">
+      <details class="fold" data-fold="overzicht">
+        <summary><h2 id="sumTitle"></h2></summary>
+      <div class="totals">
+        <div class="stat big"><div class="k">Bruto deze maand</div><div class="v" id="tTotal"></div></div>
+        <div class="stat big"><div class="k">Netto deze maand <span class="est" id="tNetEst" hidden>schatting</span></div><div class="v" id="tNet"></div></div>
+        <div class="stat"><div class="k">Shiften</div><div class="v" id="tShifts"></div></div>
+        <div class="stat"><div class="k">Overuren</div><div class="v ot" id="tOtH"></div></div>
+      </div>
+      <ul class="list" id="perCo"></ul>
+      <p class="hint" id="yearLine"></p>
+      </details>
+    </section>
+    <section class="inset grp" id="slipCard">
+      <details class="fold" data-fold="uitbetalingen">
+        <summary><h2>Uitbetalingen</h2></summary>
+      <div id="slips"></div>
+      <button type="button" class="btn ghost scanbtn" data-scan="loonbrief">Loonbrief fotograferen</button>
+      </details>
+    </section>
+    <section class="inset grp" id="workCard">
+      <details class="fold" data-fold="aanbod">
+        <summary><h2>Werkaanbod</h2></summary>
+      <div class="wk-top"><p class="hint" id="wkState"></p><button type="button" class="linkbtn" id="wkRefresh">Vernieuwen</button></div>
+      <p class="wk-info" id="wkInfo" hidden></p>
+      <a class="btn ghost" id="wkMyJob" href="https://my.cewez.be" target="_blank" rel="noopener">Naar my.cewez.be (MyJob)</a>
+      <p class="wk-info" id="wkRed" hidden>Met een rode kaart heb je geen account op my.cewez.be. Zie je een tekort dat je past, bel dan zelf de firma met de belknop bij de shift.</p>
+      <div id="wkDays"></div>
+      <a class="btn ghost" id="wkSite" href="https://cewez.be/tekorten/" target="_blank" rel="noopener" hidden>Tekorten bekijken op cewez.be</a>
+      <details id="wkBusyBox" hidden><summary>Drukte deze week</summary><div class="wk-busy" id="wkBusy"></div></details>
+      <details id="wkWantBox" hidden><summary>Havenarbeiders gezocht</summary><ul class="list" id="wkWant"></ul></details>
+      <p class="hint">Bron: <a href="https://cewez.be/tekorten/" target="_blank" rel="noopener">cewez.be › Tekorten</a> en <a href="https://cewez.be/tewerkstelling/" target="_blank" rel="noopener">Tewerkstelling</a>. De app haalt die pagina's op als je hem opent; er wordt niets van jou meegestuurd. Bij tekorten neem je contact op met de firma.</p>
+      </details>
+    </section>
+    <section class="inset grp" id="leaveCard">
+      <details class="fold" data-fold="verlof">
+        <summary><h2>Verlof</h2></summary>
+      <p class="medstatus" id="lvStatus"></p>
       <div class="row2">
-        <div><label for="tx-ficheIncome">Belastbaar loon (code 1250)</label><input id="tx-ficheIncome" data-tx="ficheIncome" inputmode="decimal" placeholder="uit de app"></div>
-        <div><label for="tx-ficheWithholding">Bedrijfsvoorheffing (code 1286)</label><input id="tx-ficheWithholding" data-tx="ficheWithholding" inputmode="decimal" placeholder="uit de app"></div>
+        <div><label for="lvFrom">Van</label><input type="date" id="lvFrom"></div>
+        <div><label for="lvTo">Tot en met</label><input type="date" id="lvTo"></div>
       </div>
-      <label for="tx-workBonus">Fiscale werkbonus (op je loonfiche)</label>
-      <input id="tx-workBonus" data-tx="workBonus" inputmode="decimal" placeholder="0">
-
-      <h3 class="taxh">2. Vakantiegeld en ander inkomen</h3>
-      <p class="hint">Vakantiegeld van het vakantiefonds (loonfiche 281.10 van het fonds).</p>
-      <div class="row2">
-        <div><label for="tx-holidayPay">Vakantiegeld (belastbaar)</label><input id="tx-holidayPay" data-tx="holidayPay" inputmode="decimal" placeholder="0"></div>
-        <div><label for="tx-holidayWithholding">Voorheffing daarop</label><input id="tx-holidayWithholding" data-tx="holidayWithholding" inputmode="decimal" placeholder="0"></div>
+      <label for="lvType">Soort</label>
+      <select id="lvType">
+        <option value="vakantie">Jaarlijkse vakantie</option>
+        <option value="anciënniteit">Anciënniteitsverlof</option>
+        <option value="ander">Ander verlof</option>
+      </select>
+      <label class="check"><input type="checkbox" id="lvSat"> Zaterdagen meetellen</label>
+      <button type="button" class="btn" id="lvAdd">Verlof opslaan</button>
+      <ul class="list" id="lvList"></ul>
+      <label for="lvQuota">Verlofdagen per jaar (optioneel, dan zie je hoeveel je er nog hebt)</label>
+      <input id="lvQuota" inputmode="numeric" placeholder="bv. 20">
+      <p class="hint">Zondagen en feestdagen tellen niet mee. Op een verlofdag werk je niet voor Cewez, dus daar is er geen loon. Je vakantiegeld krijg je één keer per jaar van het vakantiefonds, met een eigen voorheffing. Vul het in bij <b>Belastingbrief</b> zodra je het krijgt, dan klopt de schatting van je belastingen.</p>
+      </details>
+    </section>
+    <section class="inset grp" id="medCard">
+      <details class="fold" data-fold="medisch">
+        <summary><h2>Medische controle</h2></summary>
+      <p class="medstatus" id="medStatus"></p>
+      <label for="medDate">Datum van je controle</label>
+      <input type="date" id="medDate">
+      <label for="medNote">Notitie (optioneel)</label>
+      <input id="medNote" placeholder="bv. Attentia, Noordzeestraat 148">
+      <button type="button" class="btn" id="medAdd">Controle opslaan</button>
+      <ul class="list" id="medList"></ul>
+      <p class="hint">De volgende controle kan vanaf 10 maanden na de vorige en moet ten laatste na 12 maanden. De app toont wanneer je kunt gaan en waarschuwt je een maand voor het einde.</p>
+      </details>
+    </section>
+    <section class="inset grp" id="clothCard">
+      <details class="fold" data-fold="kledij">
+        <summary><h2>Kledijpunten</h2></summary>
+      <div class="totals">
+        <div class="stat big"><div class="k">Saldo <span id="clMax"></span></div><div class="v" id="clBalance"></div></div>
       </div>
-      <p class="hint">Bv. loon van een andere job of uitkeringen (loonfiches 281.10, 281.13).</p>
-      <div class="row2">
-        <div><label for="tx-income">Extra belastbaar inkomen</label><input id="tx-income" data-tx="income" inputmode="decimal" placeholder="0"></div>
-        <div><label for="tx-withholding">Voorheffing daarop</label><input id="tx-withholding" data-tx="withholding" inputmode="decimal" placeholder="0"></div>
-      </div>
+      <p class="hint" id="clInfo"></p>
+      <p class="warn" id="clWarn" hidden></p>
 
-      <h3 class="taxh">3. Gezin</h3>
-      <p class="hint" id="taxFamily"></p>
-      <label for="tx-kidsUnder3">Kinderen jonger dan 3 jaar (zonder kosten kinderopvang)</label>
-      <input id="tx-kidsUnder3" data-tx="kidsUnder3" inputmode="numeric" placeholder="0">
-      <div class="row2" id="taxPartner">
-        <div><label for="tx-partnerIncome">Belastbaar inkomen partner</label><input id="tx-partnerIncome" data-tx="partnerIncome" inputmode="decimal" placeholder="0"></div>
-        <div><label for="tx-partnerWithholding">Voorheffing partner</label><input id="tx-partnerWithholding" data-tx="partnerWithholding" inputmode="decimal" placeholder="0"></div>
-      </div>
+      <label for="clItem">Kledij afhalen</label>
+      <select id="clItem"></select>
+      <label for="clDate">Datum</label>
+      <input type="date" id="clDate">
+      <label class="check"><input type="checkbox" id="clFree"> Gratis vervangen (arbeidsongeval, fabricagefout, handschoenen binnengebracht)</label>
+      <button class="btn" id="clAdd">Afhalen</button>
+      <ul class="list" id="clList"></ul>
 
-      <h3 class="taxh">4. Aftrekken en verminderingen</h3>
-      <label for="tx-pension">Pensioensparen gestort dit jaar</label>
-      <input id="tx-pension" data-tx="pension" inputmode="decimal" placeholder="0">
-      <label for="tx-otherReductions">Andere belastingverminderingen (bv. giften, dienstencheques)</label>
-      <input id="tx-otherReductions" data-tx="otherReductions" inputmode="decimal" placeholder="0">
-      <label for="tx-realCosts">Werkelijke beroepskosten (laat leeg voor het forfait)</label>
-      <input id="tx-realCosts" data-tx="realCosts" inputmode="decimal" placeholder="forfait">
-
-      <p class="hint">De belastingbedragen zelf (belastingvrije som, schalen, …) zie en wijzig je bij <b>Instellingen › Belastingbedragen</b>.</p>
-      <button type="button" class="btn ghost" id="taxClear">Gegevens van dit jaar wissen</button>
-    </details>
-    <p class="hint" id="taxHint"></p>
-    </details>
-  </section>
-
-  <section class="card" id="medCard">
-    <details class="fold" data-fold="medisch">
-      <summary><h2>Medische controle</h2></summary>
-    <p class="medstatus" id="medStatus"></p>
-    <label for="medDate">Datum van je controle</label>
-    <input type="date" id="medDate">
-    <label for="medNote">Notitie (optioneel)</label>
-    <input id="medNote" placeholder="bv. Attentia, Noordzeestraat 148">
-    <button type="button" class="btn" id="medAdd">Controle opslaan</button>
-    <ul class="list" id="medList"></ul>
-    <p class="hint">De volgende controle kan vanaf 10 maanden na de vorige en moet ten laatste na 12 maanden. De app toont wanneer je kunt gaan en waarschuwt je een maand voor het einde.</p>
-    </details>
-  </section>
-
-  <section class="card" id="leaveCard">
-    <details class="fold" data-fold="verlof">
-      <summary><h2>Verlof</h2></summary>
-    <p class="medstatus" id="lvStatus"></p>
-    <div class="row2">
-      <div><label for="lvFrom">Van</label><input type="date" id="lvFrom"></div>
-      <div><label for="lvTo">Tot en met</label><input type="date" id="lvTo"></div>
-    </div>
-    <label for="lvType">Soort</label>
-    <select id="lvType">
-      <option value="vakantie">Jaarlijkse vakantie</option>
-      <option value="anciënniteit">Anciënniteitsverlof</option>
-      <option value="ander">Ander verlof</option>
-    </select>
-    <label class="check"><input type="checkbox" id="lvSat"> Zaterdagen meetellen</label>
-    <button type="button" class="btn" id="lvAdd">Verlof opslaan</button>
-    <ul class="list" id="lvList"></ul>
-    <label for="lvQuota">Verlofdagen per jaar (optioneel, dan zie je hoeveel je er nog hebt)</label>
-    <input id="lvQuota" inputmode="numeric" placeholder="bv. 20">
-    <p class="hint">Zondagen en feestdagen tellen niet mee. Op een verlofdag werk je niet voor Cewez, dus daar is er geen loon. Je vakantiegeld krijg je één keer per jaar van het vakantiefonds, met een eigen voorheffing. Vul het in bij <b>Belastingbrief</b> zodra je het krijgt, dan klopt de schatting van je belastingen.</p>
-    </details>
-  </section>
-
-  <section class="card" id="clothCard">
-    <details class="fold" data-fold="kledij">
-      <summary><h2>Kledijpunten</h2></summary>
-    <div class="totals">
-      <div class="stat big"><div class="k">Saldo <span id="clMax"></span></div><div class="v" id="clBalance"></div></div>
-    </div>
-    <p class="hint" id="clInfo"></p>
-    <p class="warn" id="clWarn" hidden></p>
-
-    <label for="clItem">Kledij afhalen</label>
-    <select id="clItem"></select>
-    <label for="clDate">Datum</label>
-    <input type="date" id="clDate">
-    <label class="check"><input type="checkbox" id="clFree"> Gratis vervangen (arbeidsongeval, fabricagefout, handschoenen binnengebracht)</label>
-    <button class="btn" id="clAdd">Afhalen</button>
-    <ul class="list" id="clList"></ul>
-
-    <details id="clStartBox">
-      <summary>Saldo van je loonbrief</summary>
-      <p class="hint">Vul het kledijsaldo van je laatste loonbrief in, met de datum waarop het geldt. Shiften en afgehaalde kledij tot en met die datum zitten daar al in.</p>
-      <div class="row2">
-        <div><label for="clStartPts">Punten</label><input id="clStartPts" inputmode="numeric" placeholder="0"></div>
-        <div><label for="clStartDate">Op datum</label><input type="date" id="clStartDate"></div>
-      </div>
-    </details>
-    </details>
-  </section>
-
-  <section class="card" id="coInfoCard">
-    <details class="fold" data-fold="bedrijfsinfo">
-      <summary><h2>Bedrijven</h2></summary>
-      <p class="hint">Alles over elk bedrijf op één plaats: adres, nummers, het werkaanbod van vandaag, je eigen shiften en je eigen notities.</p>
-      <div id="coInfo"></div>
-    </details>
-  </section>
-
-  <section class="card" id="setCard">
-    <details class="fold" data-fold="instellingen">
-      <summary><h2>Instellingen</h2></summary>
-      <p class="hint">Hier hoef je meestal niets te doen: de app werkt met de standaardwaarden. Wil je een nauwkeuriger netto, vul dan je Netto-instellingen in.</p>
-    <section class="inset">
-      <details class="fold" data-fold="netto" id="settingsBox">
-        <summary><h2>Netto-instellingen</h2></summary>
-        <p class="hint">Hiermee rekent de app je netto uit. Je gegevens blijven op dit toestel.</p>
-        <label for="sStatus">Statuut</label>
-        <select id="sStatus" data-s="status">
-          <option value="gelegenheid">Rode kaart (gelegenheidshavenarbeider)</option>
-          <option value="pool">Losse pool (erkend, opgebeld of zelf bellen voor werk)</option>
-          <option value="timetable">Time table (erkend, vast bij één bedrijf)</option>
-        </select>
-        <p class="hint" id="statusHint"></p>
-      <div id="alfaWrap">
-        <label for="sAlfa">Alfapas: gewerkte dagen tellen vanaf</label>
-        <input type="date" id="sAlfa" data-s="alfaStart">
-        <p class="hint">Voor de Alfapas moet je 30 dagen gewerkt hebben. De app telt elke dag met een shift één keer (afbestellingen niet).</p>
-      </div>
-        <label for="sTransport">Vervoer</label>
-        <select id="sTransport" data-s="transport">
-          <option value="auto">Eigen vervoer</option>
-          <option value="fiets">Fiets</option>
-        </select>
-        <div id="placeWrap">
-          <label for="sPlace">Woonplaats (deelgemeente)</label>
-          <select id="sPlace" data-s="place"></select>
-        </div>
-        <div class="row2" id="bikeWrap">
-          <div><label for="sBikeKm">Km per shift</label><input id="sBikeKm" data-s="bikeKm" data-t="num" inputmode="decimal"></div>
-          <div><label for="sBikeRate">Bedrag per km</label><input id="sBikeRate" data-s="bikeRate" data-t="num" inputmode="decimal"></div>
-        </div>
-        <label for="sCivil">Burgerlijke staat</label>
-        <select id="sCivil" data-s="civil">
-          <option value="ongehuwd">Ongehuwd</option>
-          <option value="gehuwd">Gehuwd</option>
-          <option value="wettelijk-samenwonend">Wettelijk samenwonend</option>
-          <option value="gescheiden">Gescheiden</option>
-          <option value="weduwe">Weduwe / weduwnaar</option>
-        </select>
-        <label class="check"><input type="checkbox" id="sSpouse" data-s="spouseDependent" data-t="bool"> Partner heeft geen eigen beroepsinkomen</label>
+      <details id="clStartBox">
+        <summary>Saldo van je loonbrief</summary>
+        <p class="hint">Vul het kledijsaldo van je laatste loonbrief in, met de datum waarop het geldt. Shiften en afgehaalde kledij tot en met die datum zitten daar al in.</p>
         <div class="row2">
-          <div><label for="sKids">Kinderen ten laste</label><input id="sKids" data-s="kids" data-t="num" inputmode="numeric"></div>
-          <div><label for="sOthers">Anderen ten laste</label><input id="sOthers" data-s="others" data-t="num" inputmode="numeric"></div>
+          <div><label for="clStartPts">Punten</label><input id="clStartPts" inputmode="numeric" placeholder="0"></div>
+          <div><label for="clStartDate">Op datum</label><input type="date" id="clStartDate"></div>
         </div>
-        <label for="sWhMode">Voorheffing (belastingen)</label>
-        <select id="sWhMode" data-s="withholdingMode">
-          <option value="schatting">Sleutelformule (berekend door de app)</option>
-          <option value="percentage">Eigen percentage (gevraagd aan Cewez)</option>
-        </select>
-        <div id="pctWrap">
-          <label for="sWhPct">Percentage van het belastbaar bedrag</label>
-          <input id="sWhPct" data-s="withholdingPct" data-t="num" inputmode="decimal" placeholder="bv. 25">
-        </div>
-        <p class="hint" id="bvHint">De voorheffing wordt berekend met de sleutelformule. De bedragen ervan zie en wijzig je bij <b>Belastingbedragen</b>.</p>
-        <label for="sExtraWh">Extra bedrag afhouden per uitbetaling</label>
-        <input id="sExtraWh" data-s="extraWithholding" data-t="num" inputmode="decimal" placeholder="0">
-        <label for="sMunicipal">Gemeentebelasting (%)</label>
-        <input id="sMunicipal" data-s="municipalRate" data-t="num" inputmode="decimal" placeholder="6,9">
-        <p class="hint">Brugge (ook Assebroek, Sint-Kruis, Sint-Michiels, …): 6,9%. Woon je elders, vul dan het percentage van je gemeente in.</p>
+      </details>
+      </details>
+    </section>
+    <section class="inset grp" id="taxCard">
+      <details class="fold" data-fold="belasting">
+        <summary><h2>Belastingbrief</h2></summary>
+      <div class="yearbar">
+        <button id="taxPrev" aria-label="Vorig jaar">‹</button>
+        <b id="taxYear"></b>
+        <button id="taxNext" aria-label="Volgend jaar">›</button>
+      </div>
+      <p class="taxresult" id="taxResult"></p>
+      <p class="slipcheck" id="taxActual" hidden></p>
+      <table class="slip-t" id="taxTable"></table>
+      <button type="button" class="btn ghost scanbtn" data-scan="fiche">Loonfiche of aanslagbiljet fotograferen</button>
+      <details id="taxExtraBox">
+        <summary>Jouw gegevens invullen (nauwkeuriger)</summary>
+        <p class="hint">Vul in wat je weet; lege velden worden niet meegeteld. Alles blijft op je gsm.</p>
 
-        <details>
-          <summary>Meer (nog niet gekende bedragen)</summary>
-          <p class="hint">Deze staan standaard op 0. Vul ze in als ze op je loonbrief staan.</p>
-          <div class="row2">
-            <div><label for="sWerkbonus">Werkbonus</label><input id="sWerkbonus" data-s="werkbonus" data-t="num" inputmode="decimal"></div>
-            <div><label for="sSpecial">Speciale bijdrage</label><input id="sSpecial" data-s="specialContribution" data-t="num" inputmode="decimal"></div>
-            <div><label for="sGroup">Groepsverzekering</label><input id="sGroup" data-s="groupInsurance" data-t="num" inputmode="decimal"></div>
-            <div><label for="sAdvance">Voorschot</label><input id="sAdvance" data-s="advance" data-t="num" inputmode="decimal"></div>
-            <div><label for="sGarn">Loonbeslag</label><input id="sGarn" data-s="garnishment" data-t="num" inputmode="decimal"></div>
-            <div><label for="sVol">Vrijwillige afhoudingen</label><input id="sVol" data-s="voluntary" data-t="num" inputmode="decimal"></div>
-          </div>
-          <label for="sExtraType">Wijzigings- en afbestelvergoeding</label>
-          <select id="sExtraType" data-s="extraType">
-            <option value="A">Met RSZ en voorheffing</option>
-            <option value="D">Zonder RSZ en voorheffing</option>
+        <h3 class="taxh">1. Je loonfiche van Cewez</h3>
+        <p class="hint">Heb je je loonfiche (281.10) al? Die bedragen zijn het nauwkeurigst en vervangen de bedragen uit de app.</p>
+        <div class="row2">
+          <div><label for="tx-ficheIncome">Belastbaar loon (code 1250)</label><input id="tx-ficheIncome" data-tx="ficheIncome" inputmode="decimal" placeholder="uit de app"></div>
+          <div><label for="tx-ficheWithholding">Bedrijfsvoorheffing (code 1286)</label><input id="tx-ficheWithholding" data-tx="ficheWithholding" inputmode="decimal" placeholder="uit de app"></div>
+        </div>
+        <label for="tx-workBonus">Fiscale werkbonus (op je loonfiche)</label>
+        <input id="tx-workBonus" data-tx="workBonus" inputmode="decimal" placeholder="0">
+
+        <h3 class="taxh">2. Vakantiegeld en ander inkomen</h3>
+        <p class="hint">Vakantiegeld van het vakantiefonds (loonfiche 281.10 van het fonds).</p>
+        <div class="row2">
+          <div><label for="tx-holidayPay">Vakantiegeld (belastbaar)</label><input id="tx-holidayPay" data-tx="holidayPay" inputmode="decimal" placeholder="0"></div>
+          <div><label for="tx-holidayWithholding">Voorheffing daarop</label><input id="tx-holidayWithholding" data-tx="holidayWithholding" inputmode="decimal" placeholder="0"></div>
+        </div>
+        <p class="hint">Bv. loon van een andere job of uitkeringen (loonfiches 281.10, 281.13).</p>
+        <div class="row2">
+          <div><label for="tx-income">Extra belastbaar inkomen</label><input id="tx-income" data-tx="income" inputmode="decimal" placeholder="0"></div>
+          <div><label for="tx-withholding">Voorheffing daarop</label><input id="tx-withholding" data-tx="withholding" inputmode="decimal" placeholder="0"></div>
+        </div>
+
+        <h3 class="taxh">3. Gezin</h3>
+        <p class="hint" id="taxFamily"></p>
+        <label for="tx-kidsUnder3">Kinderen jonger dan 3 jaar (zonder kosten kinderopvang)</label>
+        <input id="tx-kidsUnder3" data-tx="kidsUnder3" inputmode="numeric" placeholder="0">
+        <div class="row2" id="taxPartner">
+          <div><label for="tx-partnerIncome">Belastbaar inkomen partner</label><input id="tx-partnerIncome" data-tx="partnerIncome" inputmode="decimal" placeholder="0"></div>
+          <div><label for="tx-partnerWithholding">Voorheffing partner</label><input id="tx-partnerWithholding" data-tx="partnerWithholding" inputmode="decimal" placeholder="0"></div>
+        </div>
+
+        <h3 class="taxh">4. Aftrekken en verminderingen</h3>
+        <label for="tx-pension">Pensioensparen gestort dit jaar</label>
+        <input id="tx-pension" data-tx="pension" inputmode="decimal" placeholder="0">
+        <label for="tx-otherReductions">Andere belastingverminderingen (bv. giften, dienstencheques)</label>
+        <input id="tx-otherReductions" data-tx="otherReductions" inputmode="decimal" placeholder="0">
+        <label for="tx-realCosts">Werkelijke beroepskosten (laat leeg voor het forfait)</label>
+        <input id="tx-realCosts" data-tx="realCosts" inputmode="decimal" placeholder="forfait">
+
+        <p class="hint">De belastingbedragen zelf (belastingvrije som, schalen, …) zie en wijzig je bij <b>Instellingen › Belastingbedragen</b>.</p>
+        <button type="button" class="btn ghost" id="taxClear">Gegevens van dit jaar wissen</button>
+      </details>
+      <p class="hint" id="taxHint"></p>
+      </details>
+    </section>
+    <section class="inset grp" id="coInfoCard">
+      <details class="fold" data-fold="bedrijfsinfo">
+        <summary><h2>Bedrijven</h2></summary>
+        <p class="hint">Alles over elk bedrijf op één plaats: adres, nummers, het werkaanbod van vandaag, je eigen shiften en je eigen notities.</p>
+        <div id="coInfo"></div>
+      </details>
+    </section>
+    <section class="inset grp" id="setCard">
+      <details class="fold" data-fold="instellingen">
+        <summary><h2>Instellingen</h2></summary>
+        <p class="hint">Hier hoef je meestal niets te doen: de app werkt met de standaardwaarden. Wil je een nauwkeuriger netto, vul dan je Netto-instellingen in.</p>
+      <section class="inset">
+        <details class="fold" data-fold="netto" id="settingsBox">
+          <summary><h2>Netto-instellingen</h2></summary>
+          <p class="hint">Hiermee rekent de app je netto uit. Je gegevens blijven op dit toestel.</p>
+          <label for="sStatus">Statuut</label>
+          <select id="sStatus" data-s="status">
+            <option value="gelegenheid">Rode kaart (gelegenheidshavenarbeider)</option>
+            <option value="pool">Losse pool (erkend, opgebeld of zelf bellen voor werk)</option>
+            <option value="timetable">Time table (erkend, vast bij één bedrijf)</option>
           </select>
+          <p class="hint" id="statusHint"></p>
+        <div id="alfaWrap">
+          <label for="sAlfa">Alfapas: gewerkte dagen tellen vanaf</label>
+          <input type="date" id="sAlfa" data-s="alfaStart">
+          <p class="hint">Voor de Alfapas moet je 30 dagen gewerkt hebben. De app telt elke dag met een shift één keer (afbestellingen niet).</p>
+        </div>
+          <label for="sTransport">Vervoer</label>
+          <select id="sTransport" data-s="transport">
+            <option value="auto">Eigen vervoer</option>
+            <option value="fiets">Fiets</option>
+          </select>
+          <div id="placeWrap">
+            <label for="sPlace">Woonplaats (deelgemeente)</label>
+            <select id="sPlace" data-s="place"></select>
+          </div>
+          <div class="row2" id="bikeWrap">
+            <div><label for="sBikeKm">Km per shift</label><input id="sBikeKm" data-s="bikeKm" data-t="num" inputmode="decimal"></div>
+            <div><label for="sBikeRate">Bedrag per km</label><input id="sBikeRate" data-s="bikeRate" data-t="num" inputmode="decimal"></div>
+          </div>
+          <label for="sCivil">Burgerlijke staat</label>
+          <select id="sCivil" data-s="civil">
+            <option value="ongehuwd">Ongehuwd</option>
+            <option value="gehuwd">Gehuwd</option>
+            <option value="wettelijk-samenwonend">Wettelijk samenwonend</option>
+            <option value="gescheiden">Gescheiden</option>
+            <option value="weduwe">Weduwe / weduwnaar</option>
+          </select>
+          <label class="check"><input type="checkbox" id="sSpouse" data-s="spouseDependent" data-t="bool"> Partner heeft geen eigen beroepsinkomen</label>
+          <div class="row2">
+            <div><label for="sKids">Kinderen ten laste</label><input id="sKids" data-s="kids" data-t="num" inputmode="numeric"></div>
+            <div><label for="sOthers">Anderen ten laste</label><input id="sOthers" data-s="others" data-t="num" inputmode="numeric"></div>
+          </div>
+          <label for="sWhMode">Voorheffing (belastingen)</label>
+          <select id="sWhMode" data-s="withholdingMode">
+            <option value="schatting">Sleutelformule (berekend door de app)</option>
+            <option value="percentage">Eigen percentage (gevraagd aan Cewez)</option>
+          </select>
+          <div id="pctWrap">
+            <label for="sWhPct">Percentage van het belastbaar bedrag</label>
+            <input id="sWhPct" data-s="withholdingPct" data-t="num" inputmode="decimal" placeholder="bv. 25">
+          </div>
+          <p class="hint" id="bvHint">De voorheffing wordt berekend met de sleutelformule. De bedragen ervan zie en wijzig je bij <b>Belastingbedragen</b>.</p>
+          <label for="sExtraWh">Extra bedrag afhouden per uitbetaling</label>
+          <input id="sExtraWh" data-s="extraWithholding" data-t="num" inputmode="decimal" placeholder="0">
+          <label for="sMunicipal">Gemeentebelasting (%)</label>
+          <input id="sMunicipal" data-s="municipalRate" data-t="num" inputmode="decimal" placeholder="6,9">
+          <p class="hint">Brugge (ook Assebroek, Sint-Kruis, Sint-Michiels, …): 6,9%. Woon je elders, vul dan het percentage van je gemeente in.</p>
+
+          <details>
+            <summary>Meer (nog niet gekende bedragen)</summary>
+            <p class="hint">Deze staan standaard op 0. Vul ze in als ze op je loonbrief staan.</p>
+            <div class="row2">
+              <div><label for="sWerkbonus">Werkbonus</label><input id="sWerkbonus" data-s="werkbonus" data-t="num" inputmode="decimal"></div>
+              <div><label for="sSpecial">Speciale bijdrage</label><input id="sSpecial" data-s="specialContribution" data-t="num" inputmode="decimal"></div>
+              <div><label for="sGroup">Groepsverzekering</label><input id="sGroup" data-s="groupInsurance" data-t="num" inputmode="decimal"></div>
+              <div><label for="sAdvance">Voorschot</label><input id="sAdvance" data-s="advance" data-t="num" inputmode="decimal"></div>
+              <div><label for="sGarn">Loonbeslag</label><input id="sGarn" data-s="garnishment" data-t="num" inputmode="decimal"></div>
+              <div><label for="sVol">Vrijwillige afhoudingen</label><input id="sVol" data-s="voluntary" data-t="num" inputmode="decimal"></div>
+            </div>
+            <label for="sExtraType">Wijzigings- en afbestelvergoeding</label>
+            <select id="sExtraType" data-s="extraType">
+              <option value="A">Met RSZ en voorheffing</option>
+              <option value="D">Zonder RSZ en voorheffing</option>
+            </select>
+          </details>
         </details>
-      </details>
-    </section>
+      </section>
 
-    <section class="inset">
-      <details class="fold" data-fold="feestdagen">
-        <summary><h2>Feestdagen</h2></summary>
-        <p class="hint">Op de dag waarop de haven een feestdag viert, geldt het zon- en feestdagtarief. Valt een feestdag in het weekend, vul dan de vervangingsdag in.</p>
-        <div class="yearbar">
-          <button id="holPrev" aria-label="Vorig jaar">‹</button>
-          <b id="holYear"></b>
-          <button id="holNext" aria-label="Volgend jaar">›</button>
-        </div>
-        <ul class="hols" id="holList"></ul>
-      </details>
-    </section>
+      <section class="inset">
+        <details class="fold" data-fold="feestdagen">
+          <summary><h2>Feestdagen</h2></summary>
+          <p class="hint">Op de dag waarop de haven een feestdag viert, geldt het zon- en feestdagtarief. Valt een feestdag in het weekend, vul dan de vervangingsdag in.</p>
+          <div class="yearbar">
+            <button id="holPrev" aria-label="Vorig jaar">‹</button>
+            <b id="holYear"></b>
+            <button id="holNext" aria-label="Volgend jaar">›</button>
+          </div>
+          <ul class="hols" id="holList"></ul>
+        </details>
+      </section>
 
-    <section class="inset">
-      <details class="fold" data-fold="bedrijven">
-        <summary><h2>Bedrijven beheren</h2></summary>
-        <p class="hint">Per bedrijf staan de plaatsen (kantoor, terminal, kaai) met hun adres, en de telefoonnummers om te bellen voor werk. Pas ze aan of voeg er toe; bij een dag kies je de plaats en zet je op de kaart een spelt per plaats. Verwijderen haalt het bedrijf alleen uit de keuzelijst; dagen die je al opgeslagen hebt, blijven bewaard.</p>
-        <ul class="list" id="coList"></ul>
-        <button class="btn ghost" id="coRestore" hidden>Verwijderde bedrijven terugzetten</button>
-      </details>
-    </section>
+      <section class="inset">
+        <details class="fold" data-fold="bedrijven">
+          <summary><h2>Bedrijven beheren</h2></summary>
+          <p class="hint">Per bedrijf staan de plaatsen (kantoor, terminal, kaai) met hun adres, en de telefoonnummers om te bellen voor werk. Pas ze aan of voeg er toe; bij een dag kies je de plaats en zet je op de kaart een spelt per plaats. Verwijderen haalt het bedrijf alleen uit de keuzelijst; dagen die je al opgeslagen hebt, blijven bewaard.</p>
+          <ul class="list" id="coList"></ul>
+          <button class="btn ghost" id="coRestore" hidden>Verwijderde bedrijven terugzetten</button>
+        </details>
+      </section>
 
-    <section class="inset">
-      <details class="fold" data-fold="bedragen" id="tbBox">
-        <summary><h2>Belastingbedragen</h2></summary>
-        <p class="hint" id="tbInfo"></p>
-        <div class="ptabs" id="tbKind">
-          <button type="button" data-k="withholding">Voorheffing</button>
-          <button type="button" data-k="incomeTax">Belastingbrief</button>
-        </div>
-        <div class="ptabs" id="tbPeriods"></div>
-        <div id="tbFromWrap">
-          <label for="tbFrom">Geldig vanaf</label>
-          <input type="date" id="tbFrom">
-        </div>
-        <p class="hint" id="tbState"></p>
-        <div id="tbFields"></div>
-        <div class="tools">
-          <button type="button" class="btn ghost" id="tbAdd">Nieuwe bedragen vanaf…</button>
-          <button type="button" class="btn ghost" id="tbReset">Automatische bedragen terugzetten</button>
-        </div>
-      </details>
-    </section>
+      <section class="inset">
+        <details class="fold" data-fold="bedragen" id="tbBox">
+          <summary><h2>Belastingbedragen</h2></summary>
+          <p class="hint" id="tbInfo"></p>
+          <div class="ptabs" id="tbKind">
+            <button type="button" data-k="withholding">Voorheffing</button>
+            <button type="button" data-k="incomeTax">Belastingbrief</button>
+          </div>
+          <div class="ptabs" id="tbPeriods"></div>
+          <div id="tbFromWrap">
+            <label for="tbFrom">Geldig vanaf</label>
+            <input type="date" id="tbFrom">
+          </div>
+          <p class="hint" id="tbState"></p>
+          <div id="tbFields"></div>
+          <div class="tools">
+            <button type="button" class="btn ghost" id="tbAdd">Nieuwe bedragen vanaf…</button>
+            <button type="button" class="btn ghost" id="tbReset">Automatische bedragen terugzetten</button>
+          </div>
+        </details>
+      </section>
 
-    <section class="inset">
-      <details class="fold" data-fold="tarieven">
-        <summary><h2>Tarieven</h2></summary>
-        <p class="hint">Elke dag wordt berekend met de tarieven die op die datum golden. Pas je een datum of bedrag aan, dan worden alle dagen opnieuw berekend.</p>
-        <div class="ptabs" id="periodTabs"></div>
-        <div id="periodFromWrap">
-          <label for="periodFrom">Geldig vanaf</label>
-          <input type="date" id="periodFrom">
-        </div>
-        <table class="rates">
-          <thead><tr><th>Start</th><th>Shift</th><th>Uur</th><th>Overuur</th></tr></thead>
-          <tbody id="ratesBody"></tbody>
-        </table>
-        <div class="tools">
-          <button class="btn ghost" id="addPeriod">Nieuwe tarieven toevoegen</button>
-          <button class="btn ghost" id="delPeriod">Deze tarieven verwijderen</button>
-          <button class="btn ghost" id="resetRates" style="grid-column:1/-1">Standaardtarieven terugzetten</button>
-        </div>
-      </details>
-    </section>
+      <section class="inset">
+        <details class="fold" data-fold="tarieven">
+          <summary><h2>Tarieven</h2></summary>
+          <p class="hint">Elke dag wordt berekend met de tarieven die op die datum golden. Pas je een datum of bedrag aan, dan worden alle dagen opnieuw berekend.</p>
+          <div class="ptabs" id="periodTabs"></div>
+          <div id="periodFromWrap">
+            <label for="periodFrom">Geldig vanaf</label>
+            <input type="date" id="periodFrom">
+          </div>
+          <table class="rates">
+            <thead><tr><th>Start</th><th>Shift</th><th>Uur</th><th>Overuur</th></tr></thead>
+            <tbody id="ratesBody"></tbody>
+          </table>
+          <div class="tools">
+            <button class="btn ghost" id="addPeriod">Nieuwe tarieven toevoegen</button>
+            <button class="btn ghost" id="delPeriod">Deze tarieven verwijderen</button>
+            <button class="btn ghost" id="resetRates" style="grid-column:1/-1">Standaardtarieven terugzetten</button>
+          </div>
+        </details>
+      </section>
 
-    <section class="inset">
-      <details class="fold" data-fold="backup">
-        <summary><h2>Back-up &amp; export</h2></summary>
-        <p class="hint">Je gegevens staan alleen op dit toestel, in deze browser. Maak af en toe een back-up.</p>
-        <div class="tools">
-          <button class="btn ghost" id="exportJson">Back-up downloaden</button>
-          <button class="btn ghost" id="importBtn">Back-up terugzetten</button>
-          <button class="btn ghost" id="exportCsv" style="grid-column:1/-1">Maand als CSV (Excel)</button>
-        </div>
-        <input type="file" id="importFile" accept="application/json,.json" hidden>
+      <section class="inset">
+        <details class="fold" data-fold="backup">
+          <summary><h2>Back-up &amp; export</h2></summary>
+          <p class="hint">Je gegevens staan alleen op dit toestel, in deze browser. Maak af en toe een back-up.</p>
+          <div class="tools">
+            <button class="btn ghost" id="exportJson">Back-up downloaden</button>
+            <button class="btn ghost" id="importBtn">Back-up terugzetten</button>
+            <button class="btn ghost" id="exportCsv" style="grid-column:1/-1">Maand als CSV (Excel)</button>
+          </div>
+          <input type="file" id="importFile" accept="application/json,.json" hidden>
+        </details>
+      </section>
       </details>
     </section>
-    </details>
   </section>
+
   <footer class="disclaimer">
     <p>Dit is een <b>hobbyproject</b> van een havenarbeider, <b>David Schütt</b>, gebouwd met behulp van AI (Claude). Het heeft <b>niets te maken met Cewez</b>. De bedragen en informatie kunnen fout zijn: controleer altijd je loonbrief.</p>
     <p>De app werkt offline op je gsm: je uren, je loon en al je gegevens blijven op je toestel en worden nergens gedeeld. Er wordt alleen geteld hoe vaak de link gedeeld wordt en op hoeveel toestellen de app geopend is, zonder namen of gegevens.</p>
@@ -1169,13 +1164,13 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-06.12"></script>
-<script src="scan.js?v=2026-10-06.12"></script>
-<script src="aanbod.js?v=2026-10-06.12"></script>
+<script src="loon.js?v=2026-10-06.13"></script>
+<script src="scan.js?v=2026-10-06.13"></script>
+<script src="aanbod.js?v=2026-10-06.13"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-06.12';
+const APP_VERSION = '2026-10-06.13';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1875,7 +1870,6 @@ const APP_VERSION = '2026-10-06.12';
     viewYear = d.getFullYear(); viewMonth = d.getMonth();
     render();
     if (scroll) {
-      document.querySelector('[data-fold="dag"]').open = true;
       $('dayCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }
@@ -3267,6 +3261,8 @@ const APP_VERSION = '2026-10-06.12';
   save(KEY_ENTRIES, entries);
   save(KEY_PERIODS, periods);
   // welke kaarten open of dicht staan, onthouden
+  // nieuwe indeling: alle onderdelen onder de kalender beginnen één keer dichtgeklapt
+  if (!load('haven-werkuren.foldsGrouped', false)) { save(KEY_FOLDS, {}); save('haven-werkuren.foldsGrouped', true); }
   const folds = load(KEY_FOLDS, {});
   for (const d of document.querySelectorAll('details.fold')) {
     if (d.dataset.fold in folds) d.open = folds[d.dataset.fold];
