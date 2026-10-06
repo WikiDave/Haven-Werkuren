@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0f5c8c">
+<meta name="theme-color" content="#102a37">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -331,6 +331,194 @@
   .yearbar button {
     width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); cursor: pointer;
   }
+  /* lettertypes zitten in de app zelf (vendor/fonts, SIL Open Font License), zo werken ze ook offline */
+  @font-face { font-family: "Barlow Condensed"; font-weight: 500; font-display: swap; src: url("vendor/fonts/barlow-condensed-500.woff2") format("woff2"); }
+  @font-face { font-family: "Barlow Condensed"; font-weight: 600; font-display: swap; src: url("vendor/fonts/barlow-condensed-600.woff2") format("woff2"); }
+  @font-face { font-family: "Barlow Condensed"; font-weight: 700; font-display: swap; src: url("vendor/fonts/barlow-condensed-700.woff2") format("woff2"); }
+  @font-face { font-family: "Public Sans"; font-weight: 100 900; font-display: swap; src: url("vendor/fonts/public-sans.woff2") format("woff2"); }
+  /* Ontwerp "Kaai": havenstaal en signalisatie.
+     Donkere havenband bovenaan met de uitbetaling in grote smalle cijfers, één streep geel als
+     veiligheidsmarkering, daaronder rustige staalgrijze kaarten met koppen in smalle hoofdletters. */
+  :root {
+    --bg: #eef1f3; --card: #ffffff; --text: #14212b; --muted: #5d6b77;
+    --line: #d6dde3; --accent: #0b5b73; --accent-soft: #e2eef2;
+    --ot: #b4501a; --danger: #b42318; --leave: #e1f2e8; --leave-text: #17704a;
+    --harbour: #102a37; --harbour-2: #183b4c; --on-harbour: #e9f1f4; --on-harbour-muted: #9db4bf;
+    --signal: #f2c230; --on-signal: #1d1a0e; --work-cell: #102a37;
+    --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+    --body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b141a; --card: #121f27; --text: #e6eef2; --muted: #93a6b2;
+      --line: #22343f; --accent: #5cc0dc; --accent-soft: #15303b;
+      --ot: #f0a36b; --danger: #f97066; --leave: #143024; --leave-text: #6fd3a0;
+      --harbour: #0f2633; --harbour-2: #17394a; --on-harbour: #e9f1f4; --on-harbour-muted: #94adb9;
+      --signal: #f2c230; --on-signal: #1d1a0e; --work-cell: #21506a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b141a; --card: #121f27; --text: #e6eef2; --muted: #93a6b2;
+    --line: #22343f; --accent: #5cc0dc; --accent-soft: #15303b;
+    --ot: #f0a36b; --danger: #f97066; --leave: #143024; --leave-text: #6fd3a0;
+    --harbour: #0f2633; --harbour-2: #17394a; --on-harbour: #e9f1f4; --on-harbour-muted: #94adb9;
+    --signal: #f2c230; --on-signal: #1d1a0e; --work-cell: #21506a;
+    color-scheme: dark;
+  }
+
+  body { font-family: var(--body); font-size: 15px; letter-spacing: -0.005em; }
+  h1, h2, .monthbar h2, details.fold > summary h2, dialog.sheet h2 {
+    font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    text-wrap: balance;
+  }
+  h2, details.fold > summary h2 { font-size: 19px; }
+  .inset details.fold > summary h2 { font-size: 17px; }
+
+  /* havenband: kop + snel overzicht als één donker blok */
+  header {
+    background: var(--harbour); color: var(--on-harbour);
+    margin: 12px 0 0; padding: 18px 16px 14px; border-radius: 16px 16px 0 0;
+  }
+  header h1 { font-size: 30px; line-height: 1; letter-spacing: .05em; }
+  header .sub { color: var(--on-harbour-muted); font-size: 13px; margin-top: 4px; }
+  header .help {
+    background: transparent; color: var(--on-harbour); border: 1px solid var(--harbour-2);
+    font-family: var(--display); text-transform: uppercase; letter-spacing: .06em; font-size: 14px;
+  }
+  #dash {
+    margin-top: 0; border: 0; border-radius: 0 0 16px 16px; background: var(--harbour);
+    padding: 0 16px 16px; position: relative;
+  }
+  #dash::before { /* veiligheidsmarkering op de kaairand */
+    content: ""; display: block; height: 6px; margin: 0 -16px 16px;
+    background: repeating-linear-gradient(-45deg, var(--signal) 0 10px, var(--harbour) 10px 20px);
+  }
+  #dash .tile { background: var(--harbour-2); color: var(--on-harbour); border-radius: 10px; }
+  #dash .tile .k { color: var(--on-harbour-muted); text-transform: uppercase; letter-spacing: .08em; font-size: 11px; font-weight: 600; }
+  #dash .tile .m { color: var(--on-harbour-muted); }
+  #dash .tile .v { font-family: var(--display); font-size: 26px; font-weight: 600; letter-spacing: .01em; }
+  #dash .tile.big { background: transparent; padding: 4px 0 8px; }
+  #dash .tile.big .v { font-size: 54px; line-height: 1; color: var(--signal); font-weight: 700; }
+  #dash .tile.warn .v { color: #ffb37a; }
+  #dash .tile.bad { background: var(--danger); }
+  #dash .tile.leave .v { color: #7fe0ae; }
+  #dash .tile:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+  #dash .scanbtn {
+    background: var(--signal); color: var(--on-signal); font-family: var(--display);
+    text-transform: uppercase; letter-spacing: .05em; font-size: 15px; line-height: 1.15; min-height: 44px;
+  }
+  .medbanner { border-radius: 0; margin: 0; }
+
+  /* kaarten: vlakker, minder kader */
+  .card { border: 0; border-radius: 14px; box-shadow: 0 1px 0 var(--line); }
+  .btn { border-radius: 8px; font-family: var(--display); text-transform: uppercase; letter-spacing: .06em; font-size: 17px; font-weight: 700; }
+  label.btn { font-size: 17px; }
+  input, select { border-radius: 8px; }
+  .ptabs button { font-family: var(--display); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+
+  /* kalender */
+  .cal button { border-radius: 6px; }
+  .cal button .n { font-family: var(--display); font-size: 15px; font-weight: 600; }
+  .cal button .a { font-family: var(--display); font-size: 13px; }
+  .cal button.today .n { text-decoration: none; background: var(--signal); color: var(--on-signal); border-radius: 4px; padding: 0 4px; }
+  .cal-head span { font-family: var(--display); text-transform: uppercase; letter-spacing: .08em; }
+  .monthsum b, .stat .v, .preview b, .taxresult, .li-amt { font-family: var(--display); letter-spacing: .01em; }
+  .monthsum b { font-size: 26px; }
+  .stat.big .v { font-size: 34px; }
+  .stat .k { text-transform: uppercase; letter-spacing: .08em; font-size: 11px; font-weight: 600; }
+
+  /* loonbrief */
+  .slip-h b { font-family: var(--display); text-transform: uppercase; letter-spacing: .04em; font-size: 18px; }
+  table.slip-t tr.tot td { font-family: var(--display); font-size: 20px; }
+
+  /* --- verder afgewerkt ---------------------------------------------------- */
+  header {
+    background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20220%20120%27%20fill%3D%27none%27%20stroke%3D%27%23ffffff%27%20stroke-opacity%3D%270.16%27%20stroke-width%3D%273%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M40%20120V30M70%20120V30M40%2030h30M40%2060h30M40%2090h30M40%2030l30%2030M70%2030L40%2060M40%2060l30%2030M70%2060L40%2090%27/%3E%3Cpath%20d%3D%27M20%2030h200M20%2030l35-22%2035%2022M55%208v22M180%2030v26M172%2056h16v10h-16z%27/%3E%3Cpath%20d%3D%27M120%2030l-14%20-14h-10%27%20/%3E%3C/svg%3E"); background-repeat: no-repeat;
+    background-size: 170px auto; background-position: right 70px bottom -10px;
+    background-color: var(--harbour);
+  }
+  header > div:first-child { position: relative; }
+  header .help { background: var(--harbour); position: relative; }
+  header .help:hover { border-color: var(--signal); color: var(--signal); }
+
+  /* knoppen */
+  .btn:not(.ghost) { background: var(--harbour); color: var(--on-harbour); }
+  .btn:not(.ghost):hover { background: var(--harbour-2); }
+  .btn.ghost { background: var(--accent-soft); color: var(--accent); }
+  .btn:focus-visible, .ptabs button:focus-visible, .cal button:focus-visible, .monthbar button:focus-visible {
+    outline: 2px solid var(--signal); outline-offset: 2px;
+  }
+  #dash .btn.scanbtn { background: var(--signal); color: var(--on-signal); }
+
+  /* maandbalk en bruto/netto als één schakelaar */
+  .monthbar button { border-radius: 8px; background: var(--bg); border-color: transparent; color: var(--text); }
+  .monthbar h2 { font-size: 24px; }
+  .modebar .ptabs { gap: 0; background: var(--bg); border-radius: 8px; padding: 3px; }
+  .modebar .ptabs button { border: 0; background: transparent; border-radius: 6px; min-height: 36px; padding: 6px 18px; color: var(--muted); }
+  .modebar .ptabs button.on { background: var(--harbour); color: var(--on-harbour); }
+  .ptabs button { border-radius: 8px; }
+  .ptabs button.on { background: var(--harbour); border-color: var(--harbour); color: var(--on-harbour); }
+
+  /* kalender: gewerkte dagen als donkere vakken, vandaag geel */
+  .cal button { border-color: transparent; background: var(--bg); }
+  .cal button.we { background: transparent; border-color: var(--line); }
+  .cal button.work { background: var(--work-cell); }
+  .cal button.work .n { color: var(--on-harbour-muted); }
+  .cal button.work .c { color: var(--signal); font-family: var(--display); font-size: 15px; }
+  .cal button.work .a { color: var(--on-harbour); }
+  .cal button.work .logo { box-shadow: 0 0 0 1.5px var(--work-cell); }
+  .cal button.leave { background: var(--leave); }
+  .cal button.leave.work { box-shadow: inset 0 -4px 0 var(--leave-text); }
+  .cal button.hol .n { color: var(--ot); }
+  .cal button.sel { outline: 3px solid var(--signal); outline-offset: -1px; }
+  .cal button .pay { background: var(--signal); color: var(--on-signal); }
+  .cal-legend .lg-pay { background: var(--signal); color: var(--on-signal); }
+  .monthsum { border-top: 2px solid var(--text); padding-top: 10px; }
+  .monthsum span { font-family: var(--display); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+
+  /* inklapbare kaarten */
+  details.fold > summary::after { border-color: var(--accent); }
+  .card { padding: 18px 16px; }
+
+  /* bedrijven */
+  .co.on .logo { outline: 3px solid var(--signal); outline-offset: 2px; }
+  .co { font-size: 12px; }
+
+  /* overzicht van de maand */
+  .stat { border-radius: 8px; }
+  .stat.big { background: var(--accent-soft); }
+  .stat.big .v { color: var(--accent); }
+
+  /* uitbetalingen als loonbrief */
+  .slip { border: 1px solid var(--line); border-radius: 10px; padding: 0 12px 10px; margin-top: 12px; overflow: hidden; }
+  .slip:first-child { border-top: 1px solid var(--line); padding-top: 0; }
+  .slip-h { background: var(--harbour); color: var(--on-harbour); margin: 0 -12px 4px; padding: 10px 12px; }
+  .slip-h span { color: var(--on-harbour-muted); }
+  table.slip-t tr.tot td { background: var(--accent-soft); padding: 8px; border-bottom: 0; }
+  table.slip-t tr.tot td:first-child { border-radius: 6px 0 0 6px; }
+  table.slip-t tr.tot td:last-child { border-radius: 0 6px 6px 0; }
+  .slipcheck { border: 1px dashed var(--line); }
+
+  /* meldingen en resultaten */
+  .medstatus, .taxresult { border-radius: 8px; }
+  .medbanner { font-family: var(--display); text-transform: uppercase; letter-spacing: .04em; font-size: 16px; }
+  .est { border-radius: 4px; }
+
+  /* vensters met veiligheidsstreep bovenaan */
+  dialog.sheet {
+    border-radius: 14px; padding-top: 26px;
+    background:
+      repeating-linear-gradient(-45deg, var(--signal) 0 10px, var(--harbour) 10px 20px) top / 100% 6px no-repeat,
+      var(--card);
+  }
+  dialog.sheet h2 { font-size: 24px; }
+  dialog.sheet h3 { font-family: var(--display); text-transform: uppercase; letter-spacing: .05em; font-size: 17px; }
+  .sheet-x { top: 16px; }
+
+  .disclaimer { border-style: solid; border-radius: 10px; }
+  .slip-h:only-child { margin-bottom: -10px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
@@ -871,12 +1059,12 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-06.5"></script>
-<script src="scan.js?v=2026-10-06.5"></script>
+<script src="loon.js?v=2026-10-06.6"></script>
+<script src="scan.js?v=2026-10-06.6"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-06.5';
+const APP_VERSION = '2026-10-06.6';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
