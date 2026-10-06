@@ -154,6 +154,31 @@
   .lv-zeer { background: var(--accent); color: var(--card); }
   .wk-busy td.now { outline: 2px solid var(--text); outline-offset: -2px; }
   #workCard details:not(.fold) { margin-top: 14px; }
+  /* bedrijven: per bedrijf een uitklapbaar vak */
+  details.coinfo { border-top: 1px solid var(--line); }
+  details.coinfo > summary { display: flex; align-items: center; gap: 10px; padding: 10px 0; list-style: none; }
+  details.coinfo > summary::-webkit-details-marker { display: none; }
+  details.coinfo > summary .ci-name { flex: 1; min-width: 0; }
+  details.coinfo > summary .ci-name small { display: block; font-weight: 500; font-size: 12px; color: var(--muted); }
+  details.coinfo > summary::after {
+    content: ""; width: 8px; height: 8px; flex: none; margin-right: 6px;
+    border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg) translateY(-2px);
+  }
+  details.coinfo[open] > summary::after { transform: rotate(-135deg) translateY(-2px); }
+  .ci-badge { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--accent); color: var(--card); white-space: nowrap; }
+  .ci-body { padding: 0 0 14px; display: grid; gap: 14px; }
+  .ci-body h4 { margin: 0 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .ci-body p { margin: 0; font-size: 14px; }
+  .ci-place + .ci-place { margin-top: 6px; }
+  .ci-place a { color: var(--accent); font-weight: 600; }
+  .ci-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .ci-stats div { background: var(--bg); border-radius: 8px; padding: 8px; }
+  .ci-stats b { display: block; font-size: 17px; font-variant-numeric: tabular-nums; }
+  .ci-stats span { font-size: 11px; color: var(--muted); }
+  .ci-week { display: flex; gap: 4px; }
+  .ci-week span { flex: 1; min-width: 0; font-size: 11px; font-weight: 600; padding: 4px 2px; border-radius: 4px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ci-week span small { display: block; font-weight: 500; font-size: 10px; opacity: .8; }
+  .ci-body textarea { min-height: 70px; font-size: 14px; }
   .linkbtn { border: 0; background: transparent; color: var(--accent); font-weight: 600; padding: 8px 0; cursor: pointer; }
   header { display: flex; align-items: flex-start; gap: 12px; }
   header > div:first-child { flex: 1; }
@@ -968,6 +993,14 @@
     </details>
   </section>
 
+  <section class="card" id="coInfoCard">
+    <details class="fold" data-fold="bedrijfsinfo">
+      <summary><h2>Bedrijven</h2></summary>
+      <p class="hint">Alles over elk bedrijf op één plaats: adres, nummers, het werkaanbod van vandaag, je eigen shiften en je eigen notities.</p>
+      <div id="coInfo"></div>
+    </details>
+  </section>
+
   <section class="card" id="setCard">
     <details class="fold" data-fold="instellingen">
       <summary><h2>Instellingen</h2></summary>
@@ -1136,13 +1169,13 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-06.11"></script>
-<script src="scan.js?v=2026-10-06.11"></script>
-<script src="aanbod.js?v=2026-10-06.11"></script>
+<script src="loon.js?v=2026-10-06.12"></script>
+<script src="scan.js?v=2026-10-06.12"></script>
+<script src="aanbod.js?v=2026-10-06.12"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-06.11';
+const APP_VERSION = '2026-10-06.12';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1258,6 +1291,7 @@ const APP_VERSION = '2026-10-06.11';
   const KEY_LAST_LOC = 'haven-werkuren.lastLocation';
   const KEY_CO_PIN = 'haven-werkuren.companyPins';
   const KEY_CO_PHONE = 'haven-werkuren.companyPhones';
+  const KEY_CO_NOTES = 'haven-werkuren.companyNotes'; // eigen notities per bedrijf
   const KEY_AANBOD = 'haven-werkuren.werkaanbod'; // laatst opgehaald werkaanbod van cewez.be
   const load = (k, fallback) => {
     try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fallback; } catch { return fallback; }
@@ -1335,6 +1369,7 @@ const APP_VERSION = '2026-10-06.11';
   let companyLocations = load(KEY_CO_LOCS, {}); // door jou aangepaste plaatsen per bedrijf
   let companyPins = load(KEY_CO_PIN, {});         // spelden per plaats: "bedrijf/plaats"
   let lastLocation = load(KEY_LAST_LOC, {});      // laatst gekozen plaats per bedrijf
+  let companyNotes = load(KEY_CO_NOTES, {});      // { bedrijf: tekst }
   let companyPhones = load(KEY_CO_PHONE, {});     // telefoonnummers per bedrijf: [{ id, label, number }]
   // oudere gegevens: één adres en één spelt per bedrijf omzetten naar de eerste plaats
   (() => {
@@ -2037,6 +2072,7 @@ const APP_VERSION = '2026-10-06.11';
     renderLeave();
     renderTax();
     renderDash();
+    renderCoInfo();
 
     renderCalendar();
     renderDay();
@@ -2337,6 +2373,7 @@ const APP_VERSION = '2026-10-06.11';
     }
     aanbodBusy = false;
     renderAanbod();
+    renderCoInfo();
   }
   const LEVEL_CLASS = { kalm: 'lv-kalm', gewoon: 'lv-gewoon', druk: 'lv-druk', 'zeer druk': 'lv-zeer' };
   const LEVEL_SHORT = { kalm: 'kalm', gewoon: 'gew.', druk: 'druk', 'zeer druk': 'zeer' };
@@ -2406,6 +2443,62 @@ const APP_VERSION = '2026-10-06.11';
   $('wkRefresh').addEventListener('click', refreshAanbod);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && (!aanbod || Date.now() - aanbod.fetched > 10 * 60 * 1000)) refreshAanbod();
+  });
+
+  // --- bedrijven: extra info per bedrijf ------------------------------------------
+  const openInfo = new Set(); // welke vakken open staan, blijft zo na opnieuw tekenen
+  function renderCoInfo() {
+    const todayIso = isoDate(today);
+    const year = todayIso.slice(0, 4);
+    const used = {};
+    for (const e of entries) if (e.company) used[e.company] = (used[e.company] || 0) + 1;
+    const tk = (aanbod?.tekorten?.rows || []).filter((r) => r.date >= todayIso);
+    const tw = aanbod?.tewerk;
+    const list = visibleCompanies().map((c, i) => ({ c, i })).sort((a, b) => (used[b.c.id] || 0) - (used[a.c.id] || 0) || a.c.name.localeCompare(b.c.name)).map((x) => x.c);
+    $('coInfo').innerHTML = list.map((c) => {
+      const mine = entries.filter((e) => e.company === c.id);
+      const mineYear = mine.filter((e) => e.date.startsWith(year));
+      const t = totals(mineYear);
+      const last = mine.map((e) => e.date).sort().pop();
+      const funcs = [...new Set(mine.map((e) => Loon.functionOf(e.func).label))];
+      const short = tk.filter((r) => Aanbod.companyIdFor(r.firma) === c.id);
+      const shortSum = short.reduce((n, r) => n + r.count, 0);
+      const busy = tw?.busy?.find((b) => Aanbod.companyIdFor(b.firma) === c.id);
+      const wanted = tw?.wanted?.find((w) => Aanbod.companyIdFor(w.firma) === c.id);
+      const places = locationsOf(c.id).map((l) => `<p class="ci-place"><b>${escapeHtml(l.name || c.name)}</b><br>${escapeHtml(l.address || 'geen adres')} ${routeLink(c.id, l.id)}</p>`).join('');
+      const calls = callButtons(c.id);
+      return `<details class="coinfo" data-ci="${c.id}"${openInfo.has(c.id) ? ' open' : ''}>
+        <summary>${logoHtml(c.id, '', 'li-logo')}<span class="ci-name"><b>${escapeHtml(c.name)}</b>
+          <small>${mine.length ? `${mine.length} shift${mine.length === 1 ? '' : 'en'} gewerkt` : 'nog niet gewerkt'}</small></span>
+          ${shortSum ? `<span class="ci-badge" title="tekorten vandaag en morgen">${shortSum} pl.</span>` : ''}</summary>
+        <div class="ci-body">
+          <div><h4>Adres</h4>${places || '<p>Nog geen adres. Vul het in bij Instellingen › Bedrijven beheren.</p>'}</div>
+          <div><h4>Bellen</h4>${calls ? `<div class="calls">${calls}</div>` : '<p>Nog geen nummer.</p>'}</div>
+          ${short.length || busy || wanted ? `<div><h4>Werkaanbod (cewez.be)</h4>
+            ${short.length ? `<p>${short.sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start)).map((r) => `${r.date === todayIso ? 'vandaag' : fmtDate(r.date, { weekday: 'short' })} ${Number(r.start)}u: <b>${r.count}</b> ${escapeHtml(r.func.toLowerCase())}${r.vrij ? ` (${escapeHtml(r.vrij)})` : ''}`).join('<br>')}</p>` : '<p>Geen tekorten.</p>'}
+            ${busy ? `<div class="ci-week" style="margin-top:8px">${busy.levels.map((l, i) => `<span class="${LEVEL_CLASS[l] || ''}">${escapeHtml(l)}<small>${fmtDate(tw.days[i], { weekday: 'short' }).replace('.', '')}</small></span>`).join('')}</div>` : ''}
+            ${wanted ? `<p style="margin-top:8px">Zoekt havenarbeiders: ${escapeHtml(wanted.offer)}${wanted.items.length ? ` ${escapeHtml(wanted.items.join(', ').toLowerCase())}` : ''}</p>` : ''}
+          </div>` : ''}
+          <div><h4>Jouw shiften</h4>${mine.length ? `<div class="ci-stats">
+              <div><b>${mineYear.length}</b><span>shiften ${year}</span></div>
+              <div><b>${money(t.bruto).replace(/,\d\d$/, '')}</b><span>bruto ${year}</span></div>
+              <div><b>${last ? fmtDate(last, { day: 'numeric', month: 'short' }) : '–'}</b><span>laatst gewerkt</span></div></div>
+              ${funcs.length ? `<p style="margin-top:6px">Functies: ${funcs.map(escapeHtml).join(', ')}</p>` : ''}` : '<p>Je hebt hier nog geen shiften ingevuld.</p>'}</div>
+          <div><h4>Mijn notities</h4><textarea data-cinote="${c.id}" rows="3" placeholder="bv. naam ploegbaas, parking, kantine, kledij nodig…" aria-label="Notities ${escapeHtml(c.name)}">${escapeHtml(companyNotes[c.id] || '')}</textarea></div>
+        </div></details>`;
+    }).join('');
+  }
+  $('coInfo').addEventListener('toggle', (ev) => {
+    const d = ev.target.closest?.('[data-ci]');
+    if (!d) return;
+    if (d.open) openInfo.add(d.dataset.ci); else openInfo.delete(d.dataset.ci);
+  }, true);
+  $('coInfo').addEventListener('change', (ev) => {
+    const el = ev.target.closest('[data-cinote]');
+    if (!el) return;
+    const v = el.value.trim();
+    if (v) companyNotes[el.dataset.cinote] = v; else delete companyNotes[el.dataset.cinote];
+    save(KEY_CO_NOTES, companyNotes);
   });
 
   // --- snel overzicht bovenaan ----------------------------------------------
@@ -3101,7 +3194,7 @@ const APP_VERSION = '2026-10-06.11';
   }
   $('exportJson').addEventListener('click', () => {
     download(`werkuren-backup-${isoDate(new Date())}.json`,
-      JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, companyPhones, medChecks, leave, payslips, taxActual, taxExtras, taxUser }, null, 2), 'application/json');
+      JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, companyPhones, companyNotes, medChecks, leave, payslips, taxActual, taxExtras, taxUser }, null, 2), 'application/json');
   });
   $('importBtn').addEventListener('click', () => $('importFile').click());
   $('importFile').addEventListener('change', async (ev) => {
@@ -3121,6 +3214,7 @@ const APP_VERSION = '2026-10-06.11';
       if (Array.isArray(data.medChecks)) medChecks = data.medChecks;
       if (Array.isArray(data.leave)) leave = data.leave;
       if (data.companyPhones) companyPhones = data.companyPhones;
+      if (data.companyNotes) companyNotes = data.companyNotes;
       if (data.payslips) payslips = data.payslips;
       if (data.taxActual) taxActual = data.taxActual;
       if (data.taxExtras) taxExtras = data.taxExtras;
@@ -3131,7 +3225,7 @@ const APP_VERSION = '2026-10-06.11';
       if (data.companyPins) companyPins = data.companyPins;
       save(KEY_ENTRIES, entries); save(KEY_PERIODS, periods); save(KEY_SETTINGS, settings); save(KEY_HOLIDAYS, holidayOverrides);
       save(KEY_CUSTOM_CO, customCompanies); save(KEY_HIDDEN_CO, hiddenCompanies);
-      save(KEY_MEDICAL, medChecks); save(KEY_LEAVE, leave); save(KEY_PAYSLIPS, payslips); save(KEY_TAX_ACTUAL, taxActual); save(KEY_TAX_EXTRA, taxExtras); save(KEY_TAX_USER, taxUser); save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation); save(KEY_CO_PHONE, companyPhones);
+      save(KEY_MEDICAL, medChecks); save(KEY_LEAVE, leave); save(KEY_PAYSLIPS, payslips); save(KEY_TAX_ACTUAL, taxActual); save(KEY_TAX_EXTRA, taxExtras); save(KEY_TAX_USER, taxUser); save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation); save(KEY_CO_PHONE, companyPhones); save(KEY_CO_NOTES, companyNotes);
       renderCompanyPicker(); renderSettings(); renderTaxTables(); renderHolidays(); renderRates(); render();
     } catch { alert('Dit is geen geldig back-upbestand.'); }
     ev.target.value = '';
