@@ -183,7 +183,7 @@
   .plans { display: grid; gap: 8px; }
   .plans a.btn { margin-top: 0; flex-direction: column; align-items: flex-start; justify-content: center; text-align: left; gap: 2px; padding: 10px 14px; }
   .plans a.btn small { font-weight: 500; opacity: .8; text-transform: none; letter-spacing: 0; font-family: var(--body, inherit); font-size: 12px; }
-  #kaaiList li { align-items: flex-start; }
+  #kaaiList li, #planList li { align-items: flex-start; }
   .navbtns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
   .navbtns a { display: inline-flex; align-items: center; min-height: 40px; padding: 6px 12px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: 14px; text-decoration: none; }
   .navbtns a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -1011,6 +1011,9 @@
           <a class="btn ghost" href="https://cewez.be/wp-content/uploads/2025/05/Zeebrugge_bezoekersplan.pdf" target="_blank" rel="noopener">Bezoekersplan <small>docks en terminals</small></a>
           <a class="btn ghost" href="https://cewez.be/wp-content/uploads/2025/02/N-702-nlpage_content_FileFile_3.pdf" target="_blank" rel="noopener">QR-codes bedrijfsingangen <small>PDF van Cewez</small></a>
         </div>
+        <h3 class="taxh">Terminalplannen met parkings</h3>
+        <p class="hint">Voor het shunten: de plannen van de terminals met de parkings, uit de onthaalbrochures van de bedrijven. De brochure opent op de juiste bladzijde als je gsm dat toelaat; anders blader je naar het bladzijdenummer.</p>
+        <ul class="list" id="planList"></ul>
         <h3 class="taxh">Bedrijfsingangen</h3>
         <p class="hint">De ingangen uit de QR-codes van Cewez. Tik op Google Maps of Waze om er naartoe te rijden. Bij CLdN Britanniadok en Canadakaai zegt Cewez: opgelet met Waze.</p>
         <ul class="list" id="kaaiList"></ul>
@@ -1186,13 +1189,13 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-06.14"></script>
-<script src="scan.js?v=2026-10-06.14"></script>
-<script src="aanbod.js?v=2026-10-06.14"></script>
+<script src="loon.js?v=2026-10-06.15"></script>
+<script src="scan.js?v=2026-10-06.15"></script>
+<script src="aanbod.js?v=2026-10-06.15"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-06.14';
+const APP_VERSION = '2026-10-06.15';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -2500,7 +2503,23 @@ const APP_VERSION = '2026-10-06.14';
     'van-der-vlist': 'https://cewez.be/wp-content/uploads/2025/06/Vandervlist-Onthaalbrochure-2024.pdf',
     wwl: 'https://cewez.be/wp-content/uploads/2025/06/EU_ZEE_HRM_01.002-Welkom-brochure-arbeiders-WW.pdf',
   };
+  // terminalplannen (met parkings) in de onthaalbrochures: [bedrijf, naam, bladzijde, uitleg]
+  const TERMINAL_PLANS = [
+    ['ico', 'ICO Noordelijk Insteekterminal (NIT)', 22, 'parkings in zones, gates'],
+    ['ico', 'ICO Bastenaken terminal', 23, 'alle parkingrijen'],
+    ['ico', 'ICO Hanze terminal (K519-525)', 24, 'parkingrijen langs de kaai'],
+    ['ico', 'ICO Toyota terminal', 25, 'parkingrijen en vakken'],
+    ['cldn', 'CLdN terminals in Zeebrugge', 8, 'Albert II-dok, Britanniadok, Hermeskaai, Minerva (autoparking), Canadakaai (autoschepen, parking)'],
+    ['cldn', 'CLdN Britanniadok', 9, 'car deck voor 4.000 auto\'s, parking havenarbeiders'],
+    ['cldn', 'CLdN Canadakaai', 11, 'terreinen voor 23.000 auto\'s, parking havenarbeiders'],
+    ['cosco', 'CSP terminal (plattegrond)', 5, 'met personeelsparking'],
+    ['depre', 'Depre (DSH) grondplan', 7, 'loodsen, kantoor, parking'],
+  ].map(([co, name, page, note]) => ({ co, name, page, note, url: `${BROCHURES[co]}#page=${page}` }));
   function renderKaaien() {
+    $('planList').innerHTML = TERMINAL_PLANS.map((t) => `<li>${logoHtml(t.co, '', 'li-logo')}
+      <div class="li-main"><div class="d">${escapeHtml(t.name)}</div>
+        <div class="m">${escapeHtml(t.note)} · blz. ${t.page}</div>
+        <div class="navbtns"><a href="${t.url}" target="_blank" rel="noopener">Plan openen</a></div></div></li>`).join('');
     $('kaaiList').innerHTML = ENTRANCES.map((e) => `<li>${e.co ? logoHtml(e.co, '', 'li-logo') : '<span class="logo li-logo">P</span>'}
       <div class="li-main"><div class="d">${escapeHtml(e.name)}</div>
         ${e.address || e.note ? `<div class="m">${escapeHtml([e.address, e.note].filter(Boolean).join(' · '))}</div>` : ''}
@@ -2537,6 +2556,7 @@ const APP_VERSION = '2026-10-06.14';
           <div><h4>Adres</h4>${places || '<p>Nog geen adres. Vul het in bij Instellingen › Bedrijven beheren.</p>'}</div>
           ${ENTRANCES.some((e) => e.co === c.id) ? `<div><h4>Ingang${ENTRANCES.filter((e) => e.co === c.id).length > 1 ? 'en' : ''}</h4>${ENTRANCES.filter((e) => e.co === c.id).map((e) => `<p class="ci-place"><b>${escapeHtml(e.name)}</b>${e.note ? ` · ${escapeHtml(e.note)}` : ''}</p>${navButtons(e)}`).join('')}</div>` : ''}
           <div><h4>Bellen</h4>${calls ? `<div class="calls">${calls}</div>` : '<p>Nog geen nummer.</p>'}</div>
+          ${TERMINAL_PLANS.some((t) => t.co === c.id) ? `<div><h4>Terminalplannen</h4><div class="navbtns">${TERMINAL_PLANS.filter((t) => t.co === c.id).map((t) => `<a href="${t.url}" target="_blank" rel="noopener">${escapeHtml(t.name.replace(/^(ICO|CLdN|CSP|Depre \(DSH\)) /, ''))} · blz. ${t.page}</a>`).join('')}</div></div>` : ''}
           ${BROCHURES[c.id] ? `<div><h4>Onthaalbrochure</h4><div class="navbtns"><a href="${BROCHURES[c.id]}" target="_blank" rel="noopener">Brochure openen (PDF)</a></div></div>` : ''}
           ${short.length || busy || wanted ? `<div><h4>Werkaanbod (cewez.be)</h4>
             ${short.length ? `<p>${short.sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start)).map((r) => `${r.date === todayIso ? 'vandaag' : fmtDate(r.date, { weekday: 'short' })} ${Number(r.start)}u: <b>${r.count}</b> ${escapeHtml(r.func.toLowerCase())}${r.vrij ? ` (${escapeHtml(r.vrij)})` : ''}`).join('<br>')}</p>` : '<p>Geen tekorten.</p>'}
