@@ -64,3 +64,13 @@ Volgens de Codex (artikel 39 en bijlage 11): 1 punt per gewerkte shift, 2 punten
 ## Kaart
 
 Per bedrijf kun je een spelt op de kaart zetten (satelliet of kaart) en verslepen naar de juiste kaai; de route-knop gaat dan naar die spelt. De kaart gebruikt [Leaflet](https://leafletjs.com) 1.9.4 (BSD-2, in `vendor/leaflet/`) met tegels van OpenStreetMap en Esri World Imagery.
+
+## Papier fotograferen
+
+Met de knop "Loonbrief of belastingpapier fotograferen" leest de app een foto van een loonbrief van Cewez, een loonfiche 281.10 (ook die van het vakantiefonds) of een aanslagbiljet. De tekst wordt op de gsm zelf herkend met [Tesseract.js](https://github.com/naptha/tesseract.js) 5.1.1 (Apache-2.0, in `vendor/tesseract/`, met de Nederlandse taaldata `nld` van tessdata) en wordt pas geladen als iemand de knop gebruikt; de foto verlaat het toestel niet. `scan.js` haalt de bedragen uit de tekst (getest in `tests/scan.test.js`), en de gebruiker kijkt ze na voor ze ingevuld worden:
+
+- loonbrief: wordt bij Uitbetalingen naast de berekening van de app gezet (basis RSZ, belastbaar, voorheffing, netto) en zet het kledijsaldo;
+- loonfiche: vult bij Belastingbrief code 250, 286 en 284 in (of het vakantiegeld bij de fiche van het vakantiefonds);
+- aanslagbiljet: toont het echte bedrag naast de schatting.
+
+De herkenning is afgestemd op de gewone opmaak van die papieren. Wordt een bedrag niet (goed) gelezen, stuur dan een foto met verborgen naam en rijksregisternummer, of de "Gelezen tekst" uit het venster, via "Fout melden".

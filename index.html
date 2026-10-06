@@ -164,6 +164,14 @@
   .more-day { margin-top: 12px; }
   .more-day > summary { font-weight: 600; color: var(--accent); cursor: pointer; padding: 8px 0; }
   .payday { margin: 0 0 8px; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .scanbar { height: 8px; border-radius: 4px; background: var(--bg); overflow: hidden; margin-top: 8px; }
+  .scanbar > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+  .scantext { white-space: pre-wrap; font-size: 12px; max-height: 240px; overflow: auto; background: var(--bg); padding: 8px; border-radius: 8px; }
+  label.btn { display: flex; align-items: center; justify-content: center; margin: 0; color: #fff; font-size: inherit; }
+  label.btn.ghost { color: var(--accent); }
+  .scanbtn { margin-top: 10px; }
+  .slipcheck { margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--bg); font-size: 13px; }
+  .slipcheck b.ok { color: #1a8f5a; } .slipcheck b.off { color: var(--ot); }
   .leaveday { margin: 0 0 8px; padding: 10px 12px; border-radius: 10px; background: var(--leave); color: var(--leave-text); font-weight: 600; }
   .cal button .medmark {
     position: absolute; top: 3px; left: 4px; font-size: 11px; font-weight: 800; line-height: 1; color: #1a8f5a;
@@ -340,6 +348,36 @@
     <p class="hint" id="bugMsg" hidden></p>
   </dialog>
 
+  <dialog class="sheet" id="scanDialog" aria-labelledby="scanTitle">
+    <form method="dialog" class="sheet-x"><button value="close" aria-label="Sluiten">✕</button></form>
+    <h2 id="scanTitle">Papier fotograferen</h2>
+    <p>Neem een foto van je <b>loonbrief</b>, je <b>loonfiche 281.10</b> of je <b>aanslagbiljet</b>. De app leest de bedragen en vult ze voor je in.</p>
+    <p class="hint">De tekst wordt op je gsm zelf gelezen: de foto wordt nergens naartoe gestuurd. Leg het papier plat, in goed licht, en fotografeer het recht van boven.</p>
+    <div class="tools">
+      <label class="btn" for="scanCam">Foto nemen</label>
+      <label class="btn ghost" for="scanPick">Foto kiezen</label>
+    </div>
+    <input type="file" id="scanCam" accept="image/*" capture="environment" hidden>
+    <input type="file" id="scanPick" accept="image/*" hidden>
+    <p class="hint" id="scanMsg" hidden></p>
+    <div class="scanbar" id="scanBar" hidden><div id="scanBarFill"></div></div>
+    <div id="scanResult" hidden>
+      <label for="scanKind">Soort papier</label>
+      <select id="scanKind">
+        <option value="loonbrief">Loonbrief van Cewez</option>
+        <option value="fiche">Loonfiche 281.10</option>
+        <option value="aanslag">Aanslagbiljet (belastingbrief)</option>
+      </select>
+      <p class="hint" id="scanCheck">Kijk de bedragen na en verbeter ze waar nodig. Leeg = niet invullen.</p>
+      <div id="scanFields"></div>
+      <button type="button" class="btn" id="scanApply">Invullen</button>
+      <details>
+        <summary>Gelezen tekst</summary>
+        <pre class="scantext" id="scanText"></pre>
+      </details>
+    </div>
+  </dialog>
+
   <dialog class="sheet" id="welcome" aria-labelledby="welcomeTitle">
     <form method="dialog" class="sheet-x"><button value="close" aria-label="Sluiten">✕</button></form>
     <h2 id="welcomeTitle">Haven Werkuren als app</h2>
@@ -400,6 +438,7 @@
       <button type="button" class="tile" data-go="medCard" id="dMedTile"><span class="k">Medische controle</span><span class="v" id="dMed"></span><span class="m" id="dMedM"></span></button>
       <button type="button" class="tile leave" data-go="leaveCard" id="dLeaveTile"><span class="k">Verlof</span><span class="v" id="dLeave"></span><span class="m" id="dLeaveM"></span></button>
     </div>
+    <button type="button" class="btn ghost scanbtn" data-scan>Loonbrief of belastingpapier fotograferen</button>
   </section>
 
   <section class="card">
@@ -520,6 +559,7 @@
     <details class="fold" data-fold="uitbetalingen" open>
       <summary><h2>Uitbetalingen</h2></summary>
     <div id="slips"></div>
+    <button type="button" class="btn ghost scanbtn" data-scan="loonbrief">Loonbrief fotograferen</button>
     </details>
   </section>
 
@@ -532,7 +572,9 @@
       <button id="taxNext" aria-label="Volgend jaar">›</button>
     </div>
     <p class="taxresult" id="taxResult"></p>
+    <p class="slipcheck" id="taxActual" hidden></p>
     <table class="slip-t" id="taxTable"></table>
+    <button type="button" class="btn ghost scanbtn" data-scan="fiche">Loonfiche of aanslagbiljet fotograferen</button>
     <details id="taxExtraBox">
       <summary>Jouw gegevens invullen (nauwkeuriger)</summary>
       <p class="hint">Vul in wat je weet; lege velden worden niet meegeteld. Alles blijft op je gsm.</p>
@@ -809,11 +851,12 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-05.7"></script>
+<script src="loon.js?v=2026-10-06.1"></script>
+<script src="scan.js?v=2026-10-06.1"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-05.7';
+const APP_VERSION = '2026-10-06.1';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -916,6 +959,8 @@ const APP_VERSION = '2026-10-05.7';
   const KEY_COUNTED = 'haven-werkuren.deviceCounted';
   const KEY_MEDICAL = 'haven-werkuren.medicalChecks';
   const KEY_LEAVE = 'haven-werkuren.leave';
+  const KEY_PAYSLIPS = 'haven-werkuren.payslips';   // ingescande loonbrieven per periode
+  const KEY_TAX_ACTUAL = 'haven-werkuren.taxActual'; // echte aanslag per inkomstenjaar
   const KEY_TAX_EXTRA = 'haven-werkuren.taxExtras';
   const KEY_TAX_REMOTE = 'haven-werkuren.taxTablesRemote'; // laatst opgehaalde belasting.json
   const KEY_TAX_USER = 'haven-werkuren.taxTablesUser';     // eigen aanpassingen per periode
@@ -954,6 +999,8 @@ const APP_VERSION = '2026-10-05.7';
   let showMode = load(KEY_MODE, 'bruto');
   let purchases = load(KEY_PURCHASES, []);
   let medChecks = load(KEY_MEDICAL, []); // [{ id, date, note }]
+  let payslips = load(KEY_PAYSLIPS, {}); // { '2026-09-B': { basisRsz, belastbaar, voorheffing, netto } }
+  let taxActual = load(KEY_TAX_ACTUAL, {}); // { jaar: bedrag (min = terug) }
   let leave = load(KEY_LEAVE, []);       // [{ date, type, g }] één per verlofdag; g = samen aangevraagd
   let taxExtras = load(KEY_TAX_EXTRA, {}); // { jaar: { income, withholding } }
   let taxUser = load(KEY_TAX_USER, { withholding: {}, incomeTax: {} }); // { soort: { vanaf: bedragen } }
@@ -1543,9 +1590,19 @@ const APP_VERSION = '2026-10-05.7';
     const detail = Object.values(lines).map((l) => `<tr><td>${escapeHtml(l.label)}${l.n > 1 ? ` (${l.n}×)` : ''} <span class="net">type ${l.type}</span></td><td>${money(l.type === 'M' ? -l.amount : l.amount)}</td></tr>`).join('');
     const warn = r.withholdingCalculated ? ''
       : '<p class="warn">Voorheffing niet berekend: de schatting werkt enkel voor een alleenstaande zonder personen ten laste. Het netto is daardoor te hoog.</p>';
+    const ps = payslips[key];
+    const cmp = (label, mine, app) => {
+      if (!Number.isFinite(mine)) return '';
+      const d = round2(app - mine);
+      return `<div>${label}: loonbrief ${money(mine)} · app ${money(app)} · <b class="${Math.abs(d) < 0.01 ? 'ok' : 'off'}">${Math.abs(d) < 0.01 ? 'klopt' : `verschil ${money(d)}`}</b></div>`;
+    };
+    const check = ps ? `<div class="slipcheck"><div><b>Vergeleken met je loonbrief</b></div>${[
+      cmp('Basis RSZ', ps.basisRsz, r.basisRsz), cmp('Belastbaar', ps.belastbaar, r.belastbaar),
+      cmp('Voorheffing', ps.voorheffing, r.voorheffing), cmp('Netto', ps.netto, r.netto)].join('')}
+      <button type="button" class="linkbtn" data-unslip="${key}">Loonbrief weghalen</button></div>` : '';
     return `<div class="slip">
       <div class="slip-h"><b>${title}</b><span>${pay}</span></div>
-      <table class="slip-t">${rows}</table>${warn}
+      <table class="slip-t">${rows}</table>${warn}${check}
       <details><summary>Detail (${r.shifts.length} shift${r.shifts.length === 1 ? '' : 'en'})</summary><table class="slip-t">${detail}</table></details>
     </div>`;
   }
@@ -1665,6 +1722,12 @@ const APP_VERSION = '2026-10-05.7';
         row(r.couple && d.partnerWithholding ? 'Al betaalde voorheffing (jullie samen)' : 'Al betaalde voorheffing', -r.voorheffing),
         `<tr class="tot"><td>${diff < 0 ? 'Terug te krijgen' : 'Bij te betalen'} <span class="est">schatting</span></td><td>${money(Math.abs(diff))}</td></tr>`,
       ].join('');
+    }
+    const act = taxActual[y];
+    $('taxActual').hidden = !Number.isFinite(act);
+    if (Number.isFinite(act)) {
+      $('taxActual').innerHTML = `Echte aanslag: ${act < 0 ? `je krijgt <b>${money(-act)}</b> terug` : `je moet <b>${money(act)}</b> bijbetalen`}.`
+        + (periodsOfYear.length || taxable ? ` De app schatte ${r.difference < 0 ? `${money(-r.difference)} terug` : `${money(r.difference)} bijbetalen`}.` : '');
     }
     const missing = [!useFiche && 'je loonfiche', !d.holidayPay && 'je vakantiegeld', !d.workBonus && 'de fiscale werkbonus'].filter(Boolean);
     $('taxHint').textContent = `Schatting van je aanslag personenbelasting (inkomstenjaar ${y}, aanslagjaar ${taxYear + 1}). `
@@ -2068,6 +2131,157 @@ const APP_VERSION = '2026-10-05.7';
     return { title, body: lines.join('\n').slice(0, 6000) };
   }
   const bugMsg = (t) => { $('bugMsg').textContent = t; $('bugMsg').hidden = !t; };
+  // --- papier fotograferen (tekstherkenning op de gsm zelf) --------------------
+  const OCR = { script: 'vendor/tesseract/tesseract.min.js', worker: 'vendor/tesseract/worker.min.js', core: 'vendor/tesseract/core', lang: 'vendor/tesseract/lang' };
+  const abs = (u) => new URL(u, location.href).href;
+  let ocrWorker = null;
+  let scanned = null;
+  function scanMsg(text) { $('scanMsg').hidden = !text; $('scanMsg').textContent = text || ''; }
+  function scanProgress(p) {
+    $('scanBar').hidden = p === null;
+    $('scanBarFill').style.width = `${Math.round((p || 0) * 100)}%`;
+  }
+  function loadScript(src) {
+    return new Promise((ok, fail) => {
+      const el = document.createElement('script');
+      el.src = src; el.onload = ok; el.onerror = () => fail(new Error('laden mislukt'));
+      document.head.appendChild(el);
+    });
+  }
+  async function getOcr() {
+    if (ocrWorker) return ocrWorker;
+    if (!window.Tesseract) await loadScript(abs(OCR.script));
+    ocrWorker = await Tesseract.createWorker('nld', 1, {
+      workerPath: abs(OCR.worker), corePath: abs(OCR.core), langPath: abs(OCR.lang),
+      logger: (m) => {
+        if (m.status === 'recognizing text') { scanMsg('Tekst lezen…'); scanProgress(m.progress); }
+        else if (/load|initializ/.test(m.status)) scanMsg('Tekstherkenning klaarzetten (de eerste keer duurt dat even)…');
+      },
+    });
+    return ocrWorker;
+  }
+  // foto verkleinen, grijs maken en het contrast opdrijven: dat leest beter
+  async function prepareImage(file) {
+    const img = await createImageBitmap(file).catch(() => null);
+    if (!img) throw new Error('foto');
+    const scale = Math.min(1, 2400 / Math.max(img.width, img.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+    const g = c.getContext('2d');
+    g.filter = 'grayscale(1) contrast(1.4)';
+    g.drawImage(img, 0, 0, c.width, c.height);
+    return c;
+  }
+  const SCAN_FIELDS = {
+    loonbrief: [['basisRsz', 'Basis RSZ'], ['belastbaar', 'Belastbaar'], ['voorheffing', 'Voorheffing'], ['netto', 'Netto'], ['kledij', 'Kledijsaldo (punten)', 'int']],
+    fiche: [['income', 'Belastbaar loon (code 250)'], ['withholding', 'Bedrijfsvoorheffing (code 286)'], ['workBonus', 'Fiscale werkbonus (code 284)']],
+    aanslag: [['result', 'Terug (min) of bijbetalen (plus)']],
+  };
+  function renderScanFields() {
+    const kind = $('scanKind').value;
+    const r = scanned && scanned.kind === kind ? scanned : { kind, ...Scan.parse($('scanText').textContent, kind) };
+    scanned = r;
+    const y = new Date().getFullYear();
+    let head = '';
+    if (kind === 'loonbrief') {
+      const p = r.period || Loon.periodOf(isoDate(today));
+      head = `<div class="row2"><div><label for="sc-month">Maand</label><input type="month" id="sc-month" value="${p.start.slice(0, 7)}"></div>
+        <div><label for="sc-half">Uitbetaling</label><select id="sc-half"><option value="A"${p.half === 'A' ? ' selected' : ''}>1–15</option><option value="B"${p.half === 'B' ? ' selected' : ''}>16–31</option></select></div></div>`
+        + (r.period ? '' : '<p class="warn">Periode niet gevonden op de foto: kies ze zelf.</p>');
+    } else {
+      const yr = r.year || (kind === 'fiche' ? y - 1 : y - 1);
+      head = `<label for="sc-year">${kind === 'fiche' ? 'Inkomstenjaar' : 'Inkomstenjaar (aanslagjaar min 1)'}</label><input id="sc-year" inputmode="numeric" value="${yr}">`
+        + (kind === 'fiche' ? `<label class="check"><input type="checkbox" id="sc-holiday"${r.holidayFund ? ' checked' : ''}> Dit is de fiche van het vakantiefonds (vakantiegeld)</label>` : '');
+    }
+    $('scanFields').innerHTML = head + SCAN_FIELDS[kind].map(([k, label, t]) => `<label for="sc-${k}">${label}</label>
+      <input id="sc-${k}" inputmode="${t === 'int' ? 'numeric' : 'decimal'}" value="${Number.isFinite(r[k]) ? (t === 'int' ? String(r[k]) : r[k].toFixed(2).replace('.', ',')) : ''}" placeholder="niet gevonden">`).join('');
+    const found = SCAN_FIELDS[kind].filter(([k]) => Number.isFinite(r[k])).length;
+    $('scanCheck').textContent = found
+      ? `${found} van de ${SCAN_FIELDS[kind].length} bedragen gevonden. Kijk ze na en verbeter ze waar nodig. Leeg = niet invullen.`
+      : 'Geen bedragen gevonden. Probeer een scherpere foto, of vul ze zelf in.';
+  }
+  async function runScan(file) {
+    if (!file) return;
+    $('scanResult').hidden = true; scanned = null;
+    scanMsg('Foto voorbereiden…'); scanProgress(0);
+    try {
+      const img = await prepareImage(file);
+      const w = await getOcr();
+      const { data } = await w.recognize(img);
+      $('scanText').textContent = data.text;
+      const kind = Scan.detectKind(data.text);
+      $('scanKind').value = kind === 'onbekend' ? ($('scanDialog').dataset.kind || 'loonbrief') : kind;
+      scanMsg(kind === 'onbekend' ? 'Ik kon niet zien welk papier dit is: kies het hieronder.' : '');
+      renderScanFields();
+      $('scanResult').hidden = false;
+    } catch (err) {
+      scanMsg(err.message === 'foto' ? 'Deze foto kon niet geopend worden.'
+        : 'De tekstherkenning kon niet starten. De eerste keer is internet nodig om ze te laden; probeer opnieuw met bereik.');
+    } finally {
+      scanProgress(null);
+      $('scanCam').value = ''; $('scanPick').value = '';
+    }
+  }
+  $('scanCam').addEventListener('change', (ev) => runScan(ev.target.files[0]));
+  $('scanPick').addEventListener('change', (ev) => runScan(ev.target.files[0]));
+  $('scanKind').addEventListener('change', () => { scanned = null; renderScanFields(); });
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-scan]');
+    if (!b) return;
+    $('scanDialog').dataset.kind = b.dataset.scan || '';
+    $('scanResult').hidden = true; scanMsg(''); scanProgress(null);
+    if (typeof $('scanDialog').showModal === 'function') $('scanDialog').showModal();
+    else $('scanDialog').setAttribute('open', '');
+  });
+  $('scanApply').addEventListener('click', () => {
+    const kind = $('scanKind').value;
+    const val = (k) => {
+      const v = $('sc-' + k).value.trim();
+      if (!v) return undefined;
+      const n = Number(v.replace(/\s/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.'));
+      return Number.isFinite(n) ? n : NaN;
+    };
+    const vals = Object.fromEntries(SCAN_FIELDS[kind].map(([k]) => [k, val(k)]));
+    if (Object.values(vals).some(Number.isNaN)) return alert('Een van de bedragen is geen geldig getal.');
+    let done = '';
+    if (kind === 'loonbrief') {
+      const month = $('sc-month').value;
+      if (!month) return alert('Kies de maand van de loonbrief.');
+      const per = Loon.periodOf(`${month}-${$('sc-half').value === 'A' ? '01' : '16'}`);
+      const { kledij, ...amounts } = vals;
+      const clean = Object.fromEntries(Object.entries(amounts).filter(([, v]) => v !== undefined));
+      if (Object.keys(clean).length) { payslips[per.key] = clean; save(KEY_PAYSLIPS, payslips); }
+      if (kledij !== undefined) { clothingStart = { date: per.end, points: Math.round(kledij) }; save(KEY_CLOTH_START, clothingStart); }
+      const [y, m] = month.split('-').map(Number);
+      viewYear = y; viewMonth = m - 1;
+      done = 'Loonbrief opgeslagen: je ziet hem bij Uitbetalingen naast de berekening van de app.' + (kledij !== undefined ? ' Je kledijsaldo is bijgewerkt.' : '');
+    } else {
+      const y = Number($('sc-year').value);
+      if (!(y > 2000 && y < 2100)) return alert('Vul een geldig jaar in.');
+      if (kind === 'fiche') {
+        const d = { ...(taxExtras[y] || {}) };
+        const set = (k, v) => { if (v !== undefined) d[k] = v; };
+        if ($('sc-holiday').checked) { set('holidayPay', vals.income); set('holidayWithholding', vals.withholding); }
+        else { set('ficheIncome', vals.income); set('ficheWithholding', vals.withholding); set('workBonus', vals.workBonus); }
+        taxExtras[y] = d; save(KEY_TAX_EXTRA, taxExtras);
+        done = `Loonfiche ingevuld bij Belastingbrief ${y}.`;
+      } else {
+        if (vals.result === undefined) return alert('Vul het bedrag in.');
+        taxActual[y] = vals.result; save(KEY_TAX_ACTUAL, taxActual);
+        done = `Aanslag opgeslagen bij Belastingbrief ${y}.`;
+      }
+      taxYear = y;
+    }
+    $('scanDialog').close?.();
+    render();
+    alert(done);
+  });
+  $('slips').addEventListener('click', (ev) => {
+    const key = ev.target.closest('[data-unslip]')?.dataset.unslip;
+    if (!key || !confirm('Deze loonbrief weghalen?')) return;
+    delete payslips[key]; save(KEY_PAYSLIPS, payslips); render();
+  });
+
   $('bugBtn').addEventListener('click', () => {
     $('bugDayName').textContent = fmtDate(selected, { day: 'numeric', month: 'long' });
     bugMsg('');
@@ -2371,7 +2585,7 @@ const APP_VERSION = '2026-10-05.7';
   }
   $('exportJson').addEventListener('click', () => {
     download(`werkuren-backup-${isoDate(new Date())}.json`,
-      JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, medChecks, leave, taxExtras, taxUser }, null, 2), 'application/json');
+      JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, medChecks, leave, payslips, taxActual, taxExtras, taxUser }, null, 2), 'application/json');
   });
   $('importBtn').addEventListener('click', () => $('importFile').click());
   $('importFile').addEventListener('change', async (ev) => {
@@ -2390,6 +2604,8 @@ const APP_VERSION = '2026-10-05.7';
       if (Array.isArray(data.purchases)) purchases = data.purchases;
       if (Array.isArray(data.medChecks)) medChecks = data.medChecks;
       if (Array.isArray(data.leave)) leave = data.leave;
+      if (data.payslips) payslips = data.payslips;
+      if (data.taxActual) taxActual = data.taxActual;
       if (data.taxExtras) taxExtras = data.taxExtras;
       if (data.taxUser) { taxUser = data.taxUser; applyTaxTables(); }
       if (data.clothingStart) clothingStart = data.clothingStart;
@@ -2398,7 +2614,7 @@ const APP_VERSION = '2026-10-05.7';
       if (data.companyPins) companyPins = data.companyPins;
       save(KEY_ENTRIES, entries); save(KEY_PERIODS, periods); save(KEY_SETTINGS, settings); save(KEY_HOLIDAYS, holidayOverrides);
       save(KEY_CUSTOM_CO, customCompanies); save(KEY_HIDDEN_CO, hiddenCompanies);
-      save(KEY_MEDICAL, medChecks); save(KEY_LEAVE, leave); save(KEY_TAX_EXTRA, taxExtras); save(KEY_TAX_USER, taxUser); save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation);
+      save(KEY_MEDICAL, medChecks); save(KEY_LEAVE, leave); save(KEY_PAYSLIPS, payslips); save(KEY_TAX_ACTUAL, taxActual); save(KEY_TAX_EXTRA, taxExtras); save(KEY_TAX_USER, taxUser); save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation);
       renderCompanyPicker(); renderSettings(); renderTaxTables(); renderHolidays(); renderRates(); render();
     } catch { alert('Dit is geen geldig back-upbestand.'); }
     ev.target.value = '';
