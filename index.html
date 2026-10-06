@@ -87,7 +87,7 @@
   #coList .li-main { display: contents; }
   #coList .li-main .d { grid-column: 2; grid-row: 1; min-width: 0; }
   #coList li > .del { grid-column: 3; grid-row: 1; }
-  #coList .locrow, #coList .linkbtn { grid-column: 1 / -1; justify-self: stretch; }
+  #coList .locrow, #coList .phonerow, #coList .linkbtn { grid-column: 1 / -1; justify-self: stretch; }
   #coList .linkbtn { justify-self: start; }
   #coList input { min-height: 38px; padding: 6px 10px; margin-top: 6px; font-size: 14px; }
   .mapbox { margin-top: 10px; }
@@ -103,6 +103,23 @@
   .locrow input { margin-top: 0 !important; grid-column: 1; }
   .locrow input[data-field="name"] { font-weight: 600; }
   .locrow .del { grid-column: 2; grid-row: 1 / span 2; }
+  .phonerow {
+    display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) 36px; gap: 6px; align-items: center;
+    margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line);
+  }
+  .phonerow input { margin-top: 0 !important; }
+  .calls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  a.callbtn {
+    display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 14px; border-radius: 8px;
+    background: var(--accent-soft); color: var(--accent); font-weight: 600; text-decoration: none; font-variant-numeric: tabular-nums;
+  }
+  a.callbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  a.callbtn svg { width: 18px; height: 18px; flex: none; }
+  a.callbtn small { font-weight: 500; opacity: .85; }
+  #callList { list-style: none; margin: 8px 0 0; padding: 0; }
+  #callList li { padding: 12px 0; border-top: 1px solid var(--line); }
+  #callList .callhead { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+  #callList .none { font-size: 13px; color: var(--muted); margin-top: 4px; }
   .linkbtn { border: 0; background: transparent; color: var(--accent); font-weight: 600; padding: 8px 0; cursor: pointer; }
   header { display: flex; align-items: flex-start; gap: 12px; }
   header > div:first-child { flex: 1; }
@@ -450,6 +467,7 @@
     outline: 2px solid var(--signal); outline-offset: 2px;
   }
   #dash .btn.scanbtn { background: var(--signal); color: var(--on-signal); }
+  #dash .btn.callopen { background: var(--harbour-2); color: var(--on-harbour); font-family: var(--display); text-transform: uppercase; letter-spacing: .05em; font-size: 15px; margin-top: 10px; min-height: 44px; }
 
   /* maandbalk en bruto/netto als één schakelaar */
   .monthbar button { border-radius: 8px; background: var(--bg); border-color: transparent; color: var(--text); }
@@ -549,6 +567,14 @@
     <p class="hint" id="bugMsg" hidden></p>
   </dialog>
 
+  <dialog class="sheet" id="callDialog" aria-labelledby="callTitle">
+    <form method="dialog" class="sheet-x"><button value="close" aria-label="Sluiten">✕</button></form>
+    <h2 id="callTitle">Bellen voor werk</h2>
+    <p class="hint">Tik op een nummer om te bellen. Nummers toevoegen of aanpassen doe je bij <b>Instellingen › Bedrijven beheren</b>.</p>
+    <ul id="callList"></ul>
+    <button type="button" class="btn ghost" id="callEdit">Nummers toevoegen of aanpassen</button>
+  </dialog>
+
   <dialog class="sheet" id="scanDialog" aria-labelledby="scanTitle">
     <form method="dialog" class="sheet-x"><button value="close" aria-label="Sluiten">✕</button></form>
     <h2 id="scanTitle">Papier fotograferen</h2>
@@ -641,6 +667,7 @@
       <button type="button" class="tile leave" data-go="leaveCard" id="dLeaveTile"><span class="k">Verlof</span><span class="v" id="dLeave"></span><span class="m" id="dLeaveM"></span></button>
     </div>
     <button type="button" class="btn ghost scanbtn" data-scan>Loonbrief of belastingpapier fotograferen</button>
+    <button type="button" class="btn ghost callopen" id="callOpen">Bedrijven bellen voor werk</button>
   </section>
 
   <section class="card">
@@ -686,6 +713,7 @@
       <select id="loc"></select>
     </div>
     <p class="where" id="coWhere" hidden></p>
+    <div class="calls" id="coCalls" hidden></div>
     <details class="mapbox" id="mapBox" hidden>
       <summary>Kaai op de kaart</summary>
       <p class="hint" id="mapHint"></p>
@@ -989,7 +1017,7 @@
     <section class="inset">
       <details class="fold" data-fold="bedrijven">
         <summary><h2>Bedrijven beheren</h2></summary>
-        <p class="hint">Per bedrijf staan de plaatsen (kantoor, terminal, kaai) met hun adres. Pas ze aan of voeg er toe; bij een dag kies je de plaats en zet je op de kaart een spelt per plaats. Verwijderen haalt het bedrijf alleen uit de keuzelijst; dagen die je al opgeslagen hebt, blijven bewaard.</p>
+        <p class="hint">Per bedrijf staan de plaatsen (kantoor, terminal, kaai) met hun adres, en de telefoonnummers om te bellen voor werk. Pas ze aan of voeg er toe; bij een dag kies je de plaats en zet je op de kaart een spelt per plaats. Verwijderen haalt het bedrijf alleen uit de keuzelijst; dagen die je al opgeslagen hebt, blijven bewaard.</p>
         <ul class="list" id="coList"></ul>
         <button class="btn ghost" id="coRestore" hidden>Verwijderde bedrijven terugzetten</button>
       </details>
@@ -1059,12 +1087,12 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-06.6"></script>
-<script src="scan.js?v=2026-10-06.6"></script>
+<script src="loon.js?v=2026-10-06.7"></script>
+<script src="scan.js?v=2026-10-06.7"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-06.6';
+const APP_VERSION = '2026-10-06.7';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1179,6 +1207,7 @@ const APP_VERSION = '2026-10-06.6';
   const KEY_CO_LOCS = 'haven-werkuren.companyLocations';
   const KEY_LAST_LOC = 'haven-werkuren.lastLocation';
   const KEY_CO_PIN = 'haven-werkuren.companyPins';
+  const KEY_CO_PHONE = 'haven-werkuren.companyPhones';
   const load = (k, fallback) => {
     try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fallback; } catch { return fallback; }
   };
@@ -1255,6 +1284,7 @@ const APP_VERSION = '2026-10-06.6';
   let companyLocations = load(KEY_CO_LOCS, {}); // door jou aangepaste plaatsen per bedrijf
   let companyPins = load(KEY_CO_PIN, {});         // spelden per plaats: "bedrijf/plaats"
   let lastLocation = load(KEY_LAST_LOC, {});      // laatst gekozen plaats per bedrijf
+  let companyPhones = load(KEY_CO_PHONE, {});     // telefoonnummers per bedrijf: [{ id, label, number }]
   // oudere gegevens: één adres en één spelt per bedrijf omzetten naar de eerste plaats
   (() => {
     const old = load(KEY_CO_ADDR, null);
@@ -1335,6 +1365,15 @@ const APP_VERSION = '2026-10-06.6';
   // ook verborgen bedrijven opzoeken, zodat oude dagen hun logo houden
   const companyById = (id) => DEFAULT_COMPANIES.find((c) => c.id === id) || customCompanies.find((c) => c.id === id);
   const visibleCompanies = () => [...DEFAULT_COMPANIES, ...customCompanies].filter((c) => !hiddenCompanies.includes(c.id));
+  // --- telefoonnummers om te bellen voor werk ---
+  // Standaardnummers per bedrijf: [label, nummer]. Alleen nummers die zeker kloppen; de rest vul je zelf in.
+  const DEFAULT_PHONES = {};
+  const phonesOf = (co) => companyPhones[co]
+    || (DEFAULT_PHONES[co] || []).map(([label, number], i) => ({ id: 'd' + i, label, number }));
+  const savePhones = (co, list) => { companyPhones[co] = list; save(KEY_CO_PHONE, companyPhones); };
+  const PHONE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>';
+  const telHref = (n) => 'tel:' + String(n).replace(/[^\d+]/g, '');
+  const callButtons = (co) => phonesOf(co).filter((p) => p.number).map((p) => `<a class="callbtn" href="${telHref(p.number)}">${PHONE_ICON}<span>${escapeHtml(p.label || 'Bellen')} <small>${escapeHtml(p.number)}</small></span></a>`).join('');
   const initials = (name) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 
   // logo als <img>, of initialen als er geen logo is
@@ -1396,6 +1435,8 @@ const APP_VERSION = '2026-10-06.6';
       : place?.address || pinned
         ? `${escapeHtml(place?.name || sel.name)}: ${escapeHtml(place?.address || 'eigen spelt op de kaart')}${pinned && place?.address ? ' · spelt gezet' : ''} · ${routeLink(companyId, loc)}`
         : `Nog geen adres voor ${escapeHtml(sel.name)}. Vul het in bij Bedrijven beheren, of zet een spelt op de kaart.`;
+    $('coCalls').innerHTML = sel ? callButtons(companyId) : '';
+    $('coCalls').hidden = !$('coCalls').innerHTML;
     $('mapBox').hidden = !sel;
     updateMap();
 
@@ -1406,7 +1447,13 @@ const APP_VERSION = '2026-10-06.6';
             <input data-co="${c.id}" data-loc="${escapeHtml(l.id)}" data-field="address" value="${escapeHtml(l.address)}" placeholder="Adres" aria-label="Adres plaats">
             <button type="button" class="del" data-delloc="${escapeHtml(l.id)}" data-co="${c.id}" aria-label="Plaats verwijderen">✕</button>
           </div>`).join('')}
-          <button type="button" class="linkbtn" data-addloc="${c.id}">+ Plaats toevoegen</button></div>
+          <button type="button" class="linkbtn" data-addloc="${c.id}">+ Plaats toevoegen</button>
+          ${phonesOf(c.id).map((ph) => `<div class="phonerow">
+            <input data-pco="${c.id}" data-pid="${escapeHtml(ph.id)}" data-pfield="label" value="${escapeHtml(ph.label)}" placeholder="bv. Planning" aria-label="Naam nummer">
+            <input type="tel" data-pco="${c.id}" data-pid="${escapeHtml(ph.id)}" data-pfield="number" value="${escapeHtml(ph.number)}" placeholder="bv. 050 12 34 56" aria-label="Telefoonnummer">
+            <button type="button" class="del" data-delphone="${escapeHtml(ph.id)}" data-pco="${c.id}" aria-label="Nummer verwijderen">✕</button>
+          </div>`).join('')}
+          <button type="button" class="linkbtn" data-addphone="${c.id}">+ Telefoonnummer toevoegen</button></div>
         <button class="del" data-delco="${c.id}" aria-label="Bedrijf verwijderen">✕</button></li>`).join('')
       : '<li class="empty">Geen bedrijven.</li>');
     $('coRestore').hidden = !hiddenCompanies.length;
@@ -1490,6 +1537,56 @@ const APP_VERSION = '2026-10-06.6';
       save(KEY_CO_PIN, companyPins);
       renderCompanyPicker(); render();
     }
+  });
+  $('coList').addEventListener('change', (ev) => {
+    const el = ev.target.closest('[data-pfield]');
+    if (!el) return;
+    const co = el.dataset.pco;
+    const list = structuredClone(phonesOf(co));
+    const ph = list.find((x) => x.id === el.dataset.pid);
+    if (!ph) return;
+    const v = el.value.trim();
+    if (el.dataset.pfield === 'number' && v && !/^[+\d][\d\s./()-]{5,}$/.test(v)) { alert('Dat lijkt geen telefoonnummer. Gebruik cijfers, spaties en eventueel + vooraan.'); el.value = ph.number; return; }
+    ph[el.dataset.pfield] = v;
+    savePhones(co, list);
+    renderCompanyPicker();
+  });
+  $('coList').addEventListener('click', (ev) => {
+    const add = ev.target.closest('[data-addphone]');
+    const del = ev.target.closest('[data-delphone]');
+    if (add) {
+      const co = add.dataset.addphone;
+      savePhones(co, [...structuredClone(phonesOf(co)), { id: 'n' + Date.now().toString(36), label: '', number: '' }]);
+      renderCompanyPicker();
+      const inputs = $('coList').querySelectorAll(`[data-pco="${co}"][data-pfield="number"]`);
+      inputs[inputs.length - 1]?.focus();
+    } else if (del) {
+      const co = del.dataset.pco;
+      const ph = phonesOf(co).find((x) => x.id === del.dataset.delphone);
+      if (ph?.number && !confirm(`Nummer ${ph.number} verwijderen?`)) return;
+      savePhones(co, phonesOf(co).filter((x) => x.id !== del.dataset.delphone));
+      renderCompanyPicker();
+    }
+  });
+  // bellen voor werk: alle bedrijven met hun nummers
+  function renderCallList() {
+    const used = {};
+    for (const e of entries) if (e.company) used[e.company] = (used[e.company] || 0) + 1;
+    const list = visibleCompanies().map((c, i) => ({ c, i, n: phonesOf(c.id).filter((p) => p.number).length }))
+      .sort((a, b) => (b.n > 0) - (a.n > 0) || (used[b.c.id] || 0) - (used[a.c.id] || 0) || a.i - b.i);
+    $('callList').innerHTML = list.map(({ c, n }) => `<li><div class="callhead">${logoHtml(c.id, '', 'li-logo')}<span>${escapeHtml(c.name)}</span></div>
+      ${n ? `<div class="calls">${callButtons(c.id)}</div>` : '<div class="none">Nog geen nummer.</div>'}</li>`).join('');
+  }
+  $('callOpen').addEventListener('click', () => {
+    renderCallList();
+    if (typeof $('callDialog').showModal === 'function') $('callDialog').showModal();
+    else $('callDialog').setAttribute('open', '');
+  });
+  $('callEdit').addEventListener('click', () => {
+    $('callDialog').close?.();
+    document.querySelector('[data-fold="instellingen"]').open = true;
+    document.querySelector('[data-fold="bedrijven"]').open = true;
+    $('coList').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
   $('coRestore').addEventListener('click', () => {
     hiddenCompanies = [];
@@ -2829,7 +2926,7 @@ const APP_VERSION = '2026-10-06.6';
   }
   $('exportJson').addEventListener('click', () => {
     download(`werkuren-backup-${isoDate(new Date())}.json`,
-      JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, medChecks, leave, payslips, taxActual, taxExtras, taxUser }, null, 2), 'application/json');
+      JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, companyPhones, medChecks, leave, payslips, taxActual, taxExtras, taxUser }, null, 2), 'application/json');
   });
   $('importBtn').addEventListener('click', () => $('importFile').click());
   $('importFile').addEventListener('change', async (ev) => {
@@ -2848,6 +2945,7 @@ const APP_VERSION = '2026-10-06.6';
       if (Array.isArray(data.purchases)) purchases = data.purchases;
       if (Array.isArray(data.medChecks)) medChecks = data.medChecks;
       if (Array.isArray(data.leave)) leave = data.leave;
+      if (data.companyPhones) companyPhones = data.companyPhones;
       if (data.payslips) payslips = data.payslips;
       if (data.taxActual) taxActual = data.taxActual;
       if (data.taxExtras) taxExtras = data.taxExtras;
@@ -2858,7 +2956,7 @@ const APP_VERSION = '2026-10-06.6';
       if (data.companyPins) companyPins = data.companyPins;
       save(KEY_ENTRIES, entries); save(KEY_PERIODS, periods); save(KEY_SETTINGS, settings); save(KEY_HOLIDAYS, holidayOverrides);
       save(KEY_CUSTOM_CO, customCompanies); save(KEY_HIDDEN_CO, hiddenCompanies);
-      save(KEY_MEDICAL, medChecks); save(KEY_LEAVE, leave); save(KEY_PAYSLIPS, payslips); save(KEY_TAX_ACTUAL, taxActual); save(KEY_TAX_EXTRA, taxExtras); save(KEY_TAX_USER, taxUser); save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation);
+      save(KEY_MEDICAL, medChecks); save(KEY_LEAVE, leave); save(KEY_PAYSLIPS, payslips); save(KEY_TAX_ACTUAL, taxActual); save(KEY_TAX_EXTRA, taxExtras); save(KEY_TAX_USER, taxUser); save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation); save(KEY_CO_PHONE, companyPhones);
       renderCompanyPicker(); renderSettings(); renderTaxTables(); renderHolidays(); renderRates(); render();
     } catch { alert('Dit is geen geldig back-upbestand.'); }
     ev.target.value = '';
