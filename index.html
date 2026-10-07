@@ -404,6 +404,11 @@
     display: flex; gap: 10px; align-items: center; color: var(--text); font-size: 15px; margin: 12px 0 0;
   }
   .check input { width: 22px; height: 22px; min-height: 0; margin: 0; flex: none; accent-color: var(--accent); }
+  input[type="file"] { padding: 6px 8px; }
+  input[type="file"]::file-selector-button {
+    font: inherit; font-weight: 600; border: 0; border-radius: 6px; padding: 8px 12px; margin-right: 10px;
+    background: var(--accent-soft); color: var(--accent); cursor: pointer;
+  }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
   /* naast elkaar: vakjes op één lijn, ook als een label over twee regels loopt */
   .row2 > div { display: flex; flex-direction: column; justify-content: flex-end; min-width: 0; }
@@ -647,30 +652,38 @@
   <dialog class="sheet" id="bugDialog" aria-labelledby="bugTitle">
     <form method="dialog" class="sheet-x"><button value="close" aria-label="Sluiten">✕</button></form>
     <h2 id="bugTitle">Fout melden</h2>
-    <p>Beschrijf wat er misging. Je melding komt terecht bij de maker van de app, op GitHub.</p>
-    <label for="bugWhat">Wat ging er mis?</label>
-    <textarea id="bugWhat" rows="4" placeholder="bv. het netto van 15 september klopt niet met mijn loonbrief"></textarea>
-    <label for="bugExpect">Wat had je verwacht? (optioneel)</label>
-    <textarea id="bugExpect" rows="2" placeholder="bv. op mijn loonbrief staat € 239,84"></textarea>
-    <label class="check"><input type="checkbox" id="bugDay"> <span>Gekozen dag meesturen (<span id="bugDayName"></span>: shift, functie en bedragen, zonder notities)</span></label>
-    <p class="hint">De app-versie en het type toestel worden automatisch toegevoegd. Let op: meldingen zijn <b>openbaar</b> zichtbaar op GitHub. Zet er dus geen naam of telefoonnummer in.</p>
-    <button type="button" class="btn" id="bugSend">Melding versturen</button>
-    <button type="button" class="btn ghost" id="bugCopy">Tekst kopiëren</button>
-    <p class="hint" id="bugMsg" hidden></p>
+    <p>Beschrijf wat er misging. Je bericht gaat rechtstreeks naar de maker van de app.</p>
+    <form class="mailform" data-place="Fout melden" novalidate>
+      <label for="bugSubj">Onderwerp</label>
+      <input type="text" id="bugSubj" name="Onderwerp" maxlength="100" autocomplete="off" placeholder="bv. netto van 15 september klopt niet">
+      <label for="bugText">Bericht</label>
+      <textarea id="bugText" name="Bericht" rows="5" placeholder="Wat ging er mis, en wat had je verwacht? bv. op mijn loonbrief staat € 239,84"></textarea>
+      <label for="bugFile">Bestand (optioneel)</label>
+      <input type="file" id="bugFile" name="attachment" accept="image/*,application/pdf">
+      <p class="hint">bv. een schermafbeelding van de app of een foto van je loonbrief. Maximaal 10 MB.</p>
+      <label class="check"><input type="checkbox" id="bugDay"> <span>Gekozen dag meesturen (<span id="bugDayName"></span>: shift, functie en bedragen, zonder notities)</span></label>
+      <p class="hint">De app-versie en het type toestel worden automatisch meegestuurd.</p>
+      <button type="submit" class="btn">Versturen</button>
+      <p class="hint mailmsg" role="status" hidden></p>
+    </form>
   </dialog>
 
   <dialog class="sheet" id="ideaDialog" aria-labelledby="ideaTitle">
     <form method="dialog" class="sheet-x"><button value="close" aria-label="Sluiten">✕</button></form>
     <h2 id="ideaTitle">Voorstel doen</h2>
-    <p>Mis je iets in de app, of kan iets beter? Je voorstel komt terecht bij de maker van de app, op GitHub.</p>
-    <label for="ideaWhat">Wat stel je voor?</label>
-    <textarea id="ideaWhat" rows="4" placeholder="bv. een overzicht van mijn overuren per jaar"></textarea>
-    <label for="ideaWhy">Waarom zou dat helpen? (optioneel)</label>
-    <textarea id="ideaWhy" rows="2" placeholder="bv. dan zie ik meteen hoeveel overuren ik dit jaar maakte"></textarea>
-    <p class="hint">De app-versie wordt automatisch toegevoegd. Let op: voorstellen zijn <b>openbaar</b> zichtbaar op GitHub. Zet er dus geen naam of telefoonnummer in.</p>
-    <button type="button" class="btn" id="ideaSend">Voorstel versturen</button>
-    <button type="button" class="btn ghost" id="ideaCopy">Tekst kopiëren</button>
-    <p class="hint" id="ideaMsg" hidden></p>
+    <p>Mis je iets in de app, of kan iets beter? Je voorstel gaat rechtstreeks naar de maker van de app.</p>
+    <form class="mailform" data-place="Voorstel doen" novalidate>
+      <label for="ideaSubj">Onderwerp</label>
+      <input type="text" id="ideaSubj" name="Onderwerp" maxlength="100" autocomplete="off" placeholder="bv. overuren per jaar">
+      <label for="ideaText">Bericht</label>
+      <textarea id="ideaText" name="Bericht" rows="5" placeholder="Wat stel je voor, en waarom zou dat helpen?"></textarea>
+      <label for="ideaFile">Bestand (optioneel)</label>
+      <input type="file" id="ideaFile" name="attachment" accept="image/*,application/pdf">
+      <p class="hint">bv. een schets of een foto van een papier. Maximaal 10 MB.</p>
+      <p class="hint">De app-versie wordt automatisch meegestuurd.</p>
+      <button type="submit" class="btn">Versturen</button>
+      <p class="hint mailmsg" role="status" hidden></p>
+    </form>
   </dialog>
 
   <dialog class="sheet" id="callDialog" aria-labelledby="callTitle">
@@ -789,7 +802,7 @@
     <section>
       <h3>Over deze app</h3>
       <p class="disclaimer-text">Dit is een <b>hobbyproject</b> van een havenarbeider, <b>David Schütt</b>, gebouwd met behulp van AI (Claude). Het heeft <b>niets te maken met Cewez</b>. De bedragen en informatie kunnen fout zijn: controleer altijd je loonbrief.</p>
-      <p class="hint">De app werkt offline op je gsm: je uren, je loon en al je gegevens blijven op je toestel en worden nergens gedeeld. Er wordt alleen geteld hoe vaak de link gedeeld wordt en op hoeveel toestellen de app geopend is, zonder namen of gegevens.</p>
+      <p class="hint">De app werkt offline op je gsm: je uren, je loon en al je gegevens blijven op je toestel en worden nergens gedeeld. Er wordt alleen geteld hoe vaak de link gedeeld wordt en op hoeveel toestellen de app geopend is, zonder namen of gegevens. Een bericht via Contact, Fout melden of Voorstel doen gaat via de dienst FormSubmit per e-mail naar de maker; enkel wat je zelf invult wordt meegestuurd.</p>
     </section>
 
     <section class="news" id="newsBox">
@@ -1273,23 +1286,41 @@
       </section>
       </details>
     </section>
+    <section class="inset grp" id="contactCard">
+      <details class="fold" data-fold="contact">
+        <summary><h2>Contact</h2></summary>
+        <p class="hint">Een vraag, een opmerking of iets anders? Je bericht gaat rechtstreeks naar de maker van de app. Je kunt er ook een foto of bestand bij doen.</p>
+        <form class="mailform" data-place="Contact" novalidate>
+          <label for="contactSubj">Onderwerp</label>
+          <input type="text" id="contactSubj" name="Onderwerp" maxlength="100" autocomplete="off" placeholder="waarover gaat het?">
+          <label for="contactText">Bericht</label>
+          <textarea id="contactText" name="Bericht" rows="5" placeholder="Je bericht"></textarea>
+          <label for="contactFile">Bestand (optioneel)</label>
+          <input type="file" id="contactFile" name="attachment" accept="image/*,application/pdf">
+          <p class="hint">bv. een foto of een PDF. Maximaal 10 MB.</p>
+          <button type="submit" class="btn">Versturen</button>
+          <p class="hint mailmsg" role="status" hidden></p>
+        </form>
+      </details>
+    </section>
   </section>
+  <iframe name="mailFrame" id="mailFrame" title="Versturen" hidden></iframe>
 
   <footer class="disclaimer">
     <p>Dit is een <b>hobbyproject</b> van een havenarbeider, <b>David Schütt</b>, gebouwd met behulp van AI (Claude). Het heeft <b>niets te maken met Cewez</b>. De bedragen en informatie kunnen fout zijn: controleer altijd je loonbrief.</p>
-    <p>De app werkt offline op je gsm: je uren, je loon en al je gegevens blijven op je toestel en worden nergens gedeeld. Er wordt alleen geteld hoe vaak de link gedeeld wordt en op hoeveel toestellen de app geopend is, zonder namen of gegevens.</p>
+    <p>De app werkt offline op je gsm: je uren, je loon en al je gegevens blijven op je toestel en worden nergens gedeeld. Er wordt alleen geteld hoe vaak de link gedeeld wordt en op hoeveel toestellen de app geopend is, zonder namen of gegevens. Een bericht via Contact, Fout melden of Voorstel doen gaat via de dienst FormSubmit per e-mail naar de maker; enkel wat je zelf invult wordt meegestuurd.</p>
   </footer>
   <p class="usage" id="usage" hidden></p>
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-07.8"></script>
-<script src="scan.js?v=2026-10-07.8"></script>
-<script src="aanbod.js?v=2026-10-07.8"></script>
+<script src="loon.js?v=2026-10-07.9"></script>
+<script src="scan.js?v=2026-10-07.9"></script>
+<script src="aanbod.js?v=2026-10-07.9"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-07.8';
+const APP_VERSION = '2026-10-07.9';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -2863,6 +2894,7 @@ const APP_VERSION = '2026-10-07.8';
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
     ['2026-10-07', [
+      'Contact onderaan, en Fout melden en Voorstel doen: onderwerp, bericht en een foto of bestand. Je bericht gaat rechtstreeks naar de maker, zonder account.',
       'Jouw instellingen (statuut, woonplaats, gezin) meteen invullen in dit uitlegscherm.',
       'Nieuwe functies: markeerders, jumbobediener, uitwijzer, stouwbreker-zetter, en foreman en ceelbaas met hun eigen loon. Premie markage voor markeerders.',
       'Knop "Voorstel doen" bovenaan: stuur een idee voor de app.',
@@ -3002,46 +3034,102 @@ const APP_VERSION = '2026-10-07.8';
     } catch { /* geen verbinding: niets tonen */ }
   }
 
-  // --- fout melden (GitHub-issue) --------------------------------------------
-  const ISSUE_URL = 'https://github.com/WikiDave/Cewez-Calculator/issues/new';
-  // Cloudflare Worker (map melding-worker) die de melding op GitHub zet, zonder GitHub-account.
-  // Leeg = nog niet ingesteld: dan opent GitHub zelf (daar is wel een account nodig).
-  const MELD_URL = '';
-  // melding versturen; geeft een tekst terug voor onder de knop
-  async function sendReport(kind, { title, body }, labels) {
-    if (MELD_URL) {
-      try {
-        const res = await fetch(MELD_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, title, body, website: '' }) });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok && data.ok) return `Verstuurd, bedankt! Je ${kind === 'bug' ? 'melding' : 'voorstel'} staat op GitHub als nummer ${data.number}.`;
-        return data.error || 'Versturen lukte niet. Probeer later opnieuw, of kopieer de tekst.';
-      } catch {
-        return 'Versturen lukte niet (geen verbinding?). Probeer later opnieuw, of kopieer de tekst.';
+  // --- bericht naar de maker: Fout melden, Voorstel doen en Contact ----------
+  // Via FormSubmit (formsubmit.co), dat het formulier per e-mail doorstuurt.
+  // MAIL_ID is de code die FormSubmit gaf na het activeren: die staat in de plaats van het
+  // e-mailadres, zodat niemand het adres in de app kan zien. Leeg = nog niet ingesteld.
+  const MAIL_ID = '';
+  const MAIL_MAX = 10 * 1024 * 1024; // FormSubmit: bestanden samen max 10 MB
+  // extra regels in de mail, per plaats in de app
+  const mailExtra = {
+    'Fout melden': () => {
+      const x = { 'App-versie': `${APP_VERSION} · statuut: ${settings.status || ''} · als app: ${standalone ? 'ja' : 'nee'} · scherm: ${screen.width}×${screen.height}`, Toestel: navigator.userAgent };
+      if ($('bugDay').checked) {
+        const list = entries.filter((e) => e.date === selected);
+        x['Gekozen dag'] = [fmtDate(selected, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), ...(list.length ? list.map((e) => {
+          const sh = shiftOf(e);
+          return `${entryTitle(e)}; ${{ full: 'volle shift', half: 'halve shift', afbestel: 'afbestelling' }[e.kind] || e.kind}; overuren: ${fmtHours(overtimeOf(e))}; bruto ${money(sh.bruto)}; netto ± ${money(sh.netto)}`;
+        }) : ['geen shiften'])].join('\n');
       }
-    }
-    window.open(`${ISSUE_URL}?labels=${labels}&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`, '_blank', 'noopener');
-    return 'GitHub is geopend in een nieuw venster. Meld je aan en tik op "Submit new issue" om te versturen.';
-  }
-  function bugReport() {
-    const what = $('bugWhat').value.trim();
-    const expect = $('bugExpect').value.trim();
-    const lines = ['**Wat ging er mis?**', what || '(niet ingevuld)', ''];
-    if (expect) lines.push('**Wat had ik verwacht?**', expect, '');
-    if ($('bugDay').checked) {
-      const list = dayEntries(selected);
-      lines.push(`**Dag ${selected}**`);
-      if (!list.length) lines.push('- geen shiften');
-      for (const e of list) {
-        const x = shiftOf(e);
-        lines.push(`- ${entryTitle(e)}; ${{ full: 'volle shift', half: 'halve shift', afbestel: 'afbestelling' }[e.kind] || e.kind}; overuren: ${fmtHours(overtimeOf(e))}; bruto ${money(x.bruto)}; netto ± ${money(x.netto)}`);
+      return x;
+    },
+    'Voorstel doen': () => ({ 'App-versie': `${APP_VERSION} · statuut: ${settings.status || ''}` }),
+    Contact: () => ({ 'App-versie': APP_VERSION }),
+  };
+  // Het formulier gaat naar een verborgen frame. FormSubmit stuurt na het versturen door naar
+  // verstuurd.html op onze eigen site: staat dat in het frame, dan is het gelukt.
+  function sendMail(form, place) {
+    return new Promise((resolve) => {
+      const frame = $('mailFrame');
+      const added = [];
+      const add = (name, value, first) => {
+        const i = document.createElement('input');
+        i.type = 'hidden'; i.name = name; i.value = value;
+        if (first) form.prepend(i); else form.append(i);
+        added.push(i);
+      };
+      const stamp = new Date().toLocaleString('nl-BE', { dateStyle: 'full', timeStyle: 'short', timeZone: 'Europe/Brussels' });
+      // volgorde in de mail: datum en plaats bovenaan, dan wat de gebruiker schreef
+      add('Plaats in de app', place, true);
+      add('Datum en tijd', stamp, true);
+      for (const [k, v] of Object.entries(mailExtra[place]())) add(k, v);
+      add('_subject', `HAVEN APP (${place})(${form.elements.Onderwerp.value.trim()})`);
+      add('_template', 'table');
+      add('_captcha', 'false');
+      add('_next', new URL('verstuurd.html', location.href).href);
+      let timer, grace;
+      const done = (ok) => {
+        clearTimeout(timer); clearTimeout(grace);
+        frame.removeEventListener('load', onLoad);
+        added.forEach((i) => i.remove());
+        resolve(ok);
+      };
+      function onLoad() {
+        let ours = false;
+        try { ours = frame.contentWindow.location.pathname.endsWith('/verstuurd.html'); } catch { /* nog op formsubmit.co */ }
+        if (ours) return done(true);
+        // een pagina van FormSubmit (fout, of nog onderweg): even wachten of de doorverwijzing nog komt
+        clearTimeout(grace);
+        grace = setTimeout(() => done(false), 10000);
       }
-      lines.push('');
-    }
-    lines.push('---', `App-versie: ${APP_VERSION} · Als app: ${standalone ? 'ja' : 'nee'} · Scherm: ${screen.width}×${screen.height}`, `Toestel: ${navigator.userAgent}`);
-    const title = 'Fout: ' + (what.split('\n')[0].slice(0, 70) || 'zonder omschrijving');
-    return { title, body: lines.join('\n').slice(0, 6000) };
+      frame.addEventListener('load', onLoad);
+      timer = setTimeout(() => done(false), 120000);
+      form.action = `https://formsubmit.co/${MAIL_ID}`;
+      form.method = 'post';
+      form.enctype = 'multipart/form-data';
+      form.target = 'mailFrame';
+      form.submit();
+    });
   }
-  const bugMsg = (t) => { $('bugMsg').textContent = t; $('bugMsg').hidden = !t; };
+  let mailBusy = false;
+  for (const form of document.querySelectorAll('form.mailform')) {
+    const out = form.querySelector('.mailmsg');
+    const say = (t) => { out.textContent = t; out.hidden = !t; };
+    form.addEventListener('input', () => { if (!mailBusy) say(''); });
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const { Onderwerp: subj, Bericht: text, attachment: file } = form.elements;
+      if (!subj.value.trim()) { say('Vul een onderwerp in.'); subj.focus(); return; }
+      if (!text.value.trim()) { say('Schrijf eerst je bericht.'); text.focus(); return; }
+      if ([...file.files].reduce((t, f) => t + f.size, 0) > MAIL_MAX) { say('Het bestand is te groot (maximaal 10 MB). Kies een kleinere foto of een ander bestand.'); return; }
+      if (!MAIL_ID) { say('Versturen kan nog niet: het contactformulier wordt nog ingesteld. Probeer het later opnieuw.'); return; }
+      if (!navigator.onLine) { say('Geen verbinding. Probeer opnieuw als je bereik hebt; je tekst blijft staan.'); return; }
+      if (mailBusy) { say('Er wordt al een bericht verstuurd. Even geduld.'); return; }
+      mailBusy = true;
+      const btn = form.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      say(file.files.length ? 'Versturen… (met een bestand kan dat even duren)' : 'Versturen…');
+      const ok = await sendMail(form, form.dataset.place);
+      mailBusy = false;
+      btn.disabled = false;
+      if (ok) {
+        form.reset();
+        say('Verstuurd, bedankt! Je bericht is bij de maker van de app.');
+      } else {
+        say('Versturen lukte niet. Probeer het later opnieuw; je tekst blijft staan.');
+      }
+    });
+  }
   // --- papier fotograferen (tekstherkenning op de gsm zelf) --------------------
   const OCR = { script: 'vendor/tesseract/tesseract.min.js', worker: 'vendor/tesseract/worker.min.js', core: 'vendor/tesseract/core', lang: 'vendor/tesseract/lang' };
   const abs = (u) => new URL(u, location.href).href;
@@ -3195,52 +3283,17 @@ const APP_VERSION = '2026-10-07.8';
 
   $('bugBtn').addEventListener('click', () => {
     $('bugDayName').textContent = fmtDate(selected, { day: 'numeric', month: 'long' });
-    bugMsg('');
     if (typeof $('bugDialog').showModal === 'function') $('bugDialog').showModal();
     else $('bugDialog').setAttribute('open', '');
   });
   $('bugDialog').addEventListener('click', (ev) => { if (ev.target === $('bugDialog')) $('bugDialog').close(); });
-  $('bugSend').addEventListener('click', () => {
-    if (!$('bugWhat').value.trim()) { bugMsg('Beschrijf eerst kort wat er misging.'); $('bugWhat').focus(); return; }
-    $('bugSend').disabled = true; bugMsg('Versturen…');
-    sendReport('bug', bugReport(), 'bug').then((msg) => { bugMsg(msg); $('bugSend').disabled = false; if (msg.startsWith('Verstuurd')) { $('bugWhat').value = ''; $('bugExpect').value = ''; } });
-  });
-  $('bugCopy').addEventListener('click', async () => {
-    const { title, body } = bugReport();
-    try {
-      await navigator.clipboard.writeText(`${title}\n\n${body}`);
-      bugMsg('Tekst gekopieerd. Je kunt hem plakken in een bericht of e-mail.');
-    } catch { bugMsg('Kopiëren lukte niet op dit toestel.'); }
-  });
 
-  // --- voorstel doen (GitHub-issue met label enhancement) --------------------------
-  function ideaReport() {
-    const what = $('ideaWhat').value.trim();
-    const why = $('ideaWhy').value.trim();
-    const lines = ['**Voorstel**', what || '(niet ingevuld)', ''];
-    if (why) lines.push('**Waarom**', why, '');
-    lines.push('---', `App-versie: ${APP_VERSION} · Statuut: ${settings.status || ''}`);
-    return { title: 'Voorstel: ' + (what.split('\n')[0].slice(0, 70) || 'zonder omschrijving'), body: lines.join('\n').slice(0, 6000) };
-  }
-  const ideaMsg = (t) => { $('ideaMsg').textContent = t; $('ideaMsg').hidden = !t; };
+  // --- voorstel doen --------------------------------------------------------------
   $('ideaBtn').addEventListener('click', () => {
-    ideaMsg('');
     if (typeof $('ideaDialog').showModal === 'function') $('ideaDialog').showModal();
     else $('ideaDialog').setAttribute('open', '');
   });
   $('ideaDialog').addEventListener('click', (ev) => { if (ev.target === $('ideaDialog')) $('ideaDialog').close(); });
-  $('ideaSend').addEventListener('click', () => {
-    if (!$('ideaWhat').value.trim()) { ideaMsg('Beschrijf eerst kort je voorstel.'); $('ideaWhat').focus(); return; }
-    $('ideaSend').disabled = true; ideaMsg('Versturen…');
-    sendReport('idea', ideaReport(), 'enhancement').then((msg) => { ideaMsg(msg); $('ideaSend').disabled = false; if (msg.startsWith('Verstuurd')) { $('ideaWhat').value = ''; $('ideaWhy').value = ''; } });
-  });
-  $('ideaCopy').addEventListener('click', async () => {
-    const { title, body } = ideaReport();
-    try {
-      await navigator.clipboard.writeText(`${title}\n\n${body}`);
-      ideaMsg('Tekst gekopieerd. Je kunt hem plakken in een bericht of e-mail.');
-    } catch { ideaMsg('Kopiëren lukte niet op dit toestel.'); }
-  });
 
   // offline werken (enkel op een echte website, niet als los bestand)
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {

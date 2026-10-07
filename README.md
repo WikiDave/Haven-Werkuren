@@ -91,6 +91,6 @@ Het vak "Kaaien" opent de plannen van de haven (kaainummers en straten, bezoeker
 
 Het uitlegscherm bij het openen toont "Wat is er nieuw" (de twee laatste datums, ouder nieuws op vraag). Wat nieuw is sinds iemands vorige bezoek krijgt het label "nieuw". Voeg bij elke nieuwe functie een regel toe bovenaan `NEWS` in `index.html`.
 
-## Meldingen zonder account
+## Contact, Fout melden en Voorstel doen
 
-"Fout melden" en "Voorstel doen" gaan via een Cloudflare Worker die er een GitHub-issue van maakt, zodat gebruikers geen GitHub-account nodig hebben. Code en instelstappen: `melding-worker/`. Zolang `MELD_URL` in `index.html` leeg is, opent de app GitHub zelf (met account).
+Drie vakjes: onderwerp, bericht en een bestand (foto of PDF, max 10 MB). Het formulier gaat via [FormSubmit](https://formsubmit.co) per e-mail naar de maker. Het onderwerp van de mail is `HAVEN APP (plaats in de app)(onderwerp van de gebruiker)`, de mail bevat datum en tijd en de app-versie. Het e-mailadres staat nergens in de app of in deze repo: `MAIL_ID` in `index.html` is de code die FormSubmit gaf na het activeren. Na het versturen stuurt FormSubmit door naar `verstuurd.html` in een verborgen frame; zo weet de app dat het gelukt is.
