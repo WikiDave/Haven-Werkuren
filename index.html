@@ -322,7 +322,7 @@
   .cal-head { margin: 14px 0 4px; }
   .cal-head span { text-align: center; font-size: 12px; color: var(--muted); }
   .cal button {
-    position: relative; aspect-ratio: 1 / 1.55; min-height: 66px; padding: 4px 2px 3px;
+    position: relative; min-height: 74px; padding: 4px 2px 3px;
     border: 1px solid var(--line); border-radius: 8px; background: var(--bg);
     display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
     gap: 1px; cursor: pointer; overflow: hidden;
@@ -1191,13 +1191,13 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-06.17"></script>
-<script src="scan.js?v=2026-10-06.17"></script>
-<script src="aanbod.js?v=2026-10-06.17"></script>
+<script src="loon.js?v=2026-10-07.1"></script>
+<script src="scan.js?v=2026-10-07.1"></script>
+<script src="aanbod.js?v=2026-10-07.1"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-06.17';
+const APP_VERSION = '2026-10-07.1';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1416,7 +1416,7 @@ const APP_VERSION = '2026-10-06.17';
   let hiddenCompanies = load(KEY_HIDDEN_CO, []);
   let showAllCompanies = false;
   let companyId = load(KEY_LAST_CO, '');
-  const today = new Date();
+  let today = new Date(); // wordt bijgewerkt als de app na middernacht terug geopend wordt
   let viewYear = today.getFullYear();
   let viewMonth = today.getMonth();
   let holYear = viewYear;
@@ -2463,6 +2463,16 @@ const APP_VERSION = '2026-10-06.17';
     }).join('');
   }
   $('wkRefresh').addEventListener('click', refreshAanbod);
+  // bleef de app open staan tot een andere dag, dan "vandaag" opnieuw bepalen
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    const now = new Date();
+    if (now.toDateString() === today.toDateString()) return;
+    const wasToday = selected === isoDate(today);
+    today = now;
+    if (wasToday) selectDay(isoDate(today), false); else render();
+    renderAanbod();
+  });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && (!aanbod || Date.now() - aanbod.fetched > 10 * 60 * 1000)) refreshAanbod();
   });
