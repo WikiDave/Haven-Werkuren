@@ -3040,13 +3040,13 @@ const APP_VERSION = '2026-10-07.9';
   // e-mailadres, zodat niemand het adres in de app kan zien. Leeg = nog niet ingesteld.
   const MAIL_ID = '';
   const MAIL_MAX = 10 * 1024 * 1024; // FormSubmit: bestanden samen max 10 MB
-  // extra regels in de mail, per plaats in de app
+  // extra regels in de mail, per plaats in de app (veldnamen zonder spaties: FormSubmit maakt er _ van)
   const mailExtra = {
     'Fout melden': () => {
       const x = { 'App-versie': `${APP_VERSION} · statuut: ${settings.status || ''} · als app: ${standalone ? 'ja' : 'nee'} · scherm: ${screen.width}×${screen.height}`, Toestel: navigator.userAgent };
       if ($('bugDay').checked) {
         const list = entries.filter((e) => e.date === selected);
-        x['Gekozen dag'] = [fmtDate(selected, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), ...(list.length ? list.map((e) => {
+        x.Dag = [fmtDate(selected, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), ...(list.length ? list.map((e) => {
           const sh = shiftOf(e);
           return `${entryTitle(e)}; ${{ full: 'volle shift', half: 'halve shift', afbestel: 'afbestelling' }[e.kind] || e.kind}; overuren: ${fmtHours(overtimeOf(e))}; bruto ${money(sh.bruto)}; netto ± ${money(sh.netto)}`;
         }) : ['geen shiften'])].join('\n');
@@ -3070,8 +3070,8 @@ const APP_VERSION = '2026-10-07.9';
       };
       const stamp = new Date().toLocaleString('nl-BE', { dateStyle: 'full', timeStyle: 'short', timeZone: 'Europe/Brussels' });
       // volgorde in de mail: datum en plaats bovenaan, dan wat de gebruiker schreef
-      add('Plaats in de app', place, true);
-      add('Datum en tijd', stamp, true);
+      add('Plaats', place, true);
+      add('Datum', stamp, true);
       for (const [k, v] of Object.entries(mailExtra[place]())) add(k, v);
       add('_subject', `HAVEN APP (${place})(${form.elements.Onderwerp.value.trim()})`);
       add('_template', 'table');
