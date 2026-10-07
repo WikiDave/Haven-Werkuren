@@ -189,6 +189,12 @@
   .navbtns a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   /* wat is er nieuw (uitlegscherm) */
   dialog.sheet section.news { background: var(--accent-soft); border: 0; border-radius: 12px; padding: 12px; }
+  #newsFold > summary { display: flex; align-items: center; gap: 6px; list-style: none; min-height: 32px; }
+  #newsFold > summary::-webkit-details-marker { display: none; }
+  #newsFold > summary h3 { margin: 0; }
+  #newsFold > summary::after { content: ""; margin-left: auto; width: 8px; height: 8px; border-right: 2px solid var(--accent); border-bottom: 2px solid var(--accent); transform: rotate(45deg) translateY(-2px); }
+  #newsFold[open] > summary::after { transform: rotate(-135deg) translateY(-2px); }
+  #newsFold[open] > summary { margin-bottom: 8px; }
   .news-day + .news-day { margin-top: 10px; }
   .news-day b { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
   .news-day ul { margin: 4px 0 0; padding-left: 20px; display: grid; gap: 3px; }
@@ -704,11 +710,6 @@
     <p id="welcomeIntro">Zet de app op je beginscherm. Dan opent hij als een gewone app, zonder adresbalk, en werkt hij ook met slecht bereik op de kaai.</p>
     <button type="button" class="btn" id="installBtn" hidden>App installeren</button>
 
-    <section class="news" id="newsBox">
-      <h3>Wat is er nieuw</h3>
-      <div id="newsList"></div>
-    </section>
-
     <section class="howto" data-os="ios">
       <h3>iPhone (Safari)</h3>
       <ol>
@@ -748,6 +749,13 @@
       <h3>Over deze app</h3>
       <p class="disclaimer-text">Dit is een <b>hobbyproject</b> van een havenarbeider, <b>David Schütt</b>, gebouwd met behulp van AI (Claude). Het heeft <b>niets te maken met Cewez</b>. De bedragen en informatie kunnen fout zijn: controleer altijd je loonbrief.</p>
       <p class="hint">De app werkt offline op je gsm: je uren, je loon en al je gegevens blijven op je toestel en worden nergens gedeeld. Er wordt alleen geteld hoe vaak de link gedeeld wordt en op hoeveel toestellen de app geopend is, zonder namen of gegevens.</p>
+    </section>
+
+    <section class="news" id="newsBox">
+      <details id="newsFold">
+        <summary><h3>Wat is er nieuw</h3><span class="news-new" id="newsBadge" hidden>nieuw</span></summary>
+        <div id="newsList"></div>
+      </details>
     </section>
 
     <form method="dialog"><button class="btn" value="ok">Begrepen</button></form>
@@ -1233,13 +1241,13 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-07.4"></script>
-<script src="scan.js?v=2026-10-07.4"></script>
-<script src="aanbod.js?v=2026-10-07.4"></script>
+<script src="loon.js?v=2026-10-07.5"></script>
+<script src="scan.js?v=2026-10-07.5"></script>
+<script src="aanbod.js?v=2026-10-07.5"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-07.4';
+const APP_VERSION = '2026-10-07.5';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -2839,6 +2847,8 @@ const APP_VERSION = '2026-10-07.4';
       <ul>${items.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul></div>`).join('')
       + (!all && NEWS.length > 2 ? '<button type="button" class="linkbtn" id="newsMore">Ouder nieuws tonen</button>' : '');
     $('newsList').innerHTML = show(false);
+    $('newsFold').open = false; // standaard dichtgeklapt
+    $('newsBadge').hidden = !(seen && NEWS[0][0] > seen);
     $('newsMore')?.addEventListener('click', () => { $('newsList').innerHTML = show(true); });
     save(KEY_NEWS_SEEN, NEWS[0][0]);
   }
