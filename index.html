@@ -188,6 +188,13 @@
   .navbtns a { display: inline-flex; align-items: center; min-height: 40px; padding: 6px 12px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: 14px; text-decoration: none; }
   .navbtns a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   /* wat is er nieuw (uitlegscherm) */
+  dialog.sheet section.quick { background: var(--bg); border: 0; border-radius: 12px; padding: 12px; }
+  #quickFold > summary { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 8px; list-style: none; min-height: 32px; }
+  #quickFold > summary::-webkit-details-marker { display: none; }
+  #quickFold > summary h3 { margin: 0; flex: 1; }
+  #quickFold > summary .hint { width: 100%; order: 3; margin: 0; }
+  #quickFold > summary::after { content: ""; width: 8px; height: 8px; border-right: 2px solid var(--accent); border-bottom: 2px solid var(--accent); transform: rotate(45deg) translateY(-2px); }
+  #quickFold[open] > summary::after { transform: rotate(-135deg) translateY(-2px); }
   dialog.sheet section.news { background: var(--accent-soft); border: 0; border-radius: 12px; padding: 12px; }
   #newsFold > summary { display: flex; align-items: center; gap: 6px; list-style: none; min-height: 32px; }
   #newsFold > summary::-webkit-details-marker { display: none; }
@@ -709,6 +716,40 @@
     <h2 id="welcomeTitle">Haven Werkuren als app</h2>
     <p id="welcomeIntro">Zet de app op je beginscherm. Dan opent hij als een gewone app, zonder adresbalk, en werkt hij ook met slecht bereik op de kaai.</p>
     <button type="button" class="btn" id="installBtn" hidden>App installeren</button>
+
+    <section class="quick" id="quickBox">
+      <details id="quickFold">
+        <summary><h3>Jouw instellingen</h3><span class="hint" id="quickSum"></span></summary>
+        <p class="hint">Zo rekent de app meteen juist. Alles kan je later aanpassen bij Instellingen › Netto-instellingen.</p>
+        <label for="qStatus">Statuut</label>
+        <select id="qStatus" data-q="status">
+          <option value="gelegenheid">Rode kaart (gelegenheidshavenarbeider)</option>
+          <option value="pool">Losse pool (erkend)</option>
+          <option value="timetable">Time table (erkend, vast bij één bedrijf)</option>
+        </select>
+        <label for="qTransport">Vervoer</label>
+        <select id="qTransport" data-q="transport">
+          <option value="auto">Eigen vervoer</option>
+          <option value="fiets">Fiets</option>
+        </select>
+        <div id="qPlaceWrap">
+          <label for="qPlace">Woonplaats (voor de vervoersvergoeding)</label>
+          <select id="qPlace" data-q="place"></select>
+        </div>
+        <div class="row2">
+          <div><label for="qCivil">Burgerlijke staat</label>
+            <select id="qCivil" data-q="civil">
+              <option value="ongehuwd">Ongehuwd</option>
+              <option value="gehuwd">Gehuwd</option>
+              <option value="wettelijk-samenwonend">Wettelijk samenwonend</option>
+              <option value="gescheiden">Gescheiden</option>
+              <option value="weduwe">Weduwe / weduwnaar</option>
+            </select></div>
+          <div><label for="qKids">Kinderen ten laste</label><input id="qKids" data-q="kids" data-t="num" inputmode="numeric" placeholder="0"></div>
+        </div>
+        <p class="hint" id="quickSaved" hidden>Bewaard.</p>
+      </details>
+    </section>
 
     <section class="howto" data-os="ios">
       <h3>iPhone (Safari)</h3>
@@ -1242,13 +1283,13 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-07.6"></script>
-<script src="scan.js?v=2026-10-07.6"></script>
-<script src="aanbod.js?v=2026-10-07.6"></script>
+<script src="loon.js?v=2026-10-07.7"></script>
+<script src="scan.js?v=2026-10-07.7"></script>
+<script src="aanbod.js?v=2026-10-07.7"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-07.6';
+const APP_VERSION = '2026-10-07.7';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -2822,6 +2863,7 @@ const APP_VERSION = '2026-10-07.6';
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
     ['2026-10-07', [
+      'Jouw instellingen (statuut, woonplaats, gezin) meteen invullen in dit uitlegscherm.',
       'Nieuwe functies: markeerders, jumbobediener, uitwijzer, stouwbreker-zetter, en foreman en ceelbaas met hun eigen loon. Premie markage voor markeerders.',
       'Knop "Voorstel doen" bovenaan: stuur een idee voor de app.',
       'Herverdelingsdagen (HV) bijhouden voor losse pool en time table: tegoed en hoeveel shiften tot je volgende (bij Verlof).',
@@ -2857,8 +2899,35 @@ const APP_VERSION = '2026-10-07.6';
     save(KEY_NEWS_SEEN, NEWS[0][0]);
   }
 
+  // --- jouw instellingen in het uitlegscherm (eerste keer open) ----------------------
+  const STATUS_NAMES = { gelegenheid: 'rode kaart', pool: 'losse pool', timetable: 'time table' };
+  function renderQuick() {
+    $('qPlace').innerHTML = $('sPlace').innerHTML;
+    for (const el of document.querySelectorAll('[data-q]')) {
+      const v = settings[el.dataset.q];
+      el.value = el.dataset.t === 'num' ? (v ? String(v) : '') : (v ?? '');
+    }
+    $('qPlaceWrap').hidden = settings.transport !== 'auto';
+    $('quickSum').textContent = `${STATUS_NAMES[settings.status] || ''} · ${settings.transport === 'fiets' ? 'fiets' : settings.place || ''} · ${CIVIL_NAMES[settings.civil] || ''}${Number(settings.kids) ? ` · ${settings.kids} kind(eren)` : ''}`;
+  }
+  $('quickBox').addEventListener('change', (ev) => {
+    const el = ev.target.closest('[data-q]');
+    if (!el) return;
+    let v = el.value;
+    if (el.dataset.t === 'num') { v = v.trim() ? Number(v.replace(',', '.')) : 0; if (!Number.isFinite(v) || v < 0) { renderQuick(); return; } }
+    settings[el.dataset.q] = v;
+    save(KEY_SETTINGS, settings);
+    save('haven-werkuren.quickDone', true);
+    renderQuick(); renderSettings(); render(); renderAanbod();
+    $('quickSaved').hidden = false;
+  });
+
   function openWelcome() {
     renderNews();
+    renderQuick();
+    // de eerste keer open, daarna dichtgeklapt (met een samenvatting)
+    $('quickFold').open = !load('haven-werkuren.quickDone', false) && !load(KEY_SETTINGS, null);
+    $('quickSaved').hidden = true;
     // jouw toestel eerst en gemarkeerd; geïnstalleerd: geen installatie-uitleg meer nodig
     const howtos = [...document.querySelectorAll('#welcome .howto')];
     for (const h of howtos) { h.hidden = standalone; h.classList.toggle('mine', h.dataset.os === os); }
