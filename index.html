@@ -840,6 +840,7 @@
       <label for="func">Functie</label>
       <select id="func"></select>
       <p class="hint" id="funcHint"></p>
+      <label class="check" id="markageWrap" hidden><input type="checkbox" id="markage"> Premie markage (€ 13,52): voorbereidend of aanvullend werk als markeerder</label>
       <label for="work">Soort werk</label>
       <select id="work">
         <option value="other">Gewoon werk (1 kledijpunt)</option>
@@ -1241,13 +1242,13 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-07.5"></script>
-<script src="scan.js?v=2026-10-07.5"></script>
-<script src="aanbod.js?v=2026-10-07.5"></script>
+<script src="loon.js?v=2026-10-07.6"></script>
+<script src="scan.js?v=2026-10-07.6"></script>
+<script src="aanbod.js?v=2026-10-07.6"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-07.5';
+const APP_VERSION = '2026-10-07.6';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1877,7 +1878,7 @@ const APP_VERSION = '2026-10-07.5';
     return {
       id: '__preview',
       date: $('date').value, code: $('code').value, kind: $('kind').value, tariff: $('tariff').value, work: $('work').value, func: $('func').value,
-      wijziging: $('wijziging').checked,
+      wijziging: $('wijziging').checked, markage: $('markage').checked && Loon.isMarkeerder($('func').value),
       company: companyId, companyName: companyById(companyId)?.name || '', kaai: $('kaai').value.trim(),
       loc: companyId ? currentLoc() : '', locName: (companyId && locationsOf(companyId).length > 1 && locationOf(companyId, currentLoc())?.name) || '',
       overtime: parseHours($('ot').value), note: $('note').value.trim(),
@@ -1893,7 +1894,9 @@ const APP_VERSION = '2026-10-07.5';
       ? `Automatisch: ${ROW_NAMES[auto] || 'weekdagtarief'}`
       : `Automatisch zou ${ROW_NAMES[auto] || 'weekdagtarief'} zijn.`;
     const fn = Loon.functionOf(e.func);
-    $('funcHint').textContent = fn.group === 'alle' ? '' : Loon.FUNCTION_GROUPS[fn.group].label.replace(/^[^(]*\(/, 'Loon alle werk (').replace(/\)$/, ')');
+    $('funcHint').textContent = Loon.FUNCTION_GROUPS[fn.group].kader ? `Loon ${fn.label.toLowerCase()} volgens de loontabel van Cewez (shift, uur en overuren).`
+      : fn.group === 'alle' ? '' : Loon.FUNCTION_GROUPS[fn.group].label.replace(/^[^(]*\(/, 'Loon alle werk (').replace(/\)$/, ')');
+    $('markageWrap').hidden = !Loon.isMarkeerder(fn.id);
     if (Number.isNaN(e.overtime)) { $('preview').textContent = '—'; $('previewNet').textContent = ''; return; }
     // netto van deze shift: bereken de uitbetaling opnieuw met deze shift erbij
     const key = Loon.periodOf(e.date).key;
@@ -1913,7 +1916,7 @@ const APP_VERSION = '2026-10-07.5';
     save(KEY_ENTRIES, entries);
     save(KEY_LAST_WORK, e.work);
     save(KEY_LAST_FUNC, e.func);
-    $('ot').value = ''; $('note').value = ''; $('kaai').value = ''; $('wijziging').checked = false;
+    $('ot').value = ''; $('note').value = ''; $('kaai').value = ''; $('wijziging').checked = false; $('markage').checked = false;
     $('kind').value = 'full'; $('tariff').value = 'auto';
     renderCompanyPicker();
     render();
@@ -2819,6 +2822,7 @@ const APP_VERSION = '2026-10-07.5';
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
     ['2026-10-07', [
+      'Nieuwe functies: markeerders, jumbobediener, uitwijzer, stouwbreker-zetter, en foreman en ceelbaas met hun eigen loon. Premie markage voor markeerders.',
       'Knop "Voorstel doen" bovenaan: stuur een idee voor de app.',
       'Herverdelingsdagen (HV) bijhouden voor losse pool en time table: tegoed en hoeveel shiften tot je volgende (bij Verlof).',
       'Wat is er nieuw: dit lijstje bij het openen van de app.',
@@ -3498,7 +3502,7 @@ const APP_VERSION = '2026-10-07.5';
     const iso = ev.target.closest('button[data-date]')?.dataset.date;
     if (iso) selectDay(iso, true);
   });
-  ['code', 'kind', 'tariff', 'func', 'ot', 'wijziging'].forEach((id) => $(id).addEventListener('input', updatePreview));
+  ['code', 'kind', 'tariff', 'func', 'ot', 'wijziging', 'markage'].forEach((id) => $(id).addEventListener('input', updatePreview));
   $('add').addEventListener('click', addEntry);
   // bij maandwissel: zelfde dagnummer selecteren (of laatste dag van de maand)
   const shiftMonth = (delta) => {

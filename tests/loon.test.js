@@ -295,3 +295,16 @@ test('herverdelingsdagen: 1 per 25 shiften, min opgenomen HV', () => {
   assert.equal(b.progress, 12);
   assert.equal(b.balance, 3);  // 3 + 1 - 1 opgenomen
 });
+
+test('foreman en ceelbaas: eigen loon uit de loontabel, markeerder met premie markage', () => {
+  const sh = (func, extra = {}) => Loon.shiftLines(shift('2026-10-08', '08', { func, ...extra }), ctx({})).lines;
+  const get = (lines, key) => lines.find((l) => l.key === key)?.amount;
+  assert.equal(get(sh('alle'), 'shiftloon'), 180.12);
+  assert.equal(get(sh('markeerder-roro'), 'shiftloon'), 180.12);   // markeerders: loon alle werk
+  assert.equal(get(sh('foreman'), 'shiftloon'), 224.55);
+  assert.equal(get(sh('ceelbaas'), 'shiftloon'), 268.87);
+  assert.equal(get(sh('foreman', { overtime: 1 }), 'overuren'), 46.46); // overuur foreman
+  assert.equal(get(sh('markeerder-roro', { markage: true }), 'markage'), 13.52);
+  assert.equal(get(sh('alle', { markage: true }), 'markage'), undefined); // enkel voor markeerders
+  assert.equal(get(Loon.shiftLines(shift('2026-10-10', '08', { func: 'foreman' }), ctx({})).lines, 'shiftloon'), 336.83); // zaterdag
+});
