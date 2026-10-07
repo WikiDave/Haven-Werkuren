@@ -886,6 +886,7 @@
       <select id="lvType">
         <option value="vakantie">Jaarlijkse vakantie</option>
         <option value="anciënniteit">Anciënniteitsverlof</option>
+        <option value="herverdeling">Herverdelingsdag (HV)</option>
         <option value="ander">Ander verlof</option>
       </select>
       <label class="check"><input type="checkbox" id="lvSat"> Zaterdagen meetellen</label>
@@ -893,6 +894,19 @@
       <ul class="list" id="lvList"></ul>
       <label for="lvQuota">Verlofdagen per jaar (optioneel, dan zie je hoeveel je er nog hebt)</label>
       <input id="lvQuota" inputmode="numeric" placeholder="bv. 20">
+      <h3 class="taxh">Herverdelingsdagen</h3>
+      <p class="medstatus" id="hvStatus"></p>
+      <p class="hint">Per 25 gewerkte shiften bouw je 1 herverdelingsdag (HV) op. Aanvragen bij Cewez, telefonisch of via MyCewez, ten laatste om 11u00 dezelfde dag. Een HV blijft 3 jaar geldig (langer bij ziekte of ongeval) en wordt niet uitbetaald als je hem niet opneemt. Neem je er een, kies dan hierboven als soort "Herverdelingsdag (HV)".</p>
+      <details id="hvStartBox">
+        <summary>Tegoed van Cewez invullen</summary>
+        <p class="hint">Kijk in MyCewez of je prestatieboek hoeveel HV je hebt en hoeveel shiften je al opbouwde naar de volgende. Shiften en HV na die datum telt de app er zelf bij.</p>
+        <div class="row2">
+          <div><label for="hvBal">HV-tegoed</label><input id="hvBal" inputmode="numeric" placeholder="0"></div>
+          <div><label for="hvCnt">Shiften naar volgende HV</label><input id="hvCnt" inputmode="numeric" placeholder="0"></div>
+        </div>
+        <label for="hvDate">Op datum</label>
+        <input type="date" id="hvDate">
+      </details>
       <p class="hint">Zondagen en feestdagen tellen niet mee. Op een verlofdag werk je niet voor Cewez, dus daar is er geen loon. Je vakantiegeld krijg je één keer per jaar van het vakantiefonds, met een eigen voorheffing. Vul het in bij <b>Belastingbrief</b> zodra je het krijgt, dan klopt de schatting van je belastingen.</p>
       </details>
     </section>
@@ -1191,13 +1205,13 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-07.1"></script>
-<script src="scan.js?v=2026-10-07.1"></script>
-<script src="aanbod.js?v=2026-10-07.1"></script>
+<script src="loon.js?v=2026-10-07.2"></script>
+<script src="scan.js?v=2026-10-07.2"></script>
+<script src="aanbod.js?v=2026-10-07.2"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-07.1';
+const APP_VERSION = '2026-10-07.2';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1944,7 +1958,7 @@ const APP_VERSION = '2026-10-07.1';
           : `<span class="c">${list.map(shortCode).join('+')}</span>`;
         inner += `${mark}<span class="a">${Math.round(shown(t))}</span>`;
         if (t.otH) inner += '<span class="dot" title="overuren"></span>';
-      } else if (lv) inner += '<span class="lv">verlof</span>';
+      } else if (lv) inner += `<span class="lv">${lv.type === 'herverdeling' ? 'HV' : 'verlof'}</span>`;
       if (pay) inner += `<span class="pay" title="${escapeHtml(pay.map(payTitle).join(', '))}">€</span>`;
       html += `<button class="${cls}" data-date="${iso}">${inner}</button>`;
     }
@@ -2270,7 +2284,8 @@ const APP_VERSION = '2026-10-07.1';
   });
 
   // --- verlof ---------------------------------------------------------------
-  const LEAVE_TYPES = { vakantie: 'jaarlijkse vakantie', 'anciënniteit': 'anciënniteitsverlof', ander: 'ander verlof' };
+  const LEAVE_TYPES = { vakantie: 'jaarlijkse vakantie', 'anciënniteit': 'anciënniteitsverlof', herverdeling: 'herverdelingsdag (HV)', ander: 'ander verlof' };
+  const hvStats = () => Loon.hvLedger(entries, leave, settings.hvStart || {}, isoDate(today));
   const leaveEnabled = () => settings.status !== 'gelegenheid'; // rode kaart: geen verlof, wel Alfapas-teller
   const leaveOn = (iso) => (leaveEnabled() ? leave.find((l) => l.date === iso) : undefined);
   const newGroupId = () => 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -2287,7 +2302,7 @@ const APP_VERSION = '2026-10-07.1';
   function leaveStats() {
     const todayIso = isoDate(today);
     const y = todayIso.slice(0, 4);
-    const year = leave.filter((l) => l.date.startsWith(y));
+    const year = leave.filter((l) => l.date.startsWith(y) && l.type !== 'herverdeling');
     const quota = Number(settings.leaveQuota) || 0;
     const next = leaveGroups().find((g) => g.days[g.days.length - 1] >= todayIso);
     return { y, count: year.length, taken: year.filter((l) => l.date < todayIso).length, quota, left: quota ? quota - year.length : null, next };
@@ -2318,6 +2333,16 @@ const APP_VERSION = '2026-10-07.1';
     }).join('');
     $('lvList').hidden = !groups.length;
     $('lvQuota').value = settings.leaveQuota || '';
+    const hv = hvStats();
+    const st0 = settings.hvStart || {};
+    $('hvStatus').className = 'medstatus' + (hv.balance < 0 ? ' warn' : '');
+    $('hvStatus').textContent = `Tegoed: ${dayCount(hv.balance)} HV`
+      + (hv.planned ? ` (en ${hv.planned} gepland)` : '')
+      + ` · nog ${hv.toNext} shift${hv.toNext === 1 ? '' : 'en'} tot je volgende (${hv.progress}/${hv.per}).`
+      + (st0.date ? '' : ' Vul je tegoed van Cewez in, dan klopt het.');
+    $('hvBal').value = st0.balance ?? '';
+    $('hvCnt').value = st0.count ?? '';
+    $('hvDate').value = st0.date || '';
   }
   function addLeave(from, to, type, saturdays) {
     const days = Loon.leaveDays(from, to, { saturdays, overrides: holidayOverrides }).filter((d) => !leave.some((l) => l.date === d));
@@ -2345,6 +2370,13 @@ const APP_VERSION = '2026-10-07.1';
     if (!g || !confirm('Dit verlof verwijderen?')) return;
     leave = leave.filter((l) => l.g !== g);
     saveLeave();
+    render();
+  });
+  $('hvStartBox').addEventListener('change', () => {
+    const bal = numIn($('hvBal').value), cnt = numIn($('hvCnt').value);
+    if (!Number.isFinite(bal) || bal < 0 || !Number.isFinite(cnt) || cnt < 0 || cnt >= 25) { renderLeave(); return alert('Vul een geldig tegoed in, en een teller van 0 tot 24 shiften.'); }
+    settings.hvStart = { balance: Math.round(bal), count: Math.round(cnt), date: $('hvDate').value || isoDate(today) };
+    save(KEY_SETTINGS, settings);
     render();
   });
   $('lvQuota').addEventListener('change', () => {
@@ -2654,8 +2686,10 @@ const APP_VERSION = '2026-10-07.1';
     if (on) {
       const ls = leaveStats();
       $('dLeave').textContent = ls.left !== null ? `${ls.left} over` : dayCount(ls.count);
-      $('dLeaveM').textContent = ls.next ? `volgende: ${rangeText(ls.next.days)}`
-        : ls.count ? `aangevraagd in ${ls.y}` : 'nog geen verlof ingevuld';
+      const hv = hvStats();
+      $('dLeaveM').textContent = (ls.next ? `volgende: ${rangeText(ls.next.days)}`
+        : ls.count ? `aangevraagd in ${ls.y}` : 'nog geen verlof ingevuld')
+        + ` · HV: ${hv.balance} (nog ${hv.toNext} shiften)`;
     }
   }
   $('dash').addEventListener('click', (ev) => {

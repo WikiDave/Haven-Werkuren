@@ -275,3 +275,23 @@ test('gewerkte dagen voor de Alfapas: elke dag één keer, afbestellingen niet',
   ];
   assert.deepEqual(Loon.workedDays(entries, '2026-09-01', '2026-10-06'), ['2026-09-01', '2026-09-03']);
 });
+
+test('herverdelingsdagen: 1 per 25 shiften, min opgenomen HV', () => {
+  const entries = [];
+  for (let d = 1; d <= 28; d++) entries.push({ date: `2026-09-${String(d).padStart(2, '0')}`, kind: d === 28 ? 'afbestel' : 'full' });
+  const leave = [{ date: '2026-10-02', type: 'herverdeling' }, { date: '2026-10-20', type: 'herverdeling' }, { date: '2026-10-03', type: 'vakantie' }];
+  // zonder startsaldo: 27 shiften -> 1 HV, 2 naar de volgende; 1 HV opgenomen, 1 gepland
+  const a = Loon.hvLedger(entries, leave, {}, '2026-10-07');
+  assert.equal(a.earned, 1);
+  assert.equal(a.progress, 2);
+  assert.equal(a.toNext, 23);
+  assert.equal(a.taken, 1);
+  assert.equal(a.planned, 1);
+  assert.equal(a.balance, 0);
+  // met tegoed van Cewez op 10/09: 3 HV en 20 shiften; daarna nog 18 shiften (11-28/09 zonder afbestelling = 17) 
+  const b = Loon.hvLedger(entries, leave, { date: '2026-09-10', balance: 3, count: 20 }, '2026-10-07');
+  assert.equal(b.shifts, 17);
+  assert.equal(b.earned, 1);   // 20 + 17 = 37 -> 1 HV, 12 naar de volgende
+  assert.equal(b.progress, 12);
+  assert.equal(b.balance, 3);  // 3 + 1 - 1 opgenomen
+});

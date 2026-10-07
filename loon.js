@@ -572,6 +572,21 @@
     return [...days].sort();
   }
 
+  // --- herverdelingsdagen (HV) -------------------------------------------------------
+  // Erkende havenarbeiders bouwen 1 herverdelingsdag op per 25 gewerkte shiften (afbestellingen tellen niet).
+  // start: { date, balance, count } = tegoed en teller volgens Cewez op die datum (alles tot en met die datum zit erin).
+  const HV_PER = 25;
+  function hvLedger(entries, leaveDays, start = {}, today) {
+    const from = start.date || '';
+    const shifts = entries.filter((e) => e.kind !== 'afbestel' && e.date > from && (!today || e.date <= today)).length;
+    const progress = (Number(start.count) || 0) + shifts;
+    const earned = Math.floor(progress / HV_PER);
+    const taken = leaveDays.filter((l) => l.type === 'herverdeling' && l.date > from && (!today || l.date <= today)).length;
+    const planned = leaveDays.filter((l) => l.type === 'herverdeling' && today && l.date > today).length;
+    const balance = (Number(start.balance) || 0) + earned - taken;
+    return { balance, earned, taken, planned, shifts, progress: progress % HV_PER, toNext: HV_PER - (progress % HV_PER), per: HV_PER };
+  }
+
   // --- verlof ---------------------------------------------------------------------
   // verlofdagen tussen twee datums: zondagen en feestdagen tellen niet mee, zaterdagen alleen als je die vraagt
   function leaveDays(from, to, { saturdays = false, overrides = {} } = {}) {
@@ -591,7 +606,7 @@
     START_HOURS, RATE_ROWS, DEFAULT_RATE_PERIODS, FUNCTIONS, FUNCTION_GROUPS, functionOf, PARAMS, TRAVEL, PLACES, DEFAULT_SETTINGS,
     legalHolidays, holidays, holidayOn, tariffRow, rateFor, travelAllowance,
     DEFAULT_WITHHOLDING, DEFAULT_INCOME_TAX, setTaxTables, getTaxTables, normalizeTable, shiftLines, estimateWithholding, estimateAnnualTax, calcPeriod, calcAll,
-    CLOTHING, CLOTHING_ITEMS, clothingPointsFor, clothingLedger, leaveDays, workedDays,
+    CLOTHING, CLOTHING_ITEMS, clothingPointsFor, clothingLedger, leaveDays, workedDays, hvLedger,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Loon = api;
