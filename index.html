@@ -187,6 +187,14 @@
   .navbtns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
   .navbtns a { display: inline-flex; align-items: center; min-height: 40px; padding: 6px 12px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: 14px; text-decoration: none; }
   .navbtns a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* wat is er nieuw (uitlegscherm) */
+  dialog.sheet section.news { background: var(--accent-soft); border: 0; border-radius: 12px; padding: 12px; }
+  .news-day + .news-day { margin-top: 10px; }
+  .news-day b { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .news-day ul { margin: 4px 0 0; padding-left: 20px; display: grid; gap: 3px; }
+  .news-day li { font-size: 14px; }
+  .news-new { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 700; background: var(--accent); color: var(--card); vertical-align: 1px; }
+  #newsMore { margin-top: 8px; }
   .linkbtn { border: 0; background: transparent; color: var(--accent); font-weight: 600; padding: 8px 0; cursor: pointer; }
   header { display: flex; align-items: flex-start; gap: 12px; }
   header > div:first-child { flex: 1; }
@@ -680,6 +688,11 @@
     <h2 id="welcomeTitle">Haven Werkuren als app</h2>
     <p id="welcomeIntro">Zet de app op je beginscherm. Dan opent hij als een gewone app, zonder adresbalk, en werkt hij ook met slecht bereik op de kaai.</p>
     <button type="button" class="btn" id="installBtn" hidden>App installeren</button>
+
+    <section class="news" id="newsBox">
+      <h3>Wat is er nieuw</h3>
+      <div id="newsList"></div>
+    </section>
 
     <section class="howto" data-os="ios">
       <h3>iPhone (Safari)</h3>
@@ -1205,13 +1218,13 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-07.2"></script>
-<script src="scan.js?v=2026-10-07.2"></script>
-<script src="aanbod.js?v=2026-10-07.2"></script>
+<script src="loon.js?v=2026-10-07.3"></script>
+<script src="scan.js?v=2026-10-07.3"></script>
+<script src="aanbod.js?v=2026-10-07.3"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-07.2';
+const APP_VERSION = '2026-10-07.3';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -2779,7 +2792,43 @@ const APP_VERSION = '2026-10-07.2';
   const os = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ? 'ios'
     : /android/i.test(navigator.userAgent) ? 'android' : '';
   let installPrompt = null;
+  // --- wat is er nieuw -----------------------------------------------------------
+  // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
+  const NEWS = [
+    ['2026-10-07', [
+      'Herverdelingsdagen (HV) bijhouden voor losse pool en time table: tegoed en hoeveel shiften tot je volgende (bij Verlof).',
+      'Wat is er nieuw: dit lijstje bij het openen van de app.',
+      'Kalender: de bedragen in de dagvakjes worden niet meer afgekapt, en "vandaag" springt mee na middernacht.',
+    ]],
+    ['2026-10-06', [
+      'Werkaanbod van Cewez: tekorten per shift, drukte per bedrijf en wie havenarbeiders zoekt.',
+      'Bedrijven bellen voor werk: de nummers van de aanwervers van alle bedrijven.',
+      'Kaaien: plannen van de haven, terminalplannen met parkings en de bedrijfsingangen met Google Maps en Waze.',
+      'Bedrijven: per bedrijf adres, nummers, ingangen, onthaalbrochure, je eigen shiften en notities.',
+      'Statuut rode kaart, losse pool of time table, met Alfapas-teller voor rode kaart.',
+      'Medische controle: kan vanaf 10 maanden, moet binnen 12 maanden.',
+      'Loonbrief, loonfiche of aanslagbiljet fotograferen: de app leest de bedragen.',
+      'Nieuw ontwerp, en kalender en dag bovenaan met de rest netjes gegroepeerd eronder.',
+    ]],
+    ['2026-10-05', [
+      'Overzicht bovenaan, verlof bijhouden en uitbetalingsdagen in de kalender.',
+      'Netto met de officiële sleutelformule, schatting van je belastingbrief en instelbare belastingbedragen.',
+    ]],
+  ];
+  const KEY_NEWS_SEEN = 'haven-werkuren.newsSeen';
+  function renderNews() {
+    const seen = load(KEY_NEWS_SEEN, '');
+    const show = (all) => NEWS.slice(0, all ? NEWS.length : 2).map(([d, items]) => `<div class="news-day">
+      <b>${fmtDate(d, { weekday: 'short', day: 'numeric', month: 'long' })}</b>${seen && d > seen ? '<span class="news-new">nieuw</span>' : ''}
+      <ul>${items.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul></div>`).join('')
+      + (!all && NEWS.length > 2 ? '<button type="button" class="linkbtn" id="newsMore">Ouder nieuws tonen</button>' : '');
+    $('newsList').innerHTML = show(false);
+    $('newsMore')?.addEventListener('click', () => { $('newsList').innerHTML = show(true); });
+    save(KEY_NEWS_SEEN, NEWS[0][0]);
+  }
+
   function openWelcome() {
+    renderNews();
     // jouw toestel eerst en gemarkeerd; geïnstalleerd: geen installatie-uitleg meer nodig
     const howtos = [...document.querySelectorAll('#welcome .howto')];
     for (const h of howtos) { h.hidden = standalone; h.classList.toggle('mine', h.dataset.os === os); }
