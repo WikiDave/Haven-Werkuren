@@ -86,3 +86,7 @@ De kaart "Werkaanbod" toont de tekorten per shift (vandaag en morgen), de drukte
 ## Kaaien
 
 Het vak "Kaaien" opent de plannen van de haven (kaainummers en straten, bezoekersplan, QR-codes van de bedrijfsingangen) als PDF op cewez.be (Wegwijs in de haven). De 14 bedrijfsingangen met hun GPS-punten komen uit die QR-codes; elke ingang heeft een knop voor Google Maps en Waze. Bij elk bedrijf staan ook de ingangen en de link naar de onthaalbrochure.
+
+## Wat is er nieuw
+
+Het uitlegscherm bij het openen toont "Wat is er nieuw" (de twee laatste datums, ouder nieuws op vraag). Wat nieuw is sinds iemands vorige bezoek krijgt het label "nieuw". Voeg bij elke nieuwe functie een regel toe bovenaan `NEWS` in `index.html`.

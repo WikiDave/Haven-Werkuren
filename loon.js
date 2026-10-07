@@ -57,10 +57,22 @@
     chauffeur: { label: 'Chauffeurs (+ 1× overuurloon)', extra: (r) => r.overuur },
     tuig1: { label: 'Speciale tuigen (+ 2× uurloon)', extra: (r) => 2 * r.uur },
     tuig2: { label: 'Speciale tuigen (+ 2× overuurloon)', extra: (r) => 2 * r.overuur },
+    // kaderpersoneel: eigen kolom in de loontabel (shift, uur én overuur), zie KADER_RATES
+    foreman: { label: 'Foreman (eigen loon)', kader: 'foreman', extra: () => 0 },
+    ceelbaas: { label: 'Ceelbaas (eigen loon)', kader: 'ceelbaas', extra: () => 0 },
   };
   const FUNCTIONS = [
     ['alle', 'Alle werk', 'alle'],
     ['highheavy', 'High/heavy chauffeur', 'alle'],
+    ['jumbo', 'Jumbobediener', 'alle'],
+    ['uitwijzer', 'Uitwijzer', 'alle'],
+    ['stouwauto', 'Stouwbreker-zetter auto', 'alle'],
+    ['stouwroro', 'Stouwbreker-zetter ro-ro en high & heavy', 'alle'],
+    ['markeerder-container', 'Markeerder containers', 'alle'],
+    ['markeerder-roro', 'Markeerder ro-ro', 'alle'],
+    ['markeerder-stukgoed', 'Markeerder stukgoed', 'alle'],
+    ['foreman', 'Foreman', 'foreman'],
+    ['ceelbaas', 'Ceelbaas', 'ceelbaas'],
     ['tugmaster', 'Tugmasterchauffeur', 'chauffeur'],
     ['heftruck', 'Heftruckchauffeur', 'chauffeur'],
     ['bobcat', 'Bobcatchauffeur', 'chauffeur'],
@@ -80,6 +92,32 @@
     ['rmgrtg', 'RMG/RTG-bediener', 'tuig2'],
   ].map(([id, label, group]) => ({ id, label, group }));
   const functionOf = (id) => FUNCTIONS.find((f) => f.id === id) || FUNCTIONS[0];
+  const isMarkeerder = (id) => String(id || '').startsWith('markeerder');
+
+  // loon foreman en ceelbaas per startuur: [shift, uur, overuur] (loontabel Cewez geldig vanaf 07/07/2026)
+  const KADER_RATES = [{
+    from: '2026-07-07',
+    foreman: {
+      '04': [336.83, 46.46, 69.69], '05': [286.31, 39.49, 59.24], '06': [235.78, 32.52, 48.78], '07': [229.18, 31.61, 47.42],
+      '08': [224.55, 30.97, 46.46], '09': [238.48, 32.89, 49.34], '10': [241.39, 33.30, 49.95], '11': [241.39, 33.30, 49.95],
+      12: [258.23, 35.62, 53.43], 13: [258.23, 35.62, 53.43], 14: [258.23, 35.62, 53.43], 15: [269.09, 37.12, 55.68],
+      16: [279.93, 38.61, 57.92], 17: [290.77, 40.11, 60.17], 18: [336.83, 46.46, 69.69], ZA: [336.83, 46.46, 69.69], ZO: [449.10, 61.94, 92.91],
+    },
+    ceelbaas: {
+      '04': [403.31, 55.63, 83.45], '05': [342.81, 47.28, 70.92], '06': [282.31, 38.94, 58.41], '07': [274.46, 37.86, 56.79],
+      '08': [268.87, 37.09, 55.64], '09': [285.58, 39.39, 59.09], '10': [289.04, 39.87, 59.81], '11': [289.04, 39.87, 59.81],
+      12: [309.20, 42.65, 63.98], 13: [309.20, 42.65, 63.98], 14: [309.20, 42.65, 63.98], 15: [322.19, 44.44, 66.66],
+      16: [335.17, 46.23, 69.35], 17: [348.15, 48.02, 72.03], 18: [403.31, 55.63, 83.45], ZA: [403.31, 55.63, 83.45], ZO: [537.74, 74.17, 111.26],
+    },
+  }];
+  // voor 7 juli 2026 geen tabel: zelfde verhouding tot het gewone loon als in de tabel van juli
+  const KADER_FACTOR = { foreman: 1.246659, ceelbaas: 1.492664 };
+  function kaderRate(kader, date, row, base) {
+    const t = date >= KADER_RATES[0].from ? validOn(KADER_RATES, date)[kader][row] : null;
+    if (t) return { shift: t[0], uur: t[1], overuur: t[2] };
+    const f = KADER_FACTOR[kader];
+    return { shift: round2(base.shift * f), uur: round2(base.uur * f), overuur: round2(base.overuur * f) };
+  }
 
   // --- vaste waarden (met geldigheidsdatum) ----------------------------------
   const PARAMS = [{
@@ -90,6 +128,7 @@
     internet: 0.80,                           // per volle shift, enkel erkend (losse pool en time table)
     mtcValue: 7.00, mtcOwn: 1.09,             // maaltijdcheque; eigen bijdrage per volle shift
     wijziging: 17.17, afbestelWeekend: 115.16,
+    markage: 13.52,                           // premie markage (art. 31-4°): half uur voorbereidend werk markeerder
   }];
 
   // --- belastingbedragen ------------------------------------------------------------
@@ -252,12 +291,15 @@
     const row = tariffRow(entry.date, entry.code, ctx.holidays, entry.tariff);
     const rate = rateFor(ctx.ratePeriods, entry.date, row);
     const fn = functionOf(entry.func);
-    const shiftWage = round2(rate.shift + FUNCTION_GROUPS[fn.group].extra(rate));
+    const group = FUNCTION_GROUPS[fn.group];
+    const own = group.kader ? kaderRate(group.kader, entry.date, row, rate) : null; // foreman/ceelbaas: eigen loon
+    const shiftWage = own ? own.shift : round2(rate.shift + group.extra(rate));
     const label = `Shiftloon${fn.id === 'alle' ? '' : ` ${fn.label.toLowerCase()}`}${full ? '' : ' (halve shift)'}`;
     // aanname: een halve shift = de helft van het (functie)loon
     add('shiftloon', label, full ? shiftWage : shiftWage / 2, 'A');
     add('premie', 'Vaste premie', full ? p.premie : p.premieHalf, 'A');
-    add('overuren', 'Overuren', (entry.overtime || 0) * rate.overuur, 'A');
+    add('overuren', 'Overuren', (entry.overtime || 0) * (own ? own.overuur : rate.overuur), 'A');
+    if (full && entry.markage && isMarkeerder(fn.id)) add('markage', 'Premie markage', p.markage, 'A');
     if (entry.wijziging) add('wijziging', 'Wijzigingsvergoeding', p.wijziging, s.extraType);
     add('kledij', 'Kledijvergoeding', p.kledij, 'D');
     add('vervoer', s.transport === 'fiets' ? 'Fietsvergoeding' : 'Eigen vervoer', travelAllowance(entry.date, s), 'D');
@@ -572,6 +614,21 @@
     return [...days].sort();
   }
 
+  // --- herverdelingsdagen (HV) -------------------------------------------------------
+  // Erkende havenarbeiders bouwen 1 herverdelingsdag op per 25 gewerkte shiften (afbestellingen tellen niet).
+  // start: { date, balance, count } = tegoed en teller volgens Cewez op die datum (alles tot en met die datum zit erin).
+  const HV_PER = 25;
+  function hvLedger(entries, leaveDays, start = {}, today) {
+    const from = start.date || '';
+    const shifts = entries.filter((e) => e.kind !== 'afbestel' && e.date > from && (!today || e.date <= today)).length;
+    const progress = (Number(start.count) || 0) + shifts;
+    const earned = Math.floor(progress / HV_PER);
+    const taken = leaveDays.filter((l) => l.type === 'herverdeling' && l.date > from && (!today || l.date <= today)).length;
+    const planned = leaveDays.filter((l) => l.type === 'herverdeling' && today && l.date > today).length;
+    const balance = (Number(start.balance) || 0) + earned - taken;
+    return { balance, earned, taken, planned, shifts, progress: progress % HV_PER, toNext: HV_PER - (progress % HV_PER), per: HV_PER };
+  }
+
   // --- verlof ---------------------------------------------------------------------
   // verlofdagen tussen twee datums: zondagen en feestdagen tellen niet mee, zaterdagen alleen als je die vraagt
   function leaveDays(from, to, { saturdays = false, overrides = {} } = {}) {
@@ -588,10 +645,10 @@
 
   const api = {
     round2, addDays, weekday, periodOf, paymentDate,
-    START_HOURS, RATE_ROWS, DEFAULT_RATE_PERIODS, FUNCTIONS, FUNCTION_GROUPS, functionOf, PARAMS, TRAVEL, PLACES, DEFAULT_SETTINGS,
+    START_HOURS, RATE_ROWS, DEFAULT_RATE_PERIODS, FUNCTIONS, FUNCTION_GROUPS, functionOf, isMarkeerder, KADER_RATES, PARAMS, TRAVEL, PLACES, DEFAULT_SETTINGS,
     legalHolidays, holidays, holidayOn, tariffRow, rateFor, travelAllowance,
     DEFAULT_WITHHOLDING, DEFAULT_INCOME_TAX, setTaxTables, getTaxTables, normalizeTable, shiftLines, estimateWithholding, estimateAnnualTax, calcPeriod, calcAll,
-    CLOTHING, CLOTHING_ITEMS, clothingPointsFor, clothingLedger, leaveDays, workedDays,
+    CLOTHING, CLOTHING_ITEMS, clothingPointsFor, clothingLedger, leaveDays, workedDays, hvLedger,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Loon = api;

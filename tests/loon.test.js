@@ -275,3 +275,36 @@ test('gewerkte dagen voor de Alfapas: elke dag één keer, afbestellingen niet',
   ];
   assert.deepEqual(Loon.workedDays(entries, '2026-09-01', '2026-10-06'), ['2026-09-01', '2026-09-03']);
 });
+
+test('herverdelingsdagen: 1 per 25 shiften, min opgenomen HV', () => {
+  const entries = [];
+  for (let d = 1; d <= 28; d++) entries.push({ date: `2026-09-${String(d).padStart(2, '0')}`, kind: d === 28 ? 'afbestel' : 'full' });
+  const leave = [{ date: '2026-10-02', type: 'herverdeling' }, { date: '2026-10-20', type: 'herverdeling' }, { date: '2026-10-03', type: 'vakantie' }];
+  // zonder startsaldo: 27 shiften -> 1 HV, 2 naar de volgende; 1 HV opgenomen, 1 gepland
+  const a = Loon.hvLedger(entries, leave, {}, '2026-10-07');
+  assert.equal(a.earned, 1);
+  assert.equal(a.progress, 2);
+  assert.equal(a.toNext, 23);
+  assert.equal(a.taken, 1);
+  assert.equal(a.planned, 1);
+  assert.equal(a.balance, 0);
+  // met tegoed van Cewez op 10/09: 3 HV en 20 shiften; daarna nog 18 shiften (11-28/09 zonder afbestelling = 17) 
+  const b = Loon.hvLedger(entries, leave, { date: '2026-09-10', balance: 3, count: 20 }, '2026-10-07');
+  assert.equal(b.shifts, 17);
+  assert.equal(b.earned, 1);   // 20 + 17 = 37 -> 1 HV, 12 naar de volgende
+  assert.equal(b.progress, 12);
+  assert.equal(b.balance, 3);  // 3 + 1 - 1 opgenomen
+});
+
+test('foreman en ceelbaas: eigen loon uit de loontabel, markeerder met premie markage', () => {
+  const sh = (func, extra = {}) => Loon.shiftLines(shift('2026-10-08', '08', { func, ...extra }), ctx({})).lines;
+  const get = (lines, key) => lines.find((l) => l.key === key)?.amount;
+  assert.equal(get(sh('alle'), 'shiftloon'), 180.12);
+  assert.equal(get(sh('markeerder-roro'), 'shiftloon'), 180.12);   // markeerders: loon alle werk
+  assert.equal(get(sh('foreman'), 'shiftloon'), 224.55);
+  assert.equal(get(sh('ceelbaas'), 'shiftloon'), 268.87);
+  assert.equal(get(sh('foreman', { overtime: 1 }), 'overuren'), 46.46); // overuur foreman
+  assert.equal(get(sh('markeerder-roro', { markage: true }), 'markage'), 13.52);
+  assert.equal(get(sh('alle', { markage: true }), 'markage'), undefined); // enkel voor markeerders
+  assert.equal(get(Loon.shiftLines(shift('2026-10-10', '08', { func: 'foreman' }), ctx({})).lines, 'shiftloon'), 336.83); // zaterdag
+});
