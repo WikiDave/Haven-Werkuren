@@ -90,3 +90,7 @@ Het vak "Kaaien" opent de plannen van de haven (kaainummers en straten, bezoeker
 ## Wat is er nieuw
 
 Het uitlegscherm bij het openen toont "Wat is er nieuw" (de twee laatste datums, ouder nieuws op vraag). Wat nieuw is sinds iemands vorige bezoek krijgt het label "nieuw". Voeg bij elke nieuwe functie een regel toe bovenaan `NEWS` in `index.html`.
+
+## Contact, Fout melden en Voorstel doen
+
+Drie vakjes: onderwerp, bericht en een bestand (foto of PDF, max 10 MB). Het formulier gaat via [FormSubmit](https://formsubmit.co) per e-mail naar de maker. Het onderwerp van de mail is `HAVEN APP (plaats in de app)(onderwerp van de gebruiker)`, de mail bevat datum en tijd en de app-versie. Het e-mailadres staat nergens in de app of in deze repo: `MAIL_ID` in `index.html` is de code die FormSubmit gaf na het activeren. Na het versturen stuurt FormSubmit door naar `verstuurd.html` in een verborgen frame; zo weet de app dat het gelukt is.
