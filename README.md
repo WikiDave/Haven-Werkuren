@@ -90,3 +90,7 @@ Het vak "Kaaien" opent de plannen van de haven (kaainummers en straten, bezoeker
 ## Wat is er nieuw
 
 Het uitlegscherm bij het openen toont "Wat is er nieuw" (de twee laatste datums, ouder nieuws op vraag). Wat nieuw is sinds iemands vorige bezoek krijgt het label "nieuw". Voeg bij elke nieuwe functie een regel toe bovenaan `NEWS` in `index.html`.
+
+## Meldingen zonder account
+
+"Fout melden" en "Voorstel doen" gaan via een Cloudflare Worker die er een GitHub-issue van maakt, zodat gebruikers geen GitHub-account nodig hebben. Code en instelstappen: `melding-worker/`. Zolang `MELD_URL` in `index.html` leeg is, opent de app GitHub zelf (met account).

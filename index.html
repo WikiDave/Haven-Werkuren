@@ -653,8 +653,8 @@
     <label for="bugExpect">Wat had je verwacht? (optioneel)</label>
     <textarea id="bugExpect" rows="2" placeholder="bv. op mijn loonbrief staat € 239,84"></textarea>
     <label class="check"><input type="checkbox" id="bugDay"> <span>Gekozen dag meesturen (<span id="bugDayName"></span>: shift, functie en bedragen, zonder notities)</span></label>
-    <p class="hint">De app-versie en het type toestel worden automatisch toegevoegd. Let op: meldingen zijn <b>openbaar</b> zichtbaar op GitHub. Je hebt een gratis GitHub-account nodig om ze te versturen.</p>
-    <button type="button" class="btn" id="bugSend">Melding maken op GitHub</button>
+    <p class="hint">De app-versie en het type toestel worden automatisch toegevoegd. Let op: meldingen zijn <b>openbaar</b> zichtbaar op GitHub. Zet er dus geen naam of telefoonnummer in.</p>
+    <button type="button" class="btn" id="bugSend">Melding versturen</button>
     <button type="button" class="btn ghost" id="bugCopy">Tekst kopiëren</button>
     <p class="hint" id="bugMsg" hidden></p>
   </dialog>
@@ -667,8 +667,8 @@
     <textarea id="ideaWhat" rows="4" placeholder="bv. een overzicht van mijn overuren per jaar"></textarea>
     <label for="ideaWhy">Waarom zou dat helpen? (optioneel)</label>
     <textarea id="ideaWhy" rows="2" placeholder="bv. dan zie ik meteen hoeveel overuren ik dit jaar maakte"></textarea>
-    <p class="hint">De app-versie wordt automatisch toegevoegd. Let op: voorstellen zijn <b>openbaar</b> zichtbaar op GitHub. Je hebt een gratis GitHub-account nodig om ze te versturen. Geen account? Kopieer de tekst en stuur hem door.</p>
-    <button type="button" class="btn" id="ideaSend">Voorstel maken op GitHub</button>
+    <p class="hint">De app-versie wordt automatisch toegevoegd. Let op: voorstellen zijn <b>openbaar</b> zichtbaar op GitHub. Zet er dus geen naam of telefoonnummer in.</p>
+    <button type="button" class="btn" id="ideaSend">Voorstel versturen</button>
     <button type="button" class="btn ghost" id="ideaCopy">Tekst kopiëren</button>
     <p class="hint" id="ideaMsg" hidden></p>
   </dialog>
@@ -1283,13 +1283,13 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-07.7"></script>
-<script src="scan.js?v=2026-10-07.7"></script>
-<script src="aanbod.js?v=2026-10-07.7"></script>
+<script src="loon.js?v=2026-10-07.8"></script>
+<script src="scan.js?v=2026-10-07.8"></script>
+<script src="aanbod.js?v=2026-10-07.8"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-07.7';
+const APP_VERSION = '2026-10-07.8';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -3004,6 +3004,24 @@ const APP_VERSION = '2026-10-07.7';
 
   // --- fout melden (GitHub-issue) --------------------------------------------
   const ISSUE_URL = 'https://github.com/WikiDave/Cewez-Calculator/issues/new';
+  // Cloudflare Worker (map melding-worker) die de melding op GitHub zet, zonder GitHub-account.
+  // Leeg = nog niet ingesteld: dan opent GitHub zelf (daar is wel een account nodig).
+  const MELD_URL = '';
+  // melding versturen; geeft een tekst terug voor onder de knop
+  async function sendReport(kind, { title, body }, labels) {
+    if (MELD_URL) {
+      try {
+        const res = await fetch(MELD_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, title, body, website: '' }) });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) return `Verstuurd, bedankt! Je ${kind === 'bug' ? 'melding' : 'voorstel'} staat op GitHub als nummer ${data.number}.`;
+        return data.error || 'Versturen lukte niet. Probeer later opnieuw, of kopieer de tekst.';
+      } catch {
+        return 'Versturen lukte niet (geen verbinding?). Probeer later opnieuw, of kopieer de tekst.';
+      }
+    }
+    window.open(`${ISSUE_URL}?labels=${labels}&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`, '_blank', 'noopener');
+    return 'GitHub is geopend in een nieuw venster. Meld je aan en tik op "Submit new issue" om te versturen.';
+  }
   function bugReport() {
     const what = $('bugWhat').value.trim();
     const expect = $('bugExpect').value.trim();
@@ -3184,10 +3202,8 @@ const APP_VERSION = '2026-10-07.7';
   $('bugDialog').addEventListener('click', (ev) => { if (ev.target === $('bugDialog')) $('bugDialog').close(); });
   $('bugSend').addEventListener('click', () => {
     if (!$('bugWhat').value.trim()) { bugMsg('Beschrijf eerst kort wat er misging.'); $('bugWhat').focus(); return; }
-    const { title, body } = bugReport();
-    const url = `${ISSUE_URL}?labels=bug&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
-    window.open(url, '_blank', 'noopener');
-    bugMsg('GitHub is geopend in een nieuw venster. Meld je aan en tik op "Submit new issue" om te versturen.');
+    $('bugSend').disabled = true; bugMsg('Versturen…');
+    sendReport('bug', bugReport(), 'bug').then((msg) => { bugMsg(msg); $('bugSend').disabled = false; if (msg.startsWith('Verstuurd')) { $('bugWhat').value = ''; $('bugExpect').value = ''; } });
   });
   $('bugCopy').addEventListener('click', async () => {
     const { title, body } = bugReport();
@@ -3215,9 +3231,8 @@ const APP_VERSION = '2026-10-07.7';
   $('ideaDialog').addEventListener('click', (ev) => { if (ev.target === $('ideaDialog')) $('ideaDialog').close(); });
   $('ideaSend').addEventListener('click', () => {
     if (!$('ideaWhat').value.trim()) { ideaMsg('Beschrijf eerst kort je voorstel.'); $('ideaWhat').focus(); return; }
-    const { title, body } = ideaReport();
-    window.open(`${ISSUE_URL}?labels=enhancement&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`, '_blank', 'noopener');
-    ideaMsg('GitHub is geopend in een nieuw venster. Meld je aan en tik op "Submit new issue" om te versturen.');
+    $('ideaSend').disabled = true; ideaMsg('Versturen…');
+    sendReport('idea', ideaReport(), 'enhancement').then((msg) => { ideaMsg(msg); $('ideaSend').disabled = false; if (msg.startsWith('Verstuurd')) { $('ideaWhat').value = ''; $('ideaWhy').value = ''; } });
   });
   $('ideaCopy').addEventListener('click', async () => {
     const { title, body } = ideaReport();
