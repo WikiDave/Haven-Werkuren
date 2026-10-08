@@ -8,6 +8,10 @@ Werkuren en loon bijhouden voor havenarbeid in Zeebrugge: kies per dag het bedri
 - Gegevens blijven op je toestel (browseropslag) en worden niet naar de maker of naar iemand anders gestuurd; maak af en toe een back-up via "Back-up & export".
 - Privacyverklaring: [`privacy.html`](privacy.html). Geen advertenties, cookies, tracking of teller.
 
+## Licentie
+
+© 2026 David Schütt, alle rechten voorbehouden (zie [`LICENSE`](LICENSE)). De broncode is zichtbaar, maar kopiëren, aanpassen, opnieuw publiceren of verspreiden mag niet zonder schriftelijke toestemming. Onderdelen van anderen in `vendor/` vallen onder hun eigen licentie (Leaflet: BSD 2-Clause, Tesseract.js: Apache 2.0, lettertypen: SIL Open Font License 1.1).
+
 ## Beveiliging
 
 - Alle code staat in eigen bestanden (`app.js`, `loon.js`, `scan.js`); `index.html` heeft geen inline scripts. Een Content-Security-Policy (meta-tag in `index.html`) laat alleen eigen bestanden toe, plus de kaarttegels (OpenStreetMap, Esri) en FormSubmit (berichten aan de maker). Een test controleert dat er geen inline scripts bijkomen.

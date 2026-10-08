@@ -1,0 +1,19 @@
+Copyright (c) 2026 David Schütt. Alle rechten voorbehouden.
+
+Haven Werkuren (de code, de teksten, het ontwerp en de afbeeldingen) is
+auteursrechtelijk beschermd. Je mag de app gratis gebruiken via de officiële
+website van de maker.
+
+Zonder voorafgaande schriftelijke toestemming van de maker is het niet
+toegestaan de app of delen ervan te kopiëren, aan te passen, opnieuw te
+publiceren, te verspreiden, te verkopen of in een andere app of website te
+gebruiken. Dat de broncode zichtbaar is, geeft daar geen toestemming voor.
+
+Toestemming vragen kan via Contact in de app.
+
+Onderdelen van anderen in de map vendor/ vallen onder hun eigen licentie:
+- vendor/leaflet: Leaflet (BSD 2-Clause, zie vendor/leaflet/LICENSE)
+- vendor/tesseract: Tesseract.js en tesseract.js-core (Apache 2.0, zie de
+  LICENSE-bestanden in die map)
+- vendor/fonts: Barlow Condensed en Public Sans (SIL Open Font License 1.1,
+  zie vendor/fonts/OFL-Barlow.txt en vendor/fonts/OFL-PublicSans.txt)
