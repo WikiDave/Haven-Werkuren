@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-08.8';
+const APP_VERSION = '2026-10-08.9';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1607,6 +1607,7 @@ const APP_VERSION = '2026-10-08.8';
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
     ['2026-10-08', [
+      'Chauffeurs (bv. tugmaster), kraanmannen en speciale tuigen: shift, uur- en overuurloon nu precies volgens de loontabel. Overuren waren te laag (bv. tugmaster 8u: € 44,88 per overuur in plaats van € 37,26). Bedankt voor de melding!',
       'De app heet nu alleen Haven Werkuren en krijgt een nieuw webadres. Het is geen app van Cewez.',
       'Weggehaald: het werkaanbod, de nummers van de aanwervers en de bedrijfsingangen (kijk daarvoor op cewez.be of in MyJob), de logo\'s van de bedrijven en de teller.',
       'Nieuwe privacyverklaring: onderaan de pagina en in het uitlegscherm.',
