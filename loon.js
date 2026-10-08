@@ -303,6 +303,8 @@
     // premie markage: bedrag zoals de gebruiker het invulde (oude shiften: true = vast bedrag, enkel volle shift)
     const markage = typeof entry.markage === 'number' ? entry.markage : (full && entry.markage === true ? p.markage : 0);
     if (markage > 0 && isMarkeerder(fn.id)) add('markage', 'Premie markage', markage, 'A');
+    // premie lashing: sommige bedrijven betalen lashers meer; bedrag zoals de gebruiker het invulde
+    if (entry.lash > 0) add('lash', 'Premie lashing', entry.lash, 'A');
     if (entry.wijziging) add('wijziging', 'Wijzigingsvergoeding', p.wijziging, s.extraType);
     add('kledij', 'Kledijvergoeding', p.kledij, 'D');
     add('vervoer', s.transport === 'fiets' ? 'Fietsvergoeding' : 'Eigen vervoer', travelAllowance(entry.date, s), 'D');
