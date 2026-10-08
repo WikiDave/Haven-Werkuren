@@ -54,9 +54,11 @@
   // Functieloon = basisloon alle werk van die shift + een toeslag uit dezelfde rij van de loontabel.
   const FUNCTION_GROUPS = {
     alle: { label: 'Alle werk', extra: () => 0 },
-    chauffeur: { label: 'Chauffeurs (+ 1× overuurloon)', extra: (r) => r.overuur },
-    tuig1: { label: 'Speciale tuigen (+ 2× uurloon)', extra: (r) => 2 * r.uur },
-    tuig2: { label: 'Speciale tuigen (+ 2× overuurloon)', extra: (r) => 2 * r.overuur },
+    // chauffeurs, kraanmannen en speciale tuigen: eigen kolom in de loontabel (shift, uur én overuur);
+    // vóór 7 juli 2026 (geen tabel): basisloon + toeslag volgens de Codex, uur en overuur in dezelfde verhouding
+    chauffeur: { label: 'Chauffeurs', kader: 'chauffeur', extra: (r) => r.overuur },
+    tuig1: { label: 'Kraanman', kader: 'kraanman', extra: (r) => 2 * r.uur },
+    tuig2: { label: 'Speciale tuigen', kader: 'tuig', extra: (r) => 2 * r.overuur },
     // kaderpersoneel: eigen kolom in de loontabel (shift, uur én overuur), zie KADER_RATES
     foreman: { label: 'Foreman (eigen loon)', kader: 'foreman', extra: () => 0 },
     ceelbaas: { label: 'Ceelbaas (eigen loon)', kader: 'ceelbaas', extra: () => 0 },
@@ -94,9 +96,27 @@
   const functionOf = (id) => FUNCTIONS.find((f) => f.id === id) || FUNCTIONS[0];
   const isMarkeerder = (id) => String(id || '').startsWith('markeerder');
 
-  // loon foreman en ceelbaas per startuur: [shift, uur, overuur] (loontabel Cewez geldig vanaf 07/07/2026)
+  // eigen loon per startuur: [shift, uur, overuur] (functielonen havenarbeiders, loontabel Cewez geldig vanaf 07/07/2026)
   const KADER_RATES = [{
     from: '2026-07-07',
+    chauffeur: {
+      '04': [325.37, 44.88, 67.32], '05': [276.57, 38.15, 57.23], '06': [227.76, 31.42, 47.13], '07': [221.41, 30.54, 45.81],
+      '08': [216.91, 29.92, 44.88], '09': [230.39, 31.78, 47.67], '10': [233.18, 32.16, 48.24], '11': [233.18, 32.16, 48.24],
+      12: [249.45, 34.41, 51.62], 13: [249.45, 34.41, 51.62], 14: [249.45, 34.41, 51.62], 15: [259.94, 35.85, 53.78],
+      16: [270.41, 37.30, 55.95], 17: [280.88, 38.74, 58.11], 18: [325.37, 44.88, 67.32], ZA: [325.37, 44.88, 67.32], ZO: [433.82, 59.84, 89.76],
+    },
+    kraanman: {
+      '04': [343.70, 47.41, 71.12], '05': [292.15, 40.30, 60.45], '06': [240.59, 33.18, 49.77], '07': [233.84, 32.25, 48.38],
+      '08': [229.13, 31.60, 47.40], '09': [243.32, 33.56, 50.34], '10': [246.32, 33.98, 50.97], '11': [246.32, 33.98, 50.97],
+      12: [263.50, 36.34, 54.51], 13: [263.50, 36.34, 54.51], 14: [263.50, 36.34, 54.51], 15: [274.54, 37.87, 56.81],
+      16: [285.61, 39.39, 59.09], 17: [296.68, 40.92, 61.38], 18: [343.70, 47.41, 71.12], ZA: [343.70, 47.41, 71.12], ZO: [458.26, 63.21, 94.82],
+    },
+    tuig: {
+      '04': [380.39, 52.47, 78.71], '05': [323.33, 44.60, 66.90], '06': [266.27, 36.73, 55.10], '07': [258.85, 35.70, 53.55],
+      '08': [253.59, 34.98, 52.47], '09': [269.33, 37.15, 55.73], '10': [272.61, 37.60, 56.40], '11': [272.61, 37.60, 56.40],
+      12: [291.63, 40.22, 60.33], 13: [291.63, 40.22, 60.33], 14: [291.63, 40.22, 60.33], 15: [303.85, 41.91, 62.87],
+      16: [316.10, 43.60, 65.40], 17: [328.35, 45.29, 67.94], 18: [380.39, 52.47, 78.71], ZA: [380.39, 52.47, 78.71], ZO: [507.18, 69.96, 104.94],
+    },
     foreman: {
       '04': [336.83, 46.46, 69.69], '05': [286.31, 39.49, 59.24], '06': [235.78, 32.52, 48.78], '07': [229.18, 31.61, 47.42],
       '08': [224.55, 30.97, 46.46], '09': [238.48, 32.89, 49.34], '10': [241.39, 33.30, 49.95], '11': [241.39, 33.30, 49.95],
@@ -110,12 +130,13 @@
       16: [335.17, 46.23, 69.35], 17: [348.15, 48.02, 72.03], 18: [403.31, 55.63, 83.45], ZA: [403.31, 55.63, 83.45], ZO: [537.74, 74.17, 111.26],
     },
   }];
-  // voor 7 juli 2026 geen tabel: zelfde verhouding tot het gewone loon als in de tabel van juli
+  // voor 7 juli 2026 geen tabel: foreman en ceelbaas in dezelfde verhouding tot het gewone loon als in de tabel van juli;
+  // functielonen volgens de Codex (basisloon + toeslag), uur en overuur in dezelfde verhouding als de shift
   const KADER_FACTOR = { foreman: 1.246659, ceelbaas: 1.492664 };
-  function kaderRate(kader, date, row, base) {
-    const t = date >= KADER_RATES[0].from ? validOn(KADER_RATES, date)[kader][row] : null;
+  function kaderRate(kader, date, row, base, extra) {
+    const t = date >= KADER_RATES[0].from ? validOn(KADER_RATES, date)[kader]?.[row] : null;
     if (t) return { shift: t[0], uur: t[1], overuur: t[2] };
-    const f = KADER_FACTOR[kader];
+    const f = KADER_FACTOR[kader] || (base.shift + extra(base)) / base.shift;
     return { shift: round2(base.shift * f), uur: round2(base.uur * f), overuur: round2(base.overuur * f) };
   }
 
@@ -293,7 +314,7 @@
     const rate = rateFor(ctx.ratePeriods, entry.date, row);
     const fn = functionOf(entry.func);
     const group = FUNCTION_GROUPS[fn.group];
-    const own = group.kader ? kaderRate(group.kader, entry.date, row, rate) : null; // foreman/ceelbaas: eigen loon
+    const own = group.kader ? kaderRate(group.kader, entry.date, row, rate, group.extra) : null; // eigen loon uit de loontabel
     const shiftWage = own ? own.shift : round2(rate.shift + group.extra(rate));
     const label = `Shiftloon${fn.id === 'alle' ? '' : ` ${fn.label.toLowerCase()}`}${full ? '' : ' (halve shift)'}`;
     // aanname: een halve shift = de helft van het (functie)loon

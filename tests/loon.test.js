@@ -195,16 +195,22 @@ test('kledijartikelen uit bijlage 11', () => {
   assert.equal(new Set(Loon.CLOTHING_ITEMS.map((i) => i.id)).size, Loon.CLOTHING_ITEMS.length);
 });
 
-test('functielonen volgens Codex art. 31', () => {
-  const wage = (date, code, func) => Loon.shiftLines(shift(date, code, { func }), ctx()).lines.find((l) => l.key === 'shiftloon').amount;
+test('functielonen: eigen kolom in de loontabel vanaf 7 juli 2026, daarvoor Codex art. 31', () => {
+  const line = (date, code, func, key, extra = {}) => Loon.shiftLines(shift(date, code, { func, ...extra }), ctx()).lines.find((l) => l.key === key)?.amount;
+  const wage = (date, code, func) => line(date, code, func, 'shiftloon');
   assert.equal(wage('2026-10-06', '08', 'alle'), 180.12);
   assert.equal(wage('2026-10-06', '08', 'highheavy'), 180.12);       // als alle werk
-  assert.equal(wage('2026-10-06', '08', 'tugmaster'), 217.38);       // 180,12 + 37,26
-  assert.equal(wage('2026-10-06', '08', 'reachstacker'), 229.80);    // 180,12 + 2 x 24,84
-  assert.equal(wage('2026-10-06', '08', 'straddle'), 254.64);        // 180,12 + 2 x 37,26
-  assert.equal(wage('2026-10-10', '08', 'tugmaster'), 326.09);       // zaterdag: 270,18 + 55,91
+  assert.equal(wage('2026-10-06', '08', 'tugmaster'), 216.91);       // loontabel, kolom chauffeur
+  assert.equal(wage('2026-10-06', '08', 'reachstacker'), 229.13);    // kolom kraanman
+  assert.equal(wage('2026-10-06', '08', 'straddle'), 253.59);        // kolom speciale tuigen
+  assert.equal(wage('2026-10-10', '08', 'tugmaster'), 325.37);       // zaterdag
+  assert.equal(line('2026-10-06', '08', 'tugmaster', 'overuren', { overtime: 1 }), 44.88); // overuur chauffeur, niet 37,26
+  assert.equal(line('2026-10-06', '14', 'straddle', 'overuren', { overtime: 2 }), 120.66); // 2 x 60,33
   const half = Loon.shiftLines(shift('2026-10-06', '08', { func: 'tugmaster', kind: 'half' }), ctx()).lines.find((l) => l.key === 'shiftloon');
-  assert.equal(half.amount, 108.69);
+  assert.ok(Math.abs(half.amount - 108.455) < 0.006);
+  // voor 7 juli 2026: basisloon + 1 x overuurloon (174,49 + 36,11), overuur in dezelfde verhouding
+  assert.equal(wage('2026-06-02', '08', 'tugmaster'), 210.60);
+  assert.equal(line('2026-06-02', '08', 'tugmaster', 'overuren', { overtime: 1 }), 43.58);
 });
 
 test('oudere tarieventabel zonder uurloon', () => {

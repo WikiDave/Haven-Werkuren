@@ -35,7 +35,7 @@ node --test
 
 ## Functies
 
-Functieloon volgens de Codex (artikel 31): basisloon alle werk van de shift plus 1× overuurloon (chauffeurs: tugmaster, heftruck, bobcat, unimog, empty container handler, hoogwerker, tugmaster kaai, verreiker), 2× uurloon (bull, heftruck +20 ton, reachstacker, giekkraan −20 ton, hydraulische kraan) of 2× overuurloon (straddle carrier, portaalkraan, giekkraan +20 ton, RMG/RTG). High/heavy chauffeur = alle werk.
+Functielonen staan vanaf 7 juli 2026 in een eigen kolom van de loontabel (shift, uurloon én overuurloon): chauffeurs (tugmaster, heftruck, bobcat, unimog, empty container handler, hoogwerker, tugmaster kaai, verreiker), kraanman (bull, heftruck +20 ton, reachstacker, giekkraan −20 ton, hydraulische kraan) en speciale tuigen (straddle carrier, portaalkraan, giekkraan +20 ton, RMG/RTG); zie `KADER_RATES` in `loon.js`, samen met foreman en ceelbaas. Overuren worden aan het overuurloon van de functie betaald. Vóór 7 juli 2026 geldt de Codex (artikel 31): basisloon alle werk plus 1× overuurloon (chauffeurs), 2× uurloon (kraanman) of 2× overuurloon (speciale tuigen), met uur- en overuurloon in dezelfde verhouding. High/heavy chauffeur = alle werk.
 
 ## Premies per bedrijf, verlof en dop
 
