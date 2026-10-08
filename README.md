@@ -12,6 +12,17 @@ Werkuren en loon bijhouden voor havenarbeid in Zeebrugge: kies per dag het bedri
 
 © 2026 David Schütt, alle rechten voorbehouden (zie [`LICENSE`](LICENSE)). De broncode is zichtbaar, maar kopiëren, aanpassen, opnieuw publiceren of verspreiden mag niet zonder schriftelijke toestemming. Onderdelen van anderen in `vendor/` vallen onder hun eigen licentie (Leaflet: BSD 2-Clause, Tesseract.js: Apache 2.0, lettertypen: SIL Open Font License 1.1).
 
+## Publiceren
+
+Deze broncode is niet de website. De website staat in de openbare repository `WikiDave/Haven-Werkuren` (GitHub Pages, https://wikidave.github.io/Haven-Werkuren/) en bevat alleen een samengeperste versie:
+
+```
+npm install --prefix /tmp/terser terser@5.36.0
+TERSER=/tmp/terser/node_modules/terser node tools/build-site.mjs ../Haven-Werkuren
+```
+
+`tools/build-site.mjs` perst `app.js`, `loon.js`, `scan.js` en `sw.js` samen, haalt commentaar uit de HTML en CSS en kopieert alleen wat de site nodig heeft (geen tests, geen bouwscripts).
+
 ## Beveiliging
 
 - Alle code staat in eigen bestanden (`app.js`, `loon.js`, `scan.js`); `index.html` heeft geen inline scripts. Een Content-Security-Policy (meta-tag in `index.html`) laat alleen eigen bestanden toe, plus de kaarttegels (OpenStreetMap, Esri) en FormSubmit (berichten aan de maker). Een test controleert dat er geen inline scripts bijkomen.
