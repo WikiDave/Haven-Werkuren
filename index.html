@@ -667,6 +667,18 @@
       <label for="bugFile">Bestand (optioneel)</label>
       <input type="file" id="bugFile" name="attachment" accept="image/*,application/pdf">
       <p class="hint">bv. een schermafbeelding van de app of een foto van je loonbrief. Maximaal 10 MB.</p>
+      <label for="bugVia">Antwoord gewenst? (optioneel)</label>
+      <select id="bugVia" data-via>
+        <option value="">Nee, geen antwoord nodig</option>
+        <option value="email">Ja, via e-mail</option>
+        <option value="whatsapp">Ja, via WhatsApp</option>
+        <option value="sms">Ja, via sms</option>
+      </select>
+      <div data-via-box hidden>
+        <label for="bugAddr" data-via-label>Je e-mailadres</label>
+        <input id="bugAddr" data-via-addr>
+        <p class="hint">Alleen de maker van de app ziet dit. De app onthoudt het op dit toestel voor de volgende keer.</p>
+      </div>
       <label class="check"><input type="checkbox" id="bugDay"> <span>Gekozen dag meesturen (<span id="bugDayName"></span>: shift, functie en bedragen, zonder notities)</span></label>
       <p class="hint">De app-versie en het type toestel worden automatisch meegestuurd.</p>
       <button type="submit" class="btn">Versturen</button>
@@ -686,6 +698,18 @@
       <label for="ideaFile">Bestand (optioneel)</label>
       <input type="file" id="ideaFile" name="attachment" accept="image/*,application/pdf">
       <p class="hint">bv. een schets of een foto van een papier. Maximaal 10 MB.</p>
+      <label for="ideaVia">Antwoord gewenst? (optioneel)</label>
+      <select id="ideaVia" data-via>
+        <option value="">Nee, geen antwoord nodig</option>
+        <option value="email">Ja, via e-mail</option>
+        <option value="whatsapp">Ja, via WhatsApp</option>
+        <option value="sms">Ja, via sms</option>
+      </select>
+      <div data-via-box hidden>
+        <label for="ideaAddr" data-via-label>Je e-mailadres</label>
+        <input id="ideaAddr" data-via-addr>
+        <p class="hint">Alleen de maker van de app ziet dit. De app onthoudt het op dit toestel voor de volgende keer.</p>
+      </div>
       <p class="hint">De app-versie wordt automatisch meegestuurd.</p>
       <button type="submit" class="btn">Versturen</button>
       <p class="hint mailmsg" role="status" hidden></p>
@@ -1338,6 +1362,18 @@
           <label for="contactFile">Bestand (optioneel)</label>
           <input type="file" id="contactFile" name="attachment" accept="image/*,application/pdf">
           <p class="hint">bv. een foto of een PDF. Maximaal 10 MB.</p>
+          <label for="contactVia">Antwoord gewenst? (optioneel)</label>
+          <select id="contactVia" data-via>
+            <option value="">Nee, geen antwoord nodig</option>
+            <option value="email">Ja, via e-mail</option>
+            <option value="whatsapp">Ja, via WhatsApp</option>
+            <option value="sms">Ja, via sms</option>
+          </select>
+          <div data-via-box hidden>
+            <label for="contactAddr" data-via-label>Je e-mailadres</label>
+            <input id="contactAddr" data-via-addr>
+            <p class="hint">Alleen de maker van de app ziet dit. De app onthoudt het op dit toestel voor de volgende keer.</p>
+          </div>
           <button type="submit" class="btn">Versturen</button>
           <p class="hint mailmsg" role="status" hidden></p>
         </form>
@@ -1354,13 +1390,13 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-08.3"></script>
-<script src="scan.js?v=2026-10-08.3"></script>
-<script src="aanbod.js?v=2026-10-08.3"></script>
+<script src="loon.js?v=2026-10-08.4"></script>
+<script src="scan.js?v=2026-10-08.4"></script>
+<script src="aanbod.js?v=2026-10-08.4"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-08.3';
+const APP_VERSION = '2026-10-08.4';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1481,6 +1517,7 @@ const APP_VERSION = '2026-10-08.3';
   const KEY_AANBOD = 'haven-werkuren.werkaanbod'; // laatst opgehaald werkaanbod van cewez.be
   const KEY_MARKAGE = 'haven-werkuren.markagePremie'; // premie markage per bedrijf, zelf ingevuld
   const KEY_LASH = 'haven-werkuren.lashPremie'; // premie lashing per bedrijf, zelf ingevuld
+  const KEY_REPLY = 'haven-werkuren.replyTo'; // e-mail en gsm voor een antwoord op een bericht: { email, phone }
   const KEY_DOP = 'haven-werkuren.dop'; // dagen dop (werkloosheid): ['2026-10-08', …]
   const load = (k, fallback) => {
     try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fallback; } catch { return fallback; }
@@ -3030,6 +3067,7 @@ const APP_VERSION = '2026-10-08.3';
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
     ['2026-10-08', [
+      'Contact, Fout melden en Voorstel doen: kies of je een antwoord wil, via e-mail, WhatsApp of sms (optioneel).',
       'Niet gewerkt? Kies in de dag Verlof, HV, Recup of Dop. Recup is nieuw als soort verlof.',
       'Dop (werkloosheid) bijhouden: de dagen staan in de kalender. Vul je bedrag per dag in om te zien wat je ongeveer krijgt.',
       'Premie lashing: sommige bedrijven betalen lashers meer. Vink het aan bij je shift en vul het bedrag in; de app onthoudt het per bedrijf.',
@@ -3210,7 +3248,7 @@ const APP_VERSION = '2026-10-08.3';
   };
   // Het formulier gaat naar een verborgen frame. FormSubmit stuurt na het versturen door naar
   // verstuurd.html op onze eigen site: staat dat in het frame, dan is het gelukt.
-  function sendMail(form, place) {
+  function sendMail(form, place, reply) {
     return new Promise((resolve) => {
       const frame = $('mailFrame');
       const added = [];
@@ -3224,6 +3262,11 @@ const APP_VERSION = '2026-10-08.3';
       // volgorde in de mail: datum en plaats bovenaan, dan wat de gebruiker schreef
       add('Plaats', place, true);
       add('Datum', stamp, true);
+      if (reply) {
+        add('Antwoord', `${REPLY_VIA[reply.via]}: ${reply.addr}`);
+        if (reply.via === 'email') add('_replyto', reply.addr); // zo kan de maker gewoon op de mail antwoorden
+        if (reply.via === 'whatsapp') add('WhatsApp', `https://wa.me/${waNumber(reply.addr)}`);
+      }
       for (const [k, v] of Object.entries(mailExtra[place]())) add(k, v);
       add('_subject', `HAVEN APP (${place})(${form.elements.Onderwerp.value.trim()})`);
       add('_template', 'table');
@@ -3253,16 +3296,50 @@ const APP_VERSION = '2026-10-08.3';
       form.submit();
     });
   }
+  const REPLY_VIA = { email: 'E-mail', whatsapp: 'WhatsApp', sms: 'Sms' };
+  // gsm-nummer voor een WhatsApp-link: 0470 12 34 56 -> 32470123456
+  function waNumber(s) {
+    let d = s.replace(/[^\d+]/g, '');
+    if (d.startsWith('+')) d = d.slice(1);
+    else if (d.startsWith('00')) d = d.slice(2);
+    else if (d.startsWith('0')) d = '32' + d.slice(1);
+    return d.replace(/\D/g, '');
+  }
   let mailBusy = false;
   for (const form of document.querySelectorAll('form.mailform')) {
     const out = form.querySelector('.mailmsg');
     const say = (t) => { out.textContent = t; out.hidden = !t; };
     form.addEventListener('input', () => { if (!mailBusy) say(''); });
+    // antwoord gewenst: vakje voor e-mailadres of gsm-nummer, ingevuld met wat vorige keer gebruikt werd
+    const via = form.querySelector('[data-via]');
+    const addr = form.querySelector('[data-via-addr]');
+    const showVia = () => {
+      form.querySelector('[data-via-box]').hidden = !via.value;
+      if (!via.value) return;
+      const isMail = via.value === 'email';
+      form.querySelector('[data-via-label]').textContent = isMail ? 'Je e-mailadres' : 'Je gsm-nummer';
+      addr.type = isMail ? 'email' : 'tel';
+      addr.inputMode = isMail ? 'email' : 'tel';
+      addr.autocomplete = isMail ? 'email' : 'tel';
+      addr.placeholder = isMail ? 'naam@voorbeeld.be' : 'bv. 0470 12 34 56';
+      const saved = load(KEY_REPLY, {});
+      addr.value = (isMail ? saved.email : saved.phone) || '';
+    };
+    via.addEventListener('change', showVia);
     form.addEventListener('submit', async (ev) => {
       ev.preventDefault();
       const { Onderwerp: subj, Bericht: text, attachment: file } = form.elements;
       if (!subj.value.trim()) { say('Vul een onderwerp in.'); subj.focus(); return; }
       if (!text.value.trim()) { say('Schrijf eerst je bericht.'); text.focus(); return; }
+      let reply = null;
+      if (via.value) {
+        const a = addr.value.trim();
+        const isMail = via.value === 'email';
+        if (isMail ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a) : a.replace(/\D/g, '').length < 9) {
+          say(`Vul een geldig ${isMail ? 'e-mailadres' : 'gsm-nummer'} in, of kies "Nee, geen antwoord nodig".`); addr.focus(); return;
+        }
+        reply = { via: via.value, addr: a };
+      }
       if ([...file.files].reduce((t, f) => t + f.size, 0) > MAIL_MAX) { say('Het bestand is te groot (maximaal 10 MB). Kies een kleinere foto of een ander bestand.'); return; }
       if (!MAIL_ID) { say('Versturen kan nog niet: het contactformulier wordt nog ingesteld. Probeer het later opnieuw.'); return; }
       if (!navigator.onLine) { say('Geen verbinding. Probeer opnieuw als je bereik hebt; je tekst blijft staan.'); return; }
@@ -3271,11 +3348,13 @@ const APP_VERSION = '2026-10-08.3';
       const btn = form.querySelector('button[type="submit"]');
       btn.disabled = true;
       say(file.files.length ? 'Versturen… (met een bestand kan dat even duren)' : 'Versturen…');
-      const ok = await sendMail(form, form.dataset.place);
+      const ok = await sendMail(form, form.dataset.place, reply);
       mailBusy = false;
       btn.disabled = false;
       if (ok) {
+        if (reply) save(KEY_REPLY, { ...load(KEY_REPLY, {}), [reply.via === 'email' ? 'email' : 'phone']: reply.addr });
         form.reset();
+        showVia();
         say('Verstuurd, bedankt! Je bericht is bij de maker van de app.');
       } else {
         say('Versturen lukte niet. Probeer het later opnieuw; je tekst blijft staan.');
