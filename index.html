@@ -1390,13 +1390,13 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-08.4"></script>
-<script src="scan.js?v=2026-10-08.4"></script>
-<script src="aanbod.js?v=2026-10-08.4"></script>
+<script src="loon.js?v=2026-10-08.5"></script>
+<script src="scan.js?v=2026-10-08.5"></script>
+<script src="aanbod.js?v=2026-10-08.5"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-08.4';
+const APP_VERSION = '2026-10-08.5';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -3246,9 +3246,43 @@ const APP_VERSION = '2026-10-08.4';
     'Voorstel doen': () => ({ 'App-versie': `${APP_VERSION} · statuut: ${settings.status || ''}` }),
     Contact: () => ({ 'App-versie': APP_VERSION }),
   };
-  // Het formulier gaat naar een verborgen frame. FormSubmit stuurt na het versturen door naar
-  // verstuurd.html op onze eigen site: staat dat in het frame, dan is het gelukt.
+  // alle velden van de mail, in volgorde: datum en plaats bovenaan, dan wat de gebruiker schreef
+  function mailFields(form, place, reply) {
+    const subject = form.elements.Onderwerp.value.trim();
+    const f = [
+      ['Datum', new Date().toLocaleString('nl-BE', { dateStyle: 'full', timeStyle: 'short', timeZone: 'Europe/Brussels' })],
+      ['Plaats', place], ['Onderwerp', subject], ['Bericht', form.elements.Bericht.value.trim()],
+    ];
+    if (reply) {
+      f.push(['Antwoord', `${REPLY_VIA[reply.via]}: ${reply.addr}`]);
+      if (reply.via === 'whatsapp') f.push(['WhatsApp', `https://wa.me/${waNumber(reply.addr)}`]);
+    }
+    f.push(...Object.entries(mailExtra[place]()));
+    f.push(['_subject', `HAVEN APP (${place})(${subject})`], ['_template', 'table'], ['_captcha', 'false']);
+    if (reply?.via === 'email') f.push(['_replyto', reply.addr]); // zo kan de maker gewoon op de mail antwoorden
+    return f;
+  }
+  // Zonder bestand: via de AJAX-ingang van FormSubmit, die met JSON zegt of het gelukt is.
+  // Met een bestand: als gewoon formulier in een verborgen frame (de AJAX-ingang laat bijlagen vallen).
   function sendMail(form, place, reply) {
+    const fields = mailFields(form, place, reply);
+    return form.elements.attachment.files.length ? sendFrame(form, fields) : sendAjax(fields);
+  }
+  async function sendAjax(fields) {
+    try {
+      const res = await fetch(`https://formsubmit.co/ajax/${MAIL_ID}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(Object.fromEntries(fields)),
+      });
+      const data = await res.json().catch(() => ({}));
+      return res.ok && String(data.success) === 'true';
+    } catch { return false; }
+  }
+  // FormSubmit stuurt na het versturen door naar verstuurd.html op onze eigen site: staat dat in het
+  // frame, dan is het gelukt. Staat er ergens een e-mailadres in, dan toont FormSubmit altijd zijn
+  // eigen bedankpagina; dan geldt die pagina als gelukt.
+  function sendFrame(form, fields) {
     return new Promise((resolve) => {
       const frame = $('mailFrame');
       const added = [];
@@ -3258,20 +3292,12 @@ const APP_VERSION = '2026-10-08.4';
         if (first) form.prepend(i); else form.append(i);
         added.push(i);
       };
-      const stamp = new Date().toLocaleString('nl-BE', { dateStyle: 'full', timeStyle: 'short', timeZone: 'Europe/Brussels' });
-      // volgorde in de mail: datum en plaats bovenaan, dan wat de gebruiker schreef
-      add('Plaats', place, true);
-      add('Datum', stamp, true);
-      if (reply) {
-        add('Antwoord', `${REPLY_VIA[reply.via]}: ${reply.addr}`);
-        if (reply.via === 'email') add('_replyto', reply.addr); // zo kan de maker gewoon op de mail antwoorden
-        if (reply.via === 'whatsapp') add('WhatsApp', `https://wa.me/${waNumber(reply.addr)}`);
-      }
-      for (const [k, v] of Object.entries(mailExtra[place]())) add(k, v);
-      add('_subject', `HAVEN APP (${place})(${form.elements.Onderwerp.value.trim()})`);
-      add('_template', 'table');
-      add('_captcha', 'false');
+      // Onderwerp en Bericht staan al in het formulier; datum en plaats ervoor, de rest erna
+      const rest = fields.filter(([k]) => k !== 'Onderwerp' && k !== 'Bericht');
+      for (const [k, v] of rest.filter(([k]) => k === 'Datum' || k === 'Plaats').reverse()) add(k, v, true);
+      for (const [k, v] of rest.filter(([k]) => k !== 'Datum' && k !== 'Plaats')) add(k, v);
       add('_next', new URL('verstuurd.html', location.href).href);
+      const thanksPage = fields.some(([, v]) => /[^\s@]+@[^\s@]+\.[^\s@]+/.test(v));
       let timer, grace;
       const done = (ok) => {
         clearTimeout(timer); clearTimeout(grace);
@@ -3281,8 +3307,8 @@ const APP_VERSION = '2026-10-08.4';
       };
       function onLoad() {
         let ours = false;
-        try { ours = frame.contentWindow.location.pathname.endsWith('/verstuurd.html'); } catch { /* nog op formsubmit.co */ }
-        if (ours) return done(true);
+        try { ours = frame.contentWindow.location.pathname.endsWith('/verstuurd.html'); } catch { /* pagina van formsubmit.co */ }
+        if (ours || thanksPage) return done(true);
         // een pagina van FormSubmit (fout, of nog onderweg): even wachten of de doorverwijzing nog komt
         clearTimeout(grace);
         grace = setTimeout(() => done(false), 10000);
