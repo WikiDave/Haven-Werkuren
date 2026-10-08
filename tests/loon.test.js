@@ -155,10 +155,13 @@ test('versienummer van de app en version.json zijn gelijk', () => {
   const path = require('node:path');
   const root = path.join(__dirname, '..');
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  const appVersion = html.match(/const APP_VERSION = '([^']+)'/)[1];
+  const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+  const appVersion = app.match(/const APP_VERSION = '([^']+)'/)[1];
   const { version } = JSON.parse(fs.readFileSync(path.join(root, 'version.json'), 'utf8'));
   assert.equal(appVersion, version);
-  assert.equal(html.match(/<script src="loon\.js\?v=([^"]+)">/)[1], version);
+  for (const f of ['loon', 'scan', 'app']) assert.equal(html.match(new RegExp(`<script src="${f}\\.js\\?v=([^"]+)">`))[1], version, f);
+  // geen inline scripts: de Content-Security-Policy laat ze niet toe
+  assert.equal((html.match(/<script>/g) || []).length, 0);
 });
 
 test('kledijpunten: 1 per shift, 2 voor lashing, aftrek bij afhalen', () => {

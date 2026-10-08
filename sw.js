@@ -1,8 +1,8 @@
 // Service worker: de app werkt ook zonder (of met slecht) bereik.
 // Altijd eerst het netwerk proberen (zo krijg je de nieuwste versie), anders de bewaarde kopie.
-const CACHE = 'haven-werkuren-v1';
+const CACHE = 'haven-werkuren-v2';
 const CORE = [
-  './', 'index.html', 'loon.js', 'scan.js', 'aanbod.js', 'belasting.json', 'manifest.webmanifest',
+  './', 'index.html', 'app.js', 'loon.js', 'scan.js', 'privacy.html', 'belasting.json', 'manifest.webmanifest',
   'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css',
   'vendor/leaflet/images/marker-icon.png', 'vendor/leaflet/images/marker-icon-2x.png',
   'vendor/leaflet/images/marker-shadow.png', 'vendor/leaflet/images/layers.png',
@@ -31,8 +31,12 @@ self.addEventListener('fetch', (event) => {
         if (res.ok) {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(req, copy));
+          return res;
         }
-        return res;
+        // niet gevonden (bv. na een verhuis naar een nieuw adres): de bewaarde kopie gebruiken als die er is
+        return caches.match(req, { ignoreSearch: true })
+          .then((hit) => hit || (req.mode === 'navigate' ? caches.match('index.html') : undefined))
+          .then((hit) => hit || res);
       })
       .catch(() => caches.match(req, { ignoreSearch: true })
         .then((hit) => hit || (req.mode === 'navigate' ? caches.match('index.html') : undefined))
