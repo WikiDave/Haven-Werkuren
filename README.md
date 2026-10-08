@@ -33,6 +33,12 @@ node --test
 
 Functieloon volgens de Codex (artikel 31): basisloon alle werk van de shift plus 1× overuurloon (chauffeurs: tugmaster, heftruck, bobcat, unimog, empty container handler, hoogwerker, tugmaster kaai, verreiker), 2× uurloon (bull, heftruck +20 ton, reachstacker, giekkraan −20 ton, hydraulische kraan) of 2× overuurloon (straddle carrier, portaalkraan, giekkraan +20 ton, RMG/RTG). High/heavy chauffeur = alle werk.
 
+## Premies per bedrijf, verlof en dop
+
+- Premie markage en premie lashing verschillen per bedrijf: de gebruiker vult het bedrag in bij de shift en de app onthoudt het per bedrijf (`haven-werkuren.markagePremie`, `haven-werkuren.lashPremie`). Ze tellen als loon (type A).
+- In de dag kies je bij een dag zonder werk Verlof, HV, Recup of Dop (rode kaart: enkel Dop). HV en recup tellen niet mee als verlofdagen.
+- Dop (werkloosheid): dagen in `haven-werkuren.dop`. Naast een halve shift telt een halve dag, naast een volle shift niets. Met een zelf ingevuld bedrag per dag toont de app wat je ongeveer krijgt; dop zit niet in het netto per uitbetaling en niet in de belastingschatting.
+
 ## Belastingbedragen bijwerken
 
 Alle bedragen voor de voorheffing (sleutelformule) en de belastingbrief staan in `belasting.json`:

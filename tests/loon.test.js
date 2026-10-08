@@ -309,5 +309,7 @@ test('foreman en ceelbaas: eigen loon uit de loontabel, markeerder met premie ma
   assert.equal(get(sh('markeerder-roro', { markage: 0 }), 'markage'), undefined);
   assert.equal(get(Loon.shiftLines(shift('2026-10-08', '08', { func: 'markeerder-roro', kind: 'half', markage: true }), ctx({})).lines, 'markage'), undefined);
   assert.equal(get(sh('alle', { markage: true }), 'markage'), undefined); // enkel voor markeerders
+  assert.equal(get(sh('alle', { lash: 15 }), 'lash'), 15); // premie lashing: zelf ingevuld bedrag
+  assert.equal(get(sh('alle', {}), 'lash'), undefined);
   assert.equal(get(Loon.shiftLines(shift('2026-10-10', '08', { func: 'foreman' }), ctx({})).lines, 'shiftloon'), 336.83); // zaterdag
 });
