@@ -304,7 +304,10 @@ test('foreman en ceelbaas: eigen loon uit de loontabel, markeerder met premie ma
   assert.equal(get(sh('foreman'), 'shiftloon'), 224.55);
   assert.equal(get(sh('ceelbaas'), 'shiftloon'), 268.87);
   assert.equal(get(sh('foreman', { overtime: 1 }), 'overuren'), 46.46); // overuur foreman
-  assert.equal(get(sh('markeerder-roro', { markage: true }), 'markage'), 13.52);
+  assert.equal(get(sh('markeerder-roro', { markage: true }), 'markage'), 13.52); // oude shiften: vast bedrag
+  assert.equal(get(sh('markeerder-roro', { markage: 21.4 }), 'markage'), 21.4); // zelf ingevuld bedrag (verschilt per bedrijf)
+  assert.equal(get(sh('markeerder-roro', { markage: 0 }), 'markage'), undefined);
+  assert.equal(get(Loon.shiftLines(shift('2026-10-08', '08', { func: 'markeerder-roro', kind: 'half', markage: true }), ctx({})).lines, 'markage'), undefined);
   assert.equal(get(sh('alle', { markage: true }), 'markage'), undefined); // enkel voor markeerders
   assert.equal(get(Loon.shiftLines(shift('2026-10-10', '08', { func: 'foreman' }), ctx({})).lines, 'shiftloon'), 336.83); // zaterdag
 });
