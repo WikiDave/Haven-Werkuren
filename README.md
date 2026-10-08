@@ -1,18 +1,18 @@
-# Cewez-Calculator
+# Haven Werkuren
 
-![Toestellen die de app gebruiken](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fcewez-calculator%2Ftoestellen&query=%24.value&label=toestellen&color=0f5c8c&cacheSeconds=3600)
-![Hoe vaak de link gedeeld is](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fcewez-calculator%2Fgedeeld&query=%24.value&label=gedeeld&color=e87a3e&cacheSeconds=3600)
-
-Hobbyproject van een havenarbeider, David Schütt, gebouwd met behulp van AI (Claude). Dit project heeft niets te maken met Cewez. De informatie kan fout zijn. De app werkt offline op de gsm; gegevens blijven op het toestel en worden niet gedeeld.
+Onofficiële hobby-app van een havenarbeider, David Schütt, gebouwd met behulp van AI (Claude). **Dit is geen app van Cewez** en ook niet van een havenbedrijf; Cewez heeft de app en de bedragen niet nagekeken. De informatie kan fout zijn: controleer altijd je loonbrief.
 
 Werkuren en loon bijhouden voor havenarbeid in Zeebrugge: kies per dag het bedrijf en het startuur, vul eventuele overuren in (na 7u45) en zie per maand het bruto en het geschatte netto per uitbetaling.
 
 - Open de app via GitHub Pages en zet hem op je beginscherm (de knop "Uitleg" legt uit hoe). Hij werkt ook offline (service worker in `sw.js`, manifest in `manifest.webmanifest`).
-- Gegevens blijven op je toestel (browseropslag); maak af en toe een back-up via "Back-up & export".
+- Gegevens blijven op je toestel (browseropslag) en worden niet naar de maker of naar iemand anders gestuurd; maak af en toe een back-up via "Back-up & export".
+- Privacyverklaring: [`privacy.html`](privacy.html). Geen advertenties, cookies, tracking of teller.
 
-## Gebruikers tellen
+## Beveiliging
 
-Er wordt alleen geteld, zonder namen of gegevens, via tellers van [Abacus](https://abacus.jasoncameron.dev): op de echte site (wikidave.github.io) stuurt een toestel één keer "+1" (`cewez-calculator/toestellen`): op het beginscherm bij de eerste start, in de browser pas als de app op een tweede dag opnieuw geopend wordt (zo telt een iPhone niet dubbel voor Safari en het beginscherm, en tellen eenmalige bezoeken niet mee; robots en automatische browsers tellen niet), en elke keer dat iemand de knop "Link delen" gebruikt telt `cewez-calculator/gedeeld`. De aantallen staan in de badges bovenaan deze README en in het klein onderaan de app. De teller vervalt na ongeveer 6 maanden zonder nieuw toestel.
+- Alle code staat in eigen bestanden (`app.js`, `loon.js`, `scan.js`); `index.html` heeft geen inline scripts. Een Content-Security-Policy (meta-tag in `index.html`) laat alleen eigen bestanden toe, plus de kaarttegels (OpenStreetMap, Esri) en FormSubmit (berichten aan de maker). Een test controleert dat er geen inline scripts bijkomen.
+- Een teruggezette back-up wordt eerst nagekeken (`cleanBackup` in `app.js`): ids, datums en sleutels moeten het verwachte formaat hebben, een logo moet een eigen foto zijn (data-URL van een afbeelding), tekst wordt ingekort.
+- Een eigen logo van een bedrijf moet een data-URL van een afbeelding zijn (`safeLogo`); logo's van de havenbedrijven zelf zitten niet in de app.
 
 ## Loonberekening
 
@@ -88,11 +88,11 @@ Ontwerp "Kaai": een donkere havenband bovenaan met de volgende uitbetaling, een 
 
 ## Werkaanbod
 
-De kaart "Werkaanbod" toont de tekorten per shift (vandaag en morgen), de drukte per bedrijf deze week en de bedrijven die havenarbeiders zoeken. De app haalt die gegevens bij het openen op van de openbare pagina's [Tekorten](https://cewez.be/tekorten/) en [Tewerkstelling](https://cewez.be/tewerkstelling/) van Cewez (via de WordPress-API van cewez.be); er wordt niets van de gebruiker meegestuurd. `aanbod.js` leest de tabellen (getest in `tests/aanbod.test.js` met de pagina's van 6 oktober 2026). Verandert Cewez de opmaak van die pagina's, dan moet `aanbod.js` mee aangepast worden. De telefoonnummers van de aanwervers komen van [Contactgegevens aanwervers](https://cewez.be/havenarbeider/contactgegevens-aanwervers/).
+De app toont geen werkaanbod. Het vak "Werkaanbod" bevat alleen links naar de officiële bronnen: MyJob (my.cewez.be, niet voor rode kaart), [Tekorten](https://cewez.be/tekorten/) en [Tewerkstelling](https://cewez.be/tewerkstelling/) op cewez.be. Telefoonnummers vult de gebruiker zelf in; de knop "Bellen voor werk" verwijst naar [Contactgegevens aanwervers](https://cewez.be/havenarbeider/contactgegevens-aanwervers/) op cewez.be.
 
 ## Kaaien
 
-Het vak "Kaaien" opent de plannen van de haven (kaainummers en straten, bezoekersplan, QR-codes van de bedrijfsingangen) als PDF op cewez.be (Wegwijs in de haven). De 14 bedrijfsingangen met hun GPS-punten komen uit die QR-codes; elke ingang heeft een knop voor Google Maps en Waze. Bij elk bedrijf staan ook de ingangen en de link naar de onthaalbrochure.
+Het vak "Kaaien" opent de plannen van de haven (kaainummers en straten, bezoekersplan, QR-codes van de bedrijfsingangen) als PDF op cewez.be (Wegwijs in de haven), en de terminalplannen met parkings in de onthaalbrochures van de bedrijven.
 
 ## Wat is er nieuw
 
