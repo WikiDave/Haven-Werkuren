@@ -802,7 +802,7 @@
     <section>
       <h3>Over deze app</h3>
       <p class="disclaimer-text">Dit is een <b>hobbyproject</b> van een havenarbeider, <b>David Schütt</b>, gebouwd met behulp van AI (Claude). Het heeft <b>niets te maken met Cewez</b>. De bedragen en informatie kunnen fout zijn: controleer altijd je loonbrief.</p>
-      <p class="hint">De app werkt offline op je gsm: je uren, je loon en al je gegevens blijven op je toestel en worden nergens gedeeld. Er wordt alleen geteld hoe vaak de link gedeeld wordt en op hoeveel toestellen de app geopend is, zonder namen of gegevens. Een bericht via Contact, Fout melden of Voorstel doen gaat via de dienst FormSubmit per e-mail naar de maker; enkel wat je zelf invult wordt meegestuurd.</p>
+      <p class="hint">De app werkt offline op je gsm: je uren, je loon en al je gegevens blijven op je toestel en worden nergens gedeeld. Er wordt alleen geteld hoe vaak de link gedeeld wordt en op hoeveel toestellen de app gebruikt wordt, zonder namen of gegevens. Een bericht via Contact, Fout melden of Voorstel doen gaat via de dienst FormSubmit per e-mail naar de maker; enkel wat je zelf invult wordt meegestuurd.</p>
     </section>
 
     <section class="news" id="newsBox">
@@ -1315,19 +1315,19 @@
 
   <footer class="disclaimer">
     <p>Dit is een <b>hobbyproject</b> van een havenarbeider, <b>David Schütt</b>, gebouwd met behulp van AI (Claude). Het heeft <b>niets te maken met Cewez</b>. De bedragen en informatie kunnen fout zijn: controleer altijd je loonbrief.</p>
-    <p>De app werkt offline op je gsm: je uren, je loon en al je gegevens blijven op je toestel en worden nergens gedeeld. Er wordt alleen geteld hoe vaak de link gedeeld wordt en op hoeveel toestellen de app geopend is, zonder namen of gegevens. Een bericht via Contact, Fout melden of Voorstel doen gaat via de dienst FormSubmit per e-mail naar de maker; enkel wat je zelf invult wordt meegestuurd.</p>
+    <p>De app werkt offline op je gsm: je uren, je loon en al je gegevens blijven op je toestel en worden nergens gedeeld. Er wordt alleen geteld hoe vaak de link gedeeld wordt en op hoeveel toestellen de app gebruikt wordt, zonder namen of gegevens. Een bericht via Contact, Fout melden of Voorstel doen gaat via de dienst FormSubmit per e-mail naar de maker; enkel wat je zelf invult wordt meegestuurd.</p>
   </footer>
   <p class="usage" id="usage" hidden></p>
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-08.1"></script>
-<script src="scan.js?v=2026-10-08.1"></script>
-<script src="aanbod.js?v=2026-10-08.1"></script>
+<script src="loon.js?v=2026-10-08.2"></script>
+<script src="scan.js?v=2026-10-08.2"></script>
+<script src="aanbod.js?v=2026-10-08.2"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-08.1';
+const APP_VERSION = '2026-10-08.2';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1428,6 +1428,7 @@ const APP_VERSION = '2026-10-08.1';
   const KEY_LAST_WORK = 'haven-werkuren.lastWork';
   const KEY_LAST_FUNC = 'haven-werkuren.lastFunction';
   const KEY_COUNTED = 'haven-werkuren.deviceCounted';
+  const KEY_FIRST_SEEN = 'haven-werkuren.firstSeen'; // eerste dag in de browser (voor de telling)
   const KEY_MEDICAL = 'haven-werkuren.medicalChecks';
   const KEY_LEAVE = 'haven-werkuren.leave';
   const KEY_PAYSLIPS = 'haven-werkuren.payslips';   // ingescande loonbrieven per periode
@@ -2923,6 +2924,7 @@ const APP_VERSION = '2026-10-08.1';
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
     ['2026-10-08', [
+      'Telling onderaan eerlijker: een toestel telt als je de app op je beginscherm zet, of in de browser op een tweede dag opnieuw opent. Robots tellen niet meer mee.',
       'Premie markage: het bedrag verschilt per bedrijf. Je vult het nu zelf in (zoals op je loonbrief) en de app onthoudt het per bedrijf.',
     ]],
     ['2026-10-07', [
@@ -3037,7 +3039,9 @@ const APP_VERSION = '2026-10-08.1';
 
   // --- anoniem tellen op hoeveel toestellen de app gebruikt wordt -----------
   // Elk toestel stuurt één keer "+1" naar een teller (Abacus); er gaat niets mee over de gebruiker.
-  // Het aantal staat niet in de app, enkel als badge in de README op GitHub.
+  // Op het beginscherm telt de app meteen; in de browser pas als hij op een tweede dag opnieuw geopend wordt.
+  // Zo telt een iPhone niet dubbel (Safari en het beginscherm bewaren hun gegevens apart),
+  // en tellen eenmalige bezoeken en robots niet mee.
   // Enkel op de echte website, niet tijdens het testen.
   const COUNTER_URL = 'https://abacus.jasoncameron.dev';
   const COUNTER_KEY = 'cewez-calculator/toestellen';
@@ -3049,6 +3053,13 @@ const APP_VERSION = '2026-10-08.1';
   }
   async function countDevice() {
     if (!countingSite || load(KEY_COUNTED, false)) return;
+    if (navigator.webdriver || /bot|crawl|spider|slurp|headless|lighthouse|preview|facebookexternalhit/i.test(navigator.userAgent)) return;
+    if (!standalone) {
+      const day = isoDate(new Date());
+      const first = load(KEY_FIRST_SEEN, '');
+      if (!first) save(KEY_FIRST_SEEN, day);
+      if (!first || first === day) return;
+    }
     try {
       const res = await fetch(`${COUNTER_URL}/hit/${COUNTER_KEY}`);
       if (!res.ok) return;

@@ -12,7 +12,7 @@ Werkuren en loon bijhouden voor havenarbeid in Zeebrugge: kies per dag het bedri
 
 ## Gebruikers tellen
 
-Er wordt alleen geteld, zonder namen of gegevens, via tellers van [Abacus](https://abacus.jasoncameron.dev): bij de eerste start op de echte site (wikidave.github.io) stuurt een toestel één keer "+1" (`cewez-calculator/toestellen`), en elke keer dat iemand de knop "Link delen" gebruikt telt `cewez-calculator/gedeeld`. De aantallen staan in de badges bovenaan deze README en in het klein onderaan de app. De teller vervalt na ongeveer 6 maanden zonder nieuw toestel.
+Er wordt alleen geteld, zonder namen of gegevens, via tellers van [Abacus](https://abacus.jasoncameron.dev): op de echte site (wikidave.github.io) stuurt een toestel één keer "+1" (`cewez-calculator/toestellen`): op het beginscherm bij de eerste start, in de browser pas als de app op een tweede dag opnieuw geopend wordt (zo telt een iPhone niet dubbel voor Safari en het beginscherm, en tellen eenmalige bezoeken niet mee; robots en automatische browsers tellen niet), en elke keer dat iemand de knop "Link delen" gebruikt telt `cewez-calculator/gedeeld`. De aantallen staan in de badges bovenaan deze README en in het klein onderaan de app. De teller vervalt na ongeveer 6 maanden zonder nieuw toestel.
 
 ## Loonberekening
 
