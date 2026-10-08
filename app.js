@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-08.9';
+const APP_VERSION = '2026-10-08.10';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1607,6 +1607,7 @@ const APP_VERSION = '2026-10-08.9';
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
     ['2026-10-08', [
+      'Nieuw adres: wikidave.github.io/Haven-Werkuren. De app stuurt je er vanzelf naartoe en neemt je gegevens mee. Zet de app daarna opnieuw op je beginscherm.',
       'Chauffeurs (bv. tugmaster), kraanmannen en speciale tuigen: shift, uur- en overuurloon nu precies volgens de loontabel. Overuren waren te laag (bv. tugmaster 8u: € 44,88 per overuur in plaats van € 37,26). Bedankt voor de melding!',
       'De app heet nu alleen Haven Werkuren en krijgt een nieuw webadres. Het is geen app van Cewez.',
       'Weggehaald: het werkaanbod, de nummers van de aanwervers en de bedrijfsingangen (kijk daarvoor op cewez.be of in MyJob), de logo\'s van de bedrijven en de teller.',
@@ -2341,16 +2342,6 @@ const APP_VERSION = '2026-10-08.9';
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
-  // Het oude webadres (met de naam van Cewez) verdwijnt: daar de nieuwe link en een back-upknop tonen.
-  const NEW_HOME = 'https://wikidave.github.io/Haven-Werkuren/';
-  // Pas tonen als het nieuwe adres echt bestaat (na de naamswijziging van de repository).
-  if (location.hostname === 'wikidave.github.io' && !location.pathname.startsWith(new URL(NEW_HOME).pathname)) {
-    fetch(new URL('version.json', NEW_HOME), { cache: 'no-store' }).then((res) => {
-      if (!res.ok) return;
-      $('moved').hidden = false;
-      $('movedBackup').addEventListener('click', () => $('exportJson').click());
-    }).catch(() => { /* offline: later opnieuw */ });
-  }
   $('exportJson').addEventListener('click', () => {
     download(`werkuren-backup-${isoDate(new Date())}.json`,
       JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, companyPhones, companyNotes, medChecks, leave, payslips, taxActual, taxExtras, taxUser, markagePremie, lashPremie, dop, otherDays, otherPay }, null, 2), 'application/json');
@@ -2394,44 +2385,125 @@ const APP_VERSION = '2026-10-08.9';
     if (data.hiddenCompanies && !data.hiddenCompanies.every((x) => typeof x === 'string' && ID_RE.test(x))) throw new Error('bedrijven');
     return data;
   }
+  // gegevens uit een (nagekeken) back-up overnemen; vervangt wat nu op dit toestel staat
+  function applyBackup(data) {
+    entries = data.entries.map(migrateEntry);
+    if (Array.isArray(data.periods) && data.periods.length) periods = migratePeriods(data.periods);
+    if (data.settings) settings = { ...Loon.DEFAULT_SETTINGS, ...data.settings };
+    if (data.holidayOverrides) holidayOverrides = data.holidayOverrides;
+    if (Array.isArray(data.customCompanies)) customCompanies = data.customCompanies;
+    if (Array.isArray(data.hiddenCompanies)) hiddenCompanies = data.hiddenCompanies;
+    if (Array.isArray(data.purchases)) purchases = data.purchases;
+    if (Array.isArray(data.medChecks)) medChecks = data.medChecks;
+    if (Array.isArray(data.leave)) leave = data.leave;
+    if (data.companyPhones) companyPhones = data.companyPhones;
+    if (data.companyNotes) companyNotes = data.companyNotes;
+    if (data.payslips) payslips = data.payslips;
+    if (data.taxActual) taxActual = data.taxActual;
+    if (data.taxExtras) taxExtras = data.taxExtras;
+    if (data.taxUser) { taxUser = data.taxUser; applyTaxTables(); }
+    if (data.clothingStart) clothingStart = data.clothingStart;
+    if (data.companyLocations) companyLocations = data.companyLocations;
+    if (data.lastLocation) lastLocation = data.lastLocation;
+    if (data.companyPins) companyPins = data.companyPins;
+    if (data.markagePremie) markagePremie = data.markagePremie;
+    if (data.lashPremie) lashPremie = data.lashPremie;
+    if (Array.isArray(data.dop)) dop = data.dop;
+    if (Array.isArray(data.otherDays)) otherDays = data.otherDays;
+    if (data.otherPay) otherPay = data.otherPay;
+    save(KEY_ENTRIES, entries); save(KEY_PERIODS, periods); save(KEY_SETTINGS, settings); save(KEY_HOLIDAYS, holidayOverrides);
+    save(KEY_CUSTOM_CO, customCompanies); save(KEY_HIDDEN_CO, hiddenCompanies);
+    save(KEY_MEDICAL, medChecks); save(KEY_LEAVE, leave); save(KEY_PAYSLIPS, payslips); save(KEY_TAX_ACTUAL, taxActual); save(KEY_TAX_EXTRA, taxExtras); save(KEY_TAX_USER, taxUser); save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation); save(KEY_CO_PHONE, companyPhones); save(KEY_CO_NOTES, companyNotes);
+    save(KEY_MARKAGE, markagePremie); save(KEY_LASH, lashPremie); save(KEY_DOP, dop); save(KEY_OTHER_DAYS, otherDays); save(KEY_OTHER_PAY, otherPay);
+    renderCompanyPicker(); renderSettings(); renderTaxTables(); renderHolidays(); renderRates(); render();
+  }
   $('importFile').addEventListener('change', async (ev) => {
     const file = ev.target.files[0];
     if (!file) return;
     try {
       const data = cleanBackup(JSON.parse(await file.text()));
       if (!confirm(`${data.entries.length} dagen terugzetten? Dit vervangt wat nu op dit toestel staat.`)) return;
-      entries = data.entries.map(migrateEntry);
-      if (Array.isArray(data.periods) && data.periods.length) periods = migratePeriods(data.periods);
-      if (data.settings) settings = { ...Loon.DEFAULT_SETTINGS, ...data.settings };
-      if (data.holidayOverrides) holidayOverrides = data.holidayOverrides;
-      if (Array.isArray(data.customCompanies)) customCompanies = data.customCompanies;
-      if (Array.isArray(data.hiddenCompanies)) hiddenCompanies = data.hiddenCompanies;
-      if (Array.isArray(data.purchases)) purchases = data.purchases;
-      if (Array.isArray(data.medChecks)) medChecks = data.medChecks;
-      if (Array.isArray(data.leave)) leave = data.leave;
-      if (data.companyPhones) companyPhones = data.companyPhones;
-      if (data.companyNotes) companyNotes = data.companyNotes;
-      if (data.payslips) payslips = data.payslips;
-      if (data.taxActual) taxActual = data.taxActual;
-      if (data.taxExtras) taxExtras = data.taxExtras;
-      if (data.taxUser) { taxUser = data.taxUser; applyTaxTables(); }
-      if (data.clothingStart) clothingStart = data.clothingStart;
-      if (data.companyLocations) companyLocations = data.companyLocations;
-      if (data.lastLocation) lastLocation = data.lastLocation;
-      if (data.companyPins) companyPins = data.companyPins;
-      if (data.markagePremie) markagePremie = data.markagePremie;
-      if (data.lashPremie) lashPremie = data.lashPremie;
-      if (Array.isArray(data.dop)) dop = data.dop;
-      if (Array.isArray(data.otherDays)) otherDays = data.otherDays;
-      if (data.otherPay) otherPay = data.otherPay;
-      save(KEY_ENTRIES, entries); save(KEY_PERIODS, periods); save(KEY_SETTINGS, settings); save(KEY_HOLIDAYS, holidayOverrides);
-      save(KEY_CUSTOM_CO, customCompanies); save(KEY_HIDDEN_CO, hiddenCompanies);
-      save(KEY_MEDICAL, medChecks); save(KEY_LEAVE, leave); save(KEY_PAYSLIPS, payslips); save(KEY_TAX_ACTUAL, taxActual); save(KEY_TAX_EXTRA, taxExtras); save(KEY_TAX_USER, taxUser); save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation); save(KEY_CO_PHONE, companyPhones); save(KEY_CO_NOTES, companyNotes);
-      save(KEY_MARKAGE, markagePremie); save(KEY_LASH, lashPremie); save(KEY_DOP, dop); save(KEY_OTHER_DAYS, otherDays); save(KEY_OTHER_PAY, otherPay);
-      renderCompanyPicker(); renderSettings(); renderTaxTables(); renderHolidays(); renderRates(); render();
+      applyBackup(data);
     } catch { alert('Dit is geen geldig back-upbestand.'); }
     ev.target.value = '';
   });
+  // --- verhuis naar het nieuwe adres ----------------------------------------------
+  // Het oude webadres (met de naam van Cewez) verdwijnt. Zodra het nieuwe adres bestaat, gaat de app daar vanzelf
+  // naartoe en neemt ze de gegevens mee in de link, achter # (#verhuis=…). Dat stuk van een link gaat niet over het
+  // internet: de nieuwe pagina leest het op het toestel zelf en zet het over als daar nog niets staat.
+  const NEW_HOME = 'https://wikidave.github.io/Haven-Werkuren/';
+  const STORE_PREFIX = 'haven-werkuren.';
+  const BACKUP_KEYS = {
+    entries: KEY_ENTRIES, periods: KEY_PERIODS, settings: KEY_SETTINGS, holidayOverrides: KEY_HOLIDAYS, customCompanies: KEY_CUSTOM_CO,
+    hiddenCompanies: KEY_HIDDEN_CO, purchases: KEY_PURCHASES, clothingStart: KEY_CLOTH_START, companyLocations: KEY_CO_LOCS,
+    companyPins: KEY_CO_PIN, lastLocation: KEY_LAST_LOC, companyPhones: KEY_CO_PHONE, companyNotes: KEY_CO_NOTES, medChecks: KEY_MEDICAL,
+    leave: KEY_LEAVE, payslips: KEY_PAYSLIPS, taxActual: KEY_TAX_ACTUAL, taxExtras: KEY_TAX_EXTRA, taxUser: KEY_TAX_USER,
+    markagePremie: KEY_MARKAGE, lashPremie: KEY_LASH, dop: KEY_DOP, otherDays: KEY_OTHER_DAYS, otherPay: KEY_OTHER_PAY,
+  };
+  function rawStorage() {
+    const out = {};
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k.startsWith(STORE_PREFIX)) out[k] = localStorage.getItem(k);
+      }
+    } catch { /* geen opslag */ }
+    return out;
+  }
+  // JSON -> (gzip als de browser dat kan) -> base64 voor in een link
+  async function packMove(obj) {
+    let bytes = new TextEncoder().encode(JSON.stringify(obj));
+    let tag = 'r';
+    if (typeof CompressionStream === 'function') {
+      bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+      tag = 'g';
+    }
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return `${tag}.${btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`;
+  }
+  async function unpackMove(packed) {
+    const [tag, b64] = packed.split('.');
+    let bytes = Uint8Array.from(atob(b64.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
+    if (tag === 'g') bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+  function showArrived(came) {
+    $('arrivedData').textContent = came ? 'Je gegevens zijn meegekomen.' : '';
+    $('arrived').hidden = false;
+  }
+  $('arrivedOk').addEventListener('click', () => { $('arrived').hidden = true; });
+  $('arrivedBackup').addEventListener('click', () => $('exportJson').click());
+  $('movedBackup').addEventListener('click', () => $('exportJson').click());
+  const onOldHome = location.hostname === 'wikidave.github.io' && !location.pathname.startsWith(new URL(NEW_HOME).pathname);
+  if (onOldHome) {
+    // pas verhuizen als het nieuwe adres echt bestaat
+    fetch(new URL('version.json', NEW_HOME), { cache: 'no-store' }).then(async (res) => {
+      if (!res.ok) return;
+      try {
+        const packed = await packMove(rawStorage());
+        if (packed.length < 1500000) { location.replace(`${NEW_HOME}#verhuis=${packed}`); return; }
+      } catch { /* dan de melding met de back-upknop */ }
+      $('moved').hidden = false;
+    }).catch(() => { /* offline: later opnieuw */ });
+  } else if (location.hash.startsWith('#verhuis=')) {
+    const packed = location.hash.slice('#verhuis='.length);
+    history.replaceState(null, '', location.pathname + location.search);
+    // alleen overnemen als we van een andere pagina van deze website komen (het oude adres), en als hier nog niets staat
+    const here = new URL('./', location.href).href;
+    const fromOld = document.referrer.startsWith(`${location.origin}/`) && !document.referrer.startsWith(here);
+    unpackMove(packed).then((raw) => {
+      if (!fromOld || entries.length || !raw || typeof raw !== 'object') return showArrived(false);
+      const data = { entries: [] };
+      for (const [field, key] of Object.entries(BACKUP_KEYS)) {
+        if (typeof raw[key] !== 'string') continue;
+        try { data[field] = JSON.parse(raw[key]); } catch { /* overslaan */ }
+      }
+      applyBackup(cleanBackup(data));
+      showArrived(true);
+    }).catch(() => showArrived(false));
+  }
+
   $('exportCsv').addEventListener('click', () => {
     const rows = [['Datum', 'Bedrijf', 'Plaats', 'Kaai', 'Shift', 'Overuren', 'Bruto', 'Netto (schatting)', 'Notitie']];
     const num = (n) => String(round2(n)).replace('.', ',');
