@@ -358,9 +358,10 @@
   .cal button.work { background: var(--accent-soft); border-color: transparent; }
   .cal button.work .n { color: var(--text); }
   .cal button.leave { background: var(--leave); border-color: transparent; }
-  .cal button.dop { border-style: dashed; }
+  .cal button.dop, .cal button.other { border-style: dashed; }
   .cal button .lv.dop { color: var(--muted); }
   .dayoff { margin-top: 12px; }
+  #dopCalcBox { margin-top: 12px; }
   .dayoff .k { display: block; font-size: 13px; color: var(--muted); }
   .dayoff .ptabs { margin-top: 6px; }
   .cal button .pay {
@@ -889,6 +890,7 @@
         <button type="button" data-off="herverdeling" data-lv>HV</button>
         <button type="button" data-off="recup" data-lv>Recup</button>
         <button type="button" data-off="dop">Dop</button>
+        <button type="button" data-off="ander" data-rk>Ander werk</button>
       </div>
     </div>
     <button type="button" class="btn ghost" id="dayOffDel" hidden></button>
@@ -1061,8 +1063,31 @@
       <p class="medstatus" id="dopStatus"></p>
       <label for="dopDay">Bedrag per dag dop (€, optioneel)</label>
       <input id="dopDay" inputmode="decimal" autocomplete="off" placeholder="zoals op je betaling">
+      <details id="dopCalcBox">
+        <summary>Dagbedrag uitrekenen uit je laatste betaling</summary>
+        <p class="hint">Je vakbond of de HVW betaalt per maand. Vul in wat je op je rekening kreeg en voor hoeveel dagen; de app rekent het bedrag per dag uit.</p>
+        <div class="row2">
+          <div><label for="dopPaid">Bedrag dat je kreeg (€)</label><input id="dopPaid" inputmode="decimal" autocomplete="off" placeholder="bv. 1.250,00"></div>
+          <div><label for="dopPaidDays">Voor hoeveel dagen</label><input id="dopPaidDays" inputmode="decimal" autocomplete="off" placeholder="bv. 20"></div>
+        </div>
+        <button type="button" class="btn ghost" id="dopCalc">Bedrag per dag invullen</button>
+      </details>
       <p class="hint" id="dopHint"></p>
       <p class="hint">Bij een volle shift is er geen dop, bij een halve shift een halve. Het bedrag per dag hangt af van je eigen situatie: kijk op je betaling van je vakbond of de HVW. De dop telt niet mee in je netto per uitbetaling en ook niet in de schatting van je belastingen.</p>
+      </details>
+    </section>
+    <section class="inset grp" id="otherCard">
+      <details class="fold" data-fold="anderwerk">
+        <summary><h2>Ander werk</h2></summary>
+      <p class="medstatus" id="owStatus"></p>
+      <p class="hint">Werk je naast de haven ook op een andere job? Duid die dagen aan in de kalender met <b>Ander werk</b>. Je netto in de haven verandert daar niet door, maar je belastingbrief wel: al je loon wordt samen belast. Vul daarom elke maand het loon van je andere job in (staat op je loonbrief), dan telt de schatting bij <b>Belastingbrief</b> het mee.</p>
+      <label for="owMonth">Maand</label>
+      <select id="owMonth"></select>
+      <div class="row2">
+        <div><label for="owTaxable">Belastbaar loon (€)</label><input id="owTaxable" inputmode="decimal" autocomplete="off" placeholder="op je loonbrief"></div>
+        <div><label for="owWithholding">Bedrijfsvoorheffing (€)</label><input id="owWithholding" inputmode="decimal" autocomplete="off" placeholder="op je loonbrief"></div>
+      </div>
+      <ul class="list" id="owList"></ul>
       </details>
     </section>
     <section class="inset grp" id="medCard">
@@ -1390,13 +1415,13 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-08.5"></script>
-<script src="scan.js?v=2026-10-08.5"></script>
-<script src="aanbod.js?v=2026-10-08.5"></script>
+<script src="loon.js?v=2026-10-08.6"></script>
+<script src="scan.js?v=2026-10-08.6"></script>
+<script src="aanbod.js?v=2026-10-08.6"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-08.5';
+const APP_VERSION = '2026-10-08.6';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1519,6 +1544,8 @@ const APP_VERSION = '2026-10-08.5';
   const KEY_LASH = 'haven-werkuren.lashPremie'; // premie lashing per bedrijf, zelf ingevuld
   const KEY_REPLY = 'haven-werkuren.replyTo'; // e-mail en gsm voor een antwoord op een bericht: { email, phone }
   const KEY_DOP = 'haven-werkuren.dop'; // dagen dop (werkloosheid): ['2026-10-08', …]
+  const KEY_OTHER_DAYS = 'haven-werkuren.otherWork'; // dagen op een andere job (rode kaart)
+  const KEY_OTHER_PAY = 'haven-werkuren.otherPay'; // loon andere job per maand: { '2026-10': { taxable, withholding } }
   const load = (k, fallback) => {
     try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fallback; } catch { return fallback; }
   };
@@ -1623,6 +1650,8 @@ const APP_VERSION = '2026-10-08.5';
   let markagePremie = load(KEY_MARKAGE, {});
   let lashPremie = load(KEY_LASH, {});
   let dop = load(KEY_DOP, []);
+  let otherDays = load(KEY_OTHER_DAYS, []);
+  let otherPay = load(KEY_OTHER_PAY, {});
   let today = new Date(); // wordt bijgewerkt als de app na middernacht terug geopend wordt
   let viewYear = today.getFullYear();
   let viewMonth = today.getMonth();
@@ -2171,7 +2200,7 @@ const APP_VERSION = '2026-10-08.5';
       const wd = (lead + day - 1) % 7;
       const lv = leaveOn(iso);
       const pay = paydays[iso];
-      const cls = [wd >= 5 && 'we', holidayName(iso) && 'hol', list.length && 'work', lv && 'leave', !list.length && !lv && dopOn(iso) && 'dop', pay && 'paid', iso === todayIso && 'today', iso === selected && 'sel']
+      const cls = [wd >= 5 && 'we', holidayName(iso) && 'hol', list.length && 'work', lv && 'leave', !list.length && !lv && dopOn(iso) && 'dop', !list.length && !lv && !dopOn(iso) && otherOn(iso) && 'other', pay && 'paid', iso === todayIso && 'today', iso === selected && 'sel']
         .filter(Boolean).join(' ');
       let inner = `<span class="n">${day}</span>`;
       if (medChecks.some((m) => m.date === iso)) inner += '<span class="medmark" title="medische controle">+</span>';
@@ -2187,6 +2216,7 @@ const APP_VERSION = '2026-10-08.5';
         if (t.otH) inner += '<span class="dot" title="overuren"></span>';
       } else if (lv) inner += `<span class="lv">${{ herverdeling: 'HV', recup: 'recup' }[lv.type] || 'verlof'}</span>`;
       else if (dopOn(iso)) inner += '<span class="lv dop">dop</span>';
+      else if (otherOn(iso)) inner += '<span class="lv dop">job</span>';
       if (pay) inner += `<span class="pay" title="${escapeHtml(pay.map(payTitle).join(', '))}">€</span>`;
       html += `<button class="${cls}" data-date="${iso}">${inner}</button>`;
     }
@@ -2203,15 +2233,18 @@ const APP_VERSION = '2026-10-08.5';
     $('dayNote').hidden = !moved;
     const lv = leaveOn(selected);
     const dp = !lv && dopOn(selected);
+    const ow = !lv && !dp && otherOn(selected);
     const part = dp ? dopPart(selected) : 0;
-    $('dayLeaveNote').hidden = !lv && !dp;
-    $('dayLeaveNote').classList.toggle('dop', !!dp);
+    $('dayLeaveNote').hidden = !lv && !dp && !ow;
+    $('dayLeaveNote').classList.toggle('dop', !!(dp || ow));
     if (lv) $('dayLeaveNote').textContent = `Verlof: ${LEAVE_TYPES[lv.type] || 'verlof'}`;
     else if (dp) $('dayLeaveNote').textContent = 'Dop (werkloosheid)' + (part === 0.5 ? ': halve dag, naast je halve shift' : part === 0 ? ': telt niet mee, want er staat een volle shift' : '');
-    $('dayOff').hidden = !!(lv || dp);
+    else if (ow) $('dayLeaveNote').textContent = 'Ander werk (andere job)';
+    $('dayOff').hidden = !!(lv || dp || ow);
     document.querySelectorAll('#dayOffBtns [data-lv]').forEach((b) => { b.hidden = !leaveEnabled(); });
-    $('dayOffDel').hidden = !(lv || dp);
-    $('dayOffDel').textContent = lv ? 'Verlof op deze dag weghalen' : 'Dop op deze dag weghalen';
+    document.querySelectorAll('#dayOffBtns [data-rk]').forEach((b) => { b.hidden = settings.status !== 'gelegenheid'; });
+    $('dayOffDel').hidden = !(lv || dp || ow);
+    $('dayOffDel').textContent = lv ? 'Verlof op deze dag weghalen' : dp ? 'Dop op deze dag weghalen' : 'Ander werk op deze dag weghalen';
     $('lgLeave').hidden = !leaveEnabled();
     const pays = paydaysIn(Number(selected.slice(0, 4)), Number(selected.slice(5, 7)) - 1)[selected];
     $('dayPayNote').hidden = !pays;
@@ -2340,6 +2373,7 @@ const APP_VERSION = '2026-10-08.5';
     renderMedical();
     renderLeave();
     renderDop();
+    renderOther();
     renderTax();
     renderDash();
     renderCoInfo();
@@ -2373,9 +2407,10 @@ const APP_VERSION = '2026-10-08.5';
     const appTaxable = round2(periodsOfYear.reduce((t, r) => t + r.belastbaar, 0));
     const appWithheld = round2(periodsOfYear.reduce((t, r) => t + r.voorheffing, 0));
     const useFiche = has('ficheIncome');
-    const taxable = (useFiche ? Number(d.ficheIncome) : appTaxable) + (Number(d.holidayPay) || 0) + (Number(d.income) || 0);
+    const ow = otherPayYear(y); // loon van een andere job (vakje Ander werk)
+    const taxable = (useFiche ? Number(d.ficheIncome) : appTaxable) + (Number(d.holidayPay) || 0) + (Number(d.income) || 0) + ow.taxable;
     const withheld = (has('ficheWithholding') ? Number(d.ficheWithholding) : appWithheld)
-      + (Number(d.holidayWithholding) || 0) + (Number(d.withholding) || 0);
+      + (Number(d.holidayWithholding) || 0) + (Number(d.withholding) || 0) + ow.withholding;
     const r = Loon.estimateAnnualTax({ belastbaar: taxable, voorheffing: withheld, year: taxYear, settings, details: d });
 
     // formulier invullen
@@ -2400,6 +2435,7 @@ const APP_VERSION = '2026-10-08.5';
         useFiche ? row('Belastbaar loon (loonfiche)', Number(d.ficheIncome))
           : row(`Belastbaar loon in de app (${periodsOfYear.length} uitbetaling${periodsOfYear.length === 1 ? '' : 'en'})`, appTaxable),
         d.holidayPay ? row('Vakantiegeld (vakantiefonds)', Number(d.holidayPay)) : '',
+        ow.taxable ? row(`Andere job (${ow.months.length} ${ow.months.length === 1 ? 'maand' : 'maanden'} ingevuld)`, ow.taxable) : '',
         d.income ? row('Ander inkomen', Number(d.income)) : '',
         row(r.realCosts ? 'Werkelijke beroepskosten' : 'Forfaitaire beroepskosten', -r.costs),
         row('Netto belastbaar inkomen', r.netTaxable, 'mid'),
@@ -2424,7 +2460,8 @@ const APP_VERSION = '2026-10-08.5';
       $('taxActual').innerHTML = `Echte aanslag: ${act < 0 ? `je krijgt <b>${money(-act)}</b> terug` : `je moet <b>${money(act)}</b> bijbetalen`}.`
         + (periodsOfYear.length || taxable ? ` De app schatte ${r.difference < 0 ? `${money(-r.difference)} terug` : `${money(r.difference)} bijbetalen`}.` : '');
     }
-    const missing = [!useFiche && 'je loonfiche', !d.holidayPay && 'je vakantiegeld', !d.workBonus && 'de fiscale werkbonus'].filter(Boolean);
+    const missing = [!useFiche && 'je loonfiche', !d.holidayPay && 'je vakantiegeld', !d.workBonus && 'de fiscale werkbonus',
+      otherDays.some((x) => x.startsWith(y)) && !ow.months.length && 'het loon van je andere job'].filter(Boolean);
     $('taxHint').textContent = `Schatting van je aanslag personenbelasting (inkomstenjaar ${y}, aanslagjaar ${taxYear + 1}). `
       + (missing.length ? `Hoe meer je invult bij "Jouw gegevens" (bv. ${missing.slice(0, -1).join(', ')}${missing.length > 1 ? ' en ' : ''}${missing[missing.length - 1]}), hoe nauwkeuriger. ` : '')
       + (!useFiche && settings.withholdingMode !== 'percentage' ? 'De voorheffing in de app is zelf ook een schatting. ' : '')
@@ -2628,6 +2665,8 @@ const APP_VERSION = '2026-10-08.5';
     if (type === 'dop') {
       if (!dopPart(selected)) return alert('Op een dag met een volle shift (of afbestelling) is er geen dop. Bij een halve shift kan wel een halve dop.');
       dop.push(selected); saveDop();
+    } else if (type === 'ander') {
+      otherDays.push(selected); saveOther();
     } else {
       if (dayEntries(selected).length && !confirm('Op deze dag staat al een shift. Toch verlof zetten?')) return;
       leave.push({ date: selected, type, g: newGroupId() });
@@ -2637,7 +2676,8 @@ const APP_VERSION = '2026-10-08.5';
   });
   $('dayOffDel').addEventListener('click', () => {
     if (leaveOn(selected)) { leave = leave.filter((l) => l.date !== selected); saveLeave(); }
-    else { dop = dop.filter((d) => d !== selected); saveDop(); }
+    else if (dopOn(selected)) { dop = dop.filter((d) => d !== selected); saveDop(); }
+    else { otherDays = otherDays.filter((d) => d !== selected); saveOther(); }
     render();
   });
 
@@ -2670,6 +2710,87 @@ const APP_VERSION = '2026-10-08.5';
     $('dopLine').hidden = !month.n;
     $('dopLine').textContent = `Daarnaast ${dopText(month)} (niet meegeteld in bruto en netto).`;
   }
+  $('dopCalc').addEventListener('click', () => {
+    const paid = numIn($('dopPaid').value.replace(/\s|€/g, '').replace(/\.(?=\d{3}(\D|$))/g, ''));
+    const days = numIn($('dopPaidDays').value);
+    if (!(paid > 0) || !(days > 0)) return alert('Vul het bedrag en het aantal dagen in.');
+    settings.dopDay = Math.round((paid / days) * 100) / 100;
+    save(KEY_SETTINGS, settings);
+    $('dopPaid').value = ''; $('dopPaidDays').value = '';
+    $('dopCalcBox').open = false;
+    render();
+  });
+
+  // --- ander werk (rode kaart met een andere job) ----------------------------------
+  const saveOther = () => { otherDays = [...new Set(otherDays)].sort(); save(KEY_OTHER_DAYS, otherDays); };
+  const otherOn = (iso) => otherDays.includes(iso);
+  // loon van de andere job in een jaar, uit de ingevulde maanden
+  function otherPayYear(y) {
+    const months = Object.keys(otherPay).filter((m) => m.startsWith(y + '-')).sort();
+    return {
+      months,
+      taxable: round2(months.reduce((t, m) => t + (Number(otherPay[m].taxable) || 0), 0)),
+      withholding: round2(months.reduce((t, m) => t + (Number(otherPay[m].withholding) || 0), 0)),
+    };
+  }
+  const monthName = (ym) => fmtDate(`${ym}-01`, { month: 'long', year: 'numeric' });
+  function fillOwMonths() {
+    const opts = [];
+    const d = new Date(today.getFullYear(), today.getMonth(), 1);
+    for (let i = 0; i < 24; i++) {
+      const ym = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+      opts.push(`<option value="${ym}">${monthName(ym)}</option>`);
+      d.setMonth(d.getMonth() - 1);
+    }
+    const cur = $('owMonth').value;
+    $('owMonth').innerHTML = opts.join('');
+    if (cur) $('owMonth').value = cur;
+  }
+  function renderOther() {
+    const on = settings.status === 'gelegenheid' || otherDays.length > 0 || Object.keys(otherPay).length > 0;
+    $('otherCard').hidden = !on;
+    if (!on) return;
+    if (!$('owMonth').options.length) fillOwMonths();
+    const ym = `${viewYear}-${pad(viewMonth + 1)}`;
+    const n = otherDays.filter((d) => d.startsWith(ym)).length;
+    const yr = otherPayYear(String(viewYear));
+    const mName = fmtDate(`${ym}-01`, { month: 'long' });
+    $('owStatus').textContent = `${mName[0].toUpperCase() + mName.slice(1)}: ${n} ${n === 1 ? 'dag' : 'dagen'} ander werk. `
+      + (yr.months.length ? `${viewYear}: loon van ${yr.months.length} ${yr.months.length === 1 ? 'maand' : 'maanden'} ingevuld (belastbaar ${money(yr.taxable)}), dat telt mee in je belastingbrief.`
+        : `${viewYear}: nog geen loon van je andere job ingevuld.`);
+    const sel = otherPay[$('owMonth').value] || {};
+    for (const [id, k] of [['owTaxable', 'taxable'], ['owWithholding', 'withholding']]) {
+      if (document.activeElement !== $(id)) $(id).value = sel[k] ? sel[k].toFixed(2).replace('.', ',') : '';
+    }
+    const months = Object.keys(otherPay).sort().reverse().slice(0, 12);
+    $('owList').innerHTML = months.map((m) => `<li><div class="li-main"><div class="d">${monthName(m)}</div>
+      <div class="m">belastbaar ${money(otherPay[m].taxable || 0)} · voorheffing ${money(otherPay[m].withholding || 0)}</div></div>
+      <button type="button" class="linkbtn" data-owedit="${m}">aanpassen</button></li>`).join('');
+    $('owList').hidden = !months.length;
+  }
+  $('owMonth').addEventListener('change', renderOther);
+  for (const [id, k] of [['owTaxable', 'taxable'], ['owWithholding', 'withholding']]) {
+    $(id).addEventListener('change', () => {
+      const v = $(id).value.trim();
+      const n = v ? numIn(v.replace(/\s|€/g, '').replace(/\.(?=\d{3}(\D|$))/g, '')) : 0;
+      if (!Number.isFinite(n) || n < 0) { renderOther(); return alert('Vul een geldig bedrag in, bv. 1.234,56.'); }
+      const m = $('owMonth').value;
+      const e = { ...(otherPay[m] || {}) };
+      if (n) e[k] = round2(n); else delete e[k];
+      if (Object.keys(e).length) otherPay[m] = e; else delete otherPay[m];
+      save(KEY_OTHER_PAY, otherPay);
+      render();
+    });
+  }
+  $('owList').addEventListener('click', (ev) => {
+    const m = ev.target.closest('[data-owedit]')?.dataset.owedit;
+    if (!m) return;
+    if (![...$('owMonth').options].some((o) => o.value === m)) $('owMonth').insertAdjacentHTML('beforeend', `<option value="${m}">${monthName(m)}</option>`);
+    $('owMonth').value = m;
+    renderOther();
+    $('owTaxable').focus();
+  });
+
   $('dopDay').addEventListener('change', () => {
     const v = $('dopDay').value.trim();
     const n = v ? Number(v.replace(/\s|€/g, '').replace(',', '.')) : 0;
@@ -3067,6 +3188,8 @@ const APP_VERSION = '2026-10-08.5';
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
     ['2026-10-08', [
+      'Rode kaart met een andere job: duid die dagen aan als Ander werk en vul elke maand het loon van die job in. De schatting van je belastingbrief telt het mee.',
+      'Dop: reken je bedrag per dag uit met je laatste betaling van de vakbond of de HVW.',
       'Contact, Fout melden en Voorstel doen: kies of je een antwoord wil, via e-mail, WhatsApp of sms (optioneel).',
       'Niet gewerkt? Kies in de dag Verlof, HV, Recup of Dop. Recup is nieuw als soort verlof.',
       'Dop (werkloosheid) bijhouden: de dagen staan in de kalender. Vul je bedrag per dag in om te zien wat je ongeveer krijgt.',
@@ -3837,7 +3960,7 @@ const APP_VERSION = '2026-10-08.5';
   }
   $('exportJson').addEventListener('click', () => {
     download(`werkuren-backup-${isoDate(new Date())}.json`,
-      JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, companyPhones, companyNotes, medChecks, leave, payslips, taxActual, taxExtras, taxUser, markagePremie, lashPremie, dop }, null, 2), 'application/json');
+      JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, companyPhones, companyNotes, medChecks, leave, payslips, taxActual, taxExtras, taxUser, markagePremie, lashPremie, dop, otherDays, otherPay }, null, 2), 'application/json');
   });
   $('importBtn').addEventListener('click', () => $('importFile').click());
   $('importFile').addEventListener('change', async (ev) => {
@@ -3869,10 +3992,12 @@ const APP_VERSION = '2026-10-08.5';
       if (data.markagePremie) markagePremie = data.markagePremie;
       if (data.lashPremie) lashPremie = data.lashPremie;
       if (Array.isArray(data.dop)) dop = data.dop;
+      if (Array.isArray(data.otherDays)) otherDays = data.otherDays;
+      if (data.otherPay) otherPay = data.otherPay;
       save(KEY_ENTRIES, entries); save(KEY_PERIODS, periods); save(KEY_SETTINGS, settings); save(KEY_HOLIDAYS, holidayOverrides);
       save(KEY_CUSTOM_CO, customCompanies); save(KEY_HIDDEN_CO, hiddenCompanies);
       save(KEY_MEDICAL, medChecks); save(KEY_LEAVE, leave); save(KEY_PAYSLIPS, payslips); save(KEY_TAX_ACTUAL, taxActual); save(KEY_TAX_EXTRA, taxExtras); save(KEY_TAX_USER, taxUser); save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation); save(KEY_CO_PHONE, companyPhones); save(KEY_CO_NOTES, companyNotes);
-      save(KEY_MARKAGE, markagePremie); save(KEY_LASH, lashPremie); save(KEY_DOP, dop);
+      save(KEY_MARKAGE, markagePremie); save(KEY_LASH, lashPremie); save(KEY_DOP, dop); save(KEY_OTHER_DAYS, otherDays); save(KEY_OTHER_PAY, otherPay);
       renderCompanyPicker(); renderSettings(); renderTaxTables(); renderHolidays(); renderRates(); render();
     } catch { alert('Dit is geen geldig back-upbestand.'); }
     ev.target.value = '';

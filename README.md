@@ -38,6 +38,7 @@ Functieloon volgens de Codex (artikel 31): basisloon alle werk van de shift plus
 - Premie markage en premie lashing verschillen per bedrijf: de gebruiker vult het bedrag in bij de shift en de app onthoudt het per bedrijf (`haven-werkuren.markagePremie`, `haven-werkuren.lashPremie`). Ze tellen als loon (type A).
 - In de dag kies je bij een dag zonder werk Verlof, HV, Recup of Dop (rode kaart: enkel Dop). HV en recup tellen niet mee als verlofdagen.
 - Dop (werkloosheid): dagen in `haven-werkuren.dop`. Naast een halve shift telt een halve dag, naast een volle shift niets. Met een zelf ingevuld bedrag per dag toont de app wat je ongeveer krijgt; dop zit niet in het netto per uitbetaling en niet in de belastingschatting.
+- Ander werk (rode kaart met een andere job): dagen in `haven-werkuren.otherWork`, loon per maand (belastbaar en voorheffing van de loonbrief) in `haven-werkuren.otherPay`. Dat loon telt mee in de schatting van de belastingbrief; het netto per uitbetaling in de haven verandert niet. Het dagbedrag dop kan uitgerekend worden uit de laatste betaling (bedrag ÷ dagen).
 
 ## Belastingbedragen bijwerken
 
