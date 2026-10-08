@@ -128,7 +128,8 @@
     internet: 0.80,                           // per volle shift, enkel erkend (losse pool en time table)
     mtcValue: 7.00, mtcOwn: 1.09,             // maaltijdcheque; eigen bijdrage per volle shift
     wijziging: 17.17, afbestelWeekend: 115.16,
-    markage: 13.52,                           // premie markage (art. 31-4°): half uur voorbereidend werk markeerder
+    markage: 13.52,                           // premie markage (art. 31-4°); enkel nog voor oude shiften met markage: true,
+                                              // want het bedrag verschilt per bedrijf: de gebruiker vult het zelf in
   }];
 
   // --- belastingbedragen ------------------------------------------------------------
@@ -299,7 +300,9 @@
     add('shiftloon', label, full ? shiftWage : shiftWage / 2, 'A');
     add('premie', 'Vaste premie', full ? p.premie : p.premieHalf, 'A');
     add('overuren', 'Overuren', (entry.overtime || 0) * (own ? own.overuur : rate.overuur), 'A');
-    if (full && entry.markage && isMarkeerder(fn.id)) add('markage', 'Premie markage', p.markage, 'A');
+    // premie markage: bedrag zoals de gebruiker het invulde (oude shiften: true = vast bedrag, enkel volle shift)
+    const markage = typeof entry.markage === 'number' ? entry.markage : (full && entry.markage === true ? p.markage : 0);
+    if (markage > 0 && isMarkeerder(fn.id)) add('markage', 'Premie markage', markage, 'A');
     if (entry.wijziging) add('wijziging', 'Wijzigingsvergoeding', p.wijziging, s.extraType);
     add('kledij', 'Kledijvergoeding', p.kledij, 'D');
     add('vervoer', s.transport === 'fiets' ? 'Fietsvergoeding' : 'Eigen vervoer', travelAllowance(entry.date, s), 'D');

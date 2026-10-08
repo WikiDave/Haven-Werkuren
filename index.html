@@ -802,7 +802,7 @@
     <section>
       <h3>Over deze app</h3>
       <p class="disclaimer-text">Dit is een <b>hobbyproject</b> van een havenarbeider, <b>David Schütt</b>, gebouwd met behulp van AI (Claude). Het heeft <b>niets te maken met Cewez</b>. De bedragen en informatie kunnen fout zijn: controleer altijd je loonbrief.</p>
-      <p class="hint">De app werkt offline op je gsm: je uren, je loon en al je gegevens blijven op je toestel en worden nergens gedeeld. Er wordt alleen geteld hoe vaak de link gedeeld wordt en op hoeveel toestellen de app geopend is, zonder namen of gegevens. Een bericht via Contact, Fout melden of Voorstel doen gaat via de dienst FormSubmit per e-mail naar de maker; enkel wat je zelf invult wordt meegestuurd.</p>
+      <p class="hint">De app werkt offline op je gsm: je uren, je loon en al je gegevens blijven op je toestel en worden nergens gedeeld. Er wordt alleen geteld hoe vaak de link gedeeld wordt en op hoeveel toestellen de app gebruikt wordt, zonder namen of gegevens. Een bericht via Contact, Fout melden of Voorstel doen gaat via de dienst FormSubmit per e-mail naar de maker; enkel wat je zelf invult wordt meegestuurd.</p>
     </section>
 
     <section class="news" id="newsBox">
@@ -894,7 +894,14 @@
       <label for="func">Functie</label>
       <select id="func"></select>
       <p class="hint" id="funcHint"></p>
-      <label class="check" id="markageWrap" hidden><input type="checkbox" id="markage"> Premie markage (€ 13,52): voorbereidend of aanvullend werk als markeerder</label>
+      <div id="markageWrap" hidden>
+        <label class="check"><input type="checkbox" id="markage"> Premie markage: voorbereidend of aanvullend werk als markeerder</label>
+        <div id="markageAmt" hidden>
+          <label for="markageEur">Bedrag premie markage (€)</label>
+          <input type="text" id="markageEur" inputmode="decimal" autocomplete="off" placeholder="zoals op je loonbrief">
+          <p class="hint">Het bedrag verschilt per bedrijf. Vul in wat op je loonbrief staat; de app onthoudt het per bedrijf.</p>
+        </div>
+      </div>
       <label for="work">Soort werk</label>
       <select id="work">
         <option value="other">Gewoon werk (1 kledijpunt)</option>
@@ -1308,19 +1315,19 @@
 
   <footer class="disclaimer">
     <p>Dit is een <b>hobbyproject</b> van een havenarbeider, <b>David Schütt</b>, gebouwd met behulp van AI (Claude). Het heeft <b>niets te maken met Cewez</b>. De bedragen en informatie kunnen fout zijn: controleer altijd je loonbrief.</p>
-    <p>De app werkt offline op je gsm: je uren, je loon en al je gegevens blijven op je toestel en worden nergens gedeeld. Er wordt alleen geteld hoe vaak de link gedeeld wordt en op hoeveel toestellen de app geopend is, zonder namen of gegevens. Een bericht via Contact, Fout melden of Voorstel doen gaat via de dienst FormSubmit per e-mail naar de maker; enkel wat je zelf invult wordt meegestuurd.</p>
+    <p>De app werkt offline op je gsm: je uren, je loon en al je gegevens blijven op je toestel en worden nergens gedeeld. Er wordt alleen geteld hoe vaak de link gedeeld wordt en op hoeveel toestellen de app gebruikt wordt, zonder namen of gegevens. Een bericht via Contact, Fout melden of Voorstel doen gaat via de dienst FormSubmit per e-mail naar de maker; enkel wat je zelf invult wordt meegestuurd.</p>
   </footer>
   <p class="usage" id="usage" hidden></p>
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-07.9"></script>
-<script src="scan.js?v=2026-10-07.9"></script>
-<script src="aanbod.js?v=2026-10-07.9"></script>
+<script src="loon.js?v=2026-10-08.2"></script>
+<script src="scan.js?v=2026-10-08.2"></script>
+<script src="aanbod.js?v=2026-10-08.2"></script>
 <script>
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-07.9';
+const APP_VERSION = '2026-10-08.2';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1421,6 +1428,7 @@ const APP_VERSION = '2026-10-07.9';
   const KEY_LAST_WORK = 'haven-werkuren.lastWork';
   const KEY_LAST_FUNC = 'haven-werkuren.lastFunction';
   const KEY_COUNTED = 'haven-werkuren.deviceCounted';
+  const KEY_FIRST_SEEN = 'haven-werkuren.firstSeen'; // eerste dag in de browser (voor de telling)
   const KEY_MEDICAL = 'haven-werkuren.medicalChecks';
   const KEY_LEAVE = 'haven-werkuren.leave';
   const KEY_PAYSLIPS = 'haven-werkuren.payslips';   // ingescande loonbrieven per periode
@@ -1438,6 +1446,7 @@ const APP_VERSION = '2026-10-07.9';
   const KEY_CO_PHONE = 'haven-werkuren.companyPhones';
   const KEY_CO_NOTES = 'haven-werkuren.companyNotes'; // eigen notities per bedrijf
   const KEY_AANBOD = 'haven-werkuren.werkaanbod'; // laatst opgehaald werkaanbod van cewez.be
+  const KEY_MARKAGE = 'haven-werkuren.markagePremie'; // premie markage per bedrijf, zelf ingevuld
   const load = (k, fallback) => {
     try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fallback; } catch { return fallback; }
   };
@@ -1539,6 +1548,7 @@ const APP_VERSION = '2026-10-07.9';
   let hiddenCompanies = load(KEY_HIDDEN_CO, []);
   let showAllCompanies = false;
   let companyId = load(KEY_LAST_CO, '');
+  const markagePremie = load(KEY_MARKAGE, {});
   let today = new Date(); // wordt bijgewerkt als de app na middernacht terug geopend wordt
   let viewYear = today.getFullYear();
   let viewMonth = today.getMonth();
@@ -1738,6 +1748,7 @@ const APP_VERSION = '2026-10-07.9';
     if (btn.id === 'coMore') { showAllCompanies = !showAllCompanies; renderCompanyPicker(); return; }
     companyId = btn.dataset.co === companyId ? '' : btn.dataset.co;
     save(KEY_LAST_CO, companyId);
+    if ($('markage').checked) fillMarkage();
     renderCompanyPicker();
   });
   $('coCancel').addEventListener('click', () => { $('newco').hidden = true; $('coName').value = ''; $('coLogo').value = ''; });
@@ -1950,12 +1961,27 @@ const APP_VERSION = '2026-10-07.9';
     return {
       id: '__preview',
       date: $('date').value, code: $('code').value, kind: $('kind').value, tariff: $('tariff').value, work: $('work').value, func: $('func').value,
-      wijziging: $('wijziging').checked, markage: $('markage').checked && Loon.isMarkeerder($('func').value),
+      wijziging: $('wijziging').checked, markage: markageAmount(),
       company: companyId, companyName: companyById(companyId)?.name || '', kaai: $('kaai').value.trim(),
       loc: companyId ? currentLoc() : '', locName: (companyId && locationsOf(companyId).length > 1 && locationOf(companyId, currentLoc())?.name) || '',
       overtime: parseHours($('ot').value), note: $('note').value.trim(),
     };
   }
+
+  // premie markage: het bedrag dat de gebruiker invulde (verschilt per bedrijf), anders niets
+  function markageAmount() {
+    if (!$('markage').checked || !Loon.isMarkeerder($('func').value)) return undefined;
+    const n = Number($('markageEur').value.trim().replace(/\s|€/g, '').replace(',', '.'));
+    return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : 0;
+  }
+  // vakje voor het bedrag tonen, ingevuld met wat de gebruiker vorige keer bij dit bedrijf invulde
+  function fillMarkage() {
+    $('markageAmt').hidden = !$('markage').checked;
+    const known = markagePremie[companyId || ''];
+    $('markageEur').value = known ? known.toFixed(2).replace('.', ',') : '';
+  }
+  $('markage').addEventListener('change', () => { fillMarkage(); updatePreview(); });
+  $('markageEur').addEventListener('input', updatePreview);
 
   function updatePreview() {
     const e = readForm();
@@ -1982,13 +2008,16 @@ const APP_VERSION = '2026-10-07.9';
     const e = readForm();
     if (!e.date) return alert('Kies een datum.');
     if (Number.isNaN(e.overtime)) return alert('Overuren niet herkend. Schrijf bv. 1u30 of 1,5.');
+    if (e.markage === 0) { $('markageEur').focus(); return alert('Vul het bedrag van de premie markage in (staat op je loonbrief), of vink de premie uit.'); }
+    if (e.markage) { markagePremie[e.company || ''] = e.markage; save(KEY_MARKAGE, markagePremie); }
+    if (e.markage === undefined) delete e.markage;
     e.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     if (e.kind === 'afbestel') { e.overtime = 0; e.wijziging = false; }
     entries.push(e);
     save(KEY_ENTRIES, entries);
     save(KEY_LAST_WORK, e.work);
     save(KEY_LAST_FUNC, e.func);
-    $('ot').value = ''; $('note').value = ''; $('kaai').value = ''; $('wijziging').checked = false; $('markage').checked = false;
+    $('ot').value = ''; $('note').value = ''; $('kaai').value = ''; $('wijziging').checked = false; $('markage').checked = false; $('markageAmt').hidden = true;
     $('kind').value = 'full'; $('tariff').value = 'auto';
     renderCompanyPicker();
     render();
@@ -2722,7 +2751,8 @@ const APP_VERSION = '2026-10-07.9';
               <div><b>${mineYear.length}</b><span>shiften ${year}</span></div>
               <div><b>${money(t.bruto).replace(/,\d\d$/, '')}</b><span>bruto ${year}</span></div>
               <div><b>${last ? fmtDate(last, { day: 'numeric', month: 'short' }) : '–'}</b><span>laatst gewerkt</span></div></div>
-              ${funcs.length ? `<p style="margin-top:6px">Functies: ${funcs.map(escapeHtml).join(', ')}</p>` : ''}` : '<p>Je hebt hier nog geen shiften ingevuld.</p>'}</div>
+              ${funcs.length ? `<p style="margin-top:6px">Functies: ${funcs.map(escapeHtml).join(', ')}</p>` : ''}` : '<p>Je hebt hier nog geen shiften ingevuld.</p>'}
+              ${markagePremie[c.id] ? `<p style="margin-top:6px">Premie markage: ${money(markagePremie[c.id])} (zelf ingevuld)</p>` : ''}</div>
           <div><h4>Mijn notities</h4><textarea data-cinote="${c.id}" rows="3" placeholder="bv. naam ploegbaas, parking, kantine, kledij nodig…" aria-label="Notities ${escapeHtml(c.name)}">${escapeHtml(companyNotes[c.id] || '')}</textarea></div>
         </div></details>`;
     }).join('');
@@ -2893,6 +2923,10 @@ const APP_VERSION = '2026-10-07.9';
   // --- wat is er nieuw -----------------------------------------------------------
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
+    ['2026-10-08', [
+      'Telling onderaan eerlijker: een toestel telt als je de app op je beginscherm zet, of in de browser op een tweede dag opnieuw opent. Robots tellen niet meer mee.',
+      'Premie markage: het bedrag verschilt per bedrijf. Je vult het nu zelf in (zoals op je loonbrief) en de app onthoudt het per bedrijf.',
+    ]],
     ['2026-10-07', [
       'Contact onderaan, en Fout melden en Voorstel doen: onderwerp, bericht en een foto of bestand. Je bericht gaat rechtstreeks naar de maker, zonder account.',
       'Jouw instellingen (statuut, woonplaats, gezin) meteen invullen in dit uitlegscherm.',
@@ -3005,7 +3039,9 @@ const APP_VERSION = '2026-10-07.9';
 
   // --- anoniem tellen op hoeveel toestellen de app gebruikt wordt -----------
   // Elk toestel stuurt één keer "+1" naar een teller (Abacus); er gaat niets mee over de gebruiker.
-  // Het aantal staat niet in de app, enkel als badge in de README op GitHub.
+  // Op het beginscherm telt de app meteen; in de browser pas als hij op een tweede dag opnieuw geopend wordt.
+  // Zo telt een iPhone niet dubbel (Safari en het beginscherm bewaren hun gegevens apart),
+  // en tellen eenmalige bezoeken en robots niet mee.
   // Enkel op de echte website, niet tijdens het testen.
   const COUNTER_URL = 'https://abacus.jasoncameron.dev';
   const COUNTER_KEY = 'cewez-calculator/toestellen';
@@ -3017,6 +3053,13 @@ const APP_VERSION = '2026-10-07.9';
   }
   async function countDevice() {
     if (!countingSite || load(KEY_COUNTED, false)) return;
+    if (navigator.webdriver || /bot|crawl|spider|slurp|headless|lighthouse|preview|facebookexternalhit/i.test(navigator.userAgent)) return;
+    if (!standalone) {
+      const day = isoDate(new Date());
+      const first = load(KEY_FIRST_SEEN, '');
+      if (!first) save(KEY_FIRST_SEEN, day);
+      if (!first || first === day) return;
+    }
     try {
       const res = await fetch(`${COUNTER_URL}/hit/${COUNTER_KEY}`);
       if (!res.ok) return;
