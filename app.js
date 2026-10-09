@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-08.10';
+const APP_VERSION = '2026-10-09.1';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1606,6 +1606,9 @@ const APP_VERSION = '2026-10-08.10';
   // --- wat is er nieuw -----------------------------------------------------------
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
+    ['2026-10-09', [
+      'Installeren lukt niet na het scannen van de QR-code of vanuit de oude app? Tik op "Openen in Chrome" (bij Uitleg en bij Nieuw adres) en installeer daar.',
+    ]],
     ['2026-10-08', [
       'Nieuw adres: wikidave.github.io/Haven-Werkuren. De app stuurt je er vanzelf naartoe en neemt je gegevens mee. Zet de app daarna opnieuw op je beginscherm.',
       'Chauffeurs (bv. tugmaster), kraanmannen en speciale tuigen: shift, uur- en overuurloon nu precies volgens de loontabel. Overuren waren te laag (bv. tugmaster 8u: € 44,88 per overuur in plaats van € 37,26). Bedankt voor de melding!',
@@ -1694,7 +1697,7 @@ const APP_VERSION = '2026-10-08.10';
     $('welcomeIntro').textContent = standalone
       ? 'Je gebruikt de app al vanaf je beginscherm. Hieronder lees je hoe je hem deelt en hoe je gegevens bewaard worden.'
       : 'Zet de app op je beginscherm. Dan opent hij als een gewone app, zonder adresbalk, en werkt hij ook met slecht bereik op de kaai.';
-    $('installBtn').hidden = standalone || !installPrompt;
+    renderInstallHelp();
     $('shareMsg').hidden = true;
     if (typeof $('welcome').showModal === 'function') $('welcome').showModal();
     else $('welcome').setAttribute('open', '');
@@ -1702,19 +1705,31 @@ const APP_VERSION = '2026-10-08.10';
   $('helpBtn').addEventListener('click', openWelcome);
   // klikken naast het venster sluit het ook
   $('welcome').addEventListener('click', (ev) => { if (ev.target === $('welcome')) $('welcome').close(); });
-  // Android/Chrome: eigen installatieknop
+  // Installeren: in Chrome met een eigen knop. Na een QR-scan of vanuit de oude app opent de pagina vaak in een
+  // klein venster zonder "App installeren"; op Android dan een knop die de pagina in Chrome zelf opent.
+  const chromeIntent = `intent://${location.host}${location.pathname}#Intent;scheme=https;package=com.android.chrome;end`;
+  let promptWaited = false; // even wachten of Chrome zelf installeren aanbiedt
+  function renderInstallHelp() {
+    for (const el of document.querySelectorAll('[data-install="prompt"]')) el.hidden = standalone || !installPrompt;
+    for (const el of document.querySelectorAll('[data-install="chrome"]')) el.hidden = standalone || !!installPrompt || os !== 'android' || !promptWaited;
+    for (const el of document.querySelectorAll('[data-install="ios"]')) el.hidden = standalone || os !== 'ios';
+  }
+  document.querySelectorAll('[data-chrome]').forEach((a) => { a.href = chromeIntent; });
+  setTimeout(() => { promptWaited = true; renderInstallHelp(); }, 2500);
   window.addEventListener('beforeinstallprompt', (ev) => {
     ev.preventDefault();
     installPrompt = ev;
-    if ($('welcome').open) $('installBtn').hidden = false;
+    renderInstallHelp();
   });
-  $('installBtn').addEventListener('click', async () => {
+  window.addEventListener('appinstalled', () => { installPrompt = null; renderInstallHelp(); });
+  document.querySelectorAll('button[data-install="prompt"]').forEach((b) => b.addEventListener('click', async () => {
     if (!installPrompt) return;
     installPrompt.prompt();
     await installPrompt.userChoice.catch(() => {});
     installPrompt = null;
-    $('installBtn').hidden = true;
-  });
+    renderInstallHelp();
+  }));
+  renderInstallHelp();
   $('shareBtn').addEventListener('click', async () => {
     const msg = (t) => { $('shareMsg').textContent = t; $('shareMsg').hidden = false; };
     const data = { title: 'Haven Werkuren', text: 'Hou je shiften, overuren en netto bij met Haven Werkuren:', url: APP_URL };
