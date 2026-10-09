@@ -614,8 +614,14 @@
   <section class="card moved" id="arrived" hidden>
     <h2>Nieuw adres</h2>
     <p>Haven Werkuren staat nu op <b>wikidave.github.io/Haven-Werkuren</b>. <span id="arrivedData"></span></p>
-    <p class="hint">Zet de app opnieuw op je beginscherm vanaf deze pagina (de knop Uitleg legt uit hoe). Op een iPhone: download eerst een back-up; staan je gegevens niet in de nieuwe app, zet de back-up daar terug bij Instellingen › Back-up terugzetten. Verwijder het oude icoon pas als alles goed staat.</p>
-    <button type="button" class="btn" id="arrivedBackup">Back-up downloaden</button>
+    <p class="hint">Installeer de app opnieuw vanaf dit adres. Verwijder het oude icoon pas als alles goed staat.</p>
+    <button type="button" class="btn" data-install="prompt">App installeren</button>
+    <div data-install="chrome" hidden>
+      <a class="btn" data-chrome href="#">Openen in Chrome</a>
+      <p class="hint">Daarna in Chrome: tik op <b>⋮</b> › <b>App installeren</b>.</p>
+    </div>
+    <p class="hint" data-install="ios" hidden>In Safari: tik op de <b>Deel-knop</b> › <b>Zet op beginscherm</b>. Download eerst een back-up; staan je gegevens niet in de nieuwe app, zet de back-up daar terug bij Instellingen › Back-up terugzetten.</p>
+    <button type="button" class="btn ghost" id="arrivedBackup">Back-up downloaden</button>
     <button type="button" class="btn ghost" id="arrivedOk">OK</button>
   </section>
   <section class="card moved" id="moved" hidden>
@@ -741,7 +747,7 @@
     <form method="dialog" class="sheet-x"><button value="close" aria-label="Sluiten">✕</button></form>
     <h2 id="welcomeTitle">Haven Werkuren als app</h2>
     <p id="welcomeIntro">Zet de app op je beginscherm. Dan opent hij als een gewone app, zonder adresbalk, en werkt hij ook met slecht bereik op de kaai.</p>
-    <button type="button" class="btn" id="installBtn" hidden>App installeren</button>
+    <button type="button" class="btn" id="installBtn" data-install="prompt" hidden>App installeren</button>
 
     <section class="quick" id="quickBox">
       <details id="quickFold">
@@ -794,6 +800,11 @@
         <li>Kies <b>App installeren</b> of <b>Toevoegen aan startscherm</b>.</li>
         <li>Bevestig met <b>Installeren</b>.</li>
       </ol>
+      <div data-install="chrome" hidden>
+        <p class="hint">Zie je <b>App installeren</b> niet? Dan is de pagina in een klein venster geopend, bijvoorbeeld na het scannen van de QR-code of vanuit de oude app. Open ze dan eerst in Chrome:</p>
+        <a class="btn" data-chrome href="#">Openen in Chrome</a>
+      </div>
+      <p class="hint">Samsung Internet: tik op <b>☰</b> › <b>Toevoegen aan</b> › <b>Startscherm</b>.</p>
     </section>
 
     <section>
@@ -1389,8 +1400,8 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-08.10"></script>
-<script src="scan.js?v=2026-10-08.10"></script>
-<script src="app.js?v=2026-10-08.10"></script>
+<script src="loon.js?v=2026-10-09.1"></script>
+<script src="scan.js?v=2026-10-09.1"></script>
+<script src="app.js?v=2026-10-09.1"></script>
 </body>
 </html>
