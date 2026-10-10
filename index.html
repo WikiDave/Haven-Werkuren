@@ -685,7 +685,7 @@
   <dialog class="sheet" id="callDialog" aria-labelledby="callTitle">
     <form method="dialog" class="sheet-x"><button value="close" aria-label="Sluiten">✕</button></form>
     <h2 id="callTitle">Bellen voor werk</h2>
-    <p class="hint">Tik op een nummer om te bellen. Je vult de nummers zelf in bij <b>Instellingen › Bedrijven beheren</b>. De nummers van de aanwervers vind je op <a href="https://cewez.be/havenarbeider/contactgegevens-aanwervers/" target="_blank" rel="noopener">cewez.be</a>.</p>
+    <p class="hint">Tik op een nummer om te bellen. Je vult de nummers zelf in bij <b>Instellingen › Bedrijven beheren</b>. De nummers van de aanwervers vind je op <a href="https://cewez.be/havenarbeider/contactgegevens-aanwervers/" target="_blank" rel="noopener">deze pagina</a>.</p>
     <ul id="callList"></ul>
     <button type="button" class="btn ghost" id="callEdit">Nummers toevoegen of aanpassen</button>
   </dialog>
@@ -706,7 +706,7 @@
     <div id="scanResult" hidden>
       <label for="scanKind">Soort papier</label>
       <select id="scanKind">
-        <option value="loonbrief">Loonbrief van Cewez</option>
+        <option value="loonbrief">Loonbrief</option>
         <option value="fiche">Loonfiche 281.10</option>
         <option value="aanslag">Aanslagbiljet (belastingbrief)</option>
       </select>
@@ -982,10 +982,10 @@
     <section class="inset grp" id="workCard">
       <details class="fold" data-fold="aanbod">
         <summary><h2>Werkaanbod</h2></summary>
-      <p class="hint">Het werkaanbod en de tekorten vind je bij Cewez zelf. Deze app toont ze niet.</p>
-      <a class="btn ghost" id="wkMyJob" href="https://my.cewez.be" target="_blank" rel="noopener">MyJob (my.cewez.be)</a>
-      <a class="btn ghost" href="https://cewez.be/tekorten/" target="_blank" rel="noopener">Tekorten op cewez.be</a>
-      <a class="btn ghost" href="https://cewez.be/tewerkstelling/" target="_blank" rel="noopener">Tewerkstelling op cewez.be</a>
+      <p class="hint">Het werkaanbod en de tekorten toont deze app niet. Je vindt ze via deze links.</p>
+      <a class="btn ghost" id="wkMyJob" href="https://my.cewez.be" target="_blank" rel="noopener">MyJob</a>
+      <a class="btn ghost" href="https://cewez.be/tekorten/" target="_blank" rel="noopener">Tekorten</a>
+      <a class="btn ghost" href="https://cewez.be/tewerkstelling/" target="_blank" rel="noopener">Tewerkstelling</a>
       </details>
     </section>
     <section class="inset grp" id="leaveCard">
@@ -1013,10 +1013,10 @@
       <input id="lvQuota" inputmode="numeric" placeholder="bv. 20">
       <h3 class="taxh">Herverdelingsdagen</h3>
       <p class="medstatus" id="hvStatus"></p>
-      <p class="hint">Per 25 gewerkte shiften bouw je 1 herverdelingsdag (HV) op. Aanvragen bij Cewez, telefonisch of via MyCewez, ten laatste om 11u00 dezelfde dag. Een HV blijft 3 jaar geldig (langer bij ziekte of ongeval) en wordt niet uitbetaald als je hem niet opneemt. Neem je er een, kies dan hierboven als soort "Herverdelingsdag (HV)".</p>
+      <p class="hint">Per 25 gewerkte shiften bouw je 1 herverdelingsdag (HV) op. Aanvragen doe je telefonisch of online, ten laatste om 11u00 dezelfde dag. Een HV blijft 3 jaar geldig (langer bij ziekte of ongeval) en wordt niet uitbetaald als je hem niet opneemt. Neem je er een, kies dan hierboven als soort "Herverdelingsdag (HV)".</p>
       <details id="hvStartBox">
-        <summary>Tegoed van Cewez invullen</summary>
-        <p class="hint">Kijk in MyCewez of je prestatieboek hoeveel HV je hebt en hoeveel shiften je al opbouwde naar de volgende. Shiften en HV na die datum telt de app er zelf bij.</p>
+        <summary>Je tegoed invullen</summary>
+        <p class="hint">Kijk online of in je prestatieboek hoeveel HV je hebt en hoeveel shiften je al opbouwde naar de volgende. Shiften en HV na die datum telt de app er zelf bij.</p>
         <div class="row2">
           <div><label for="hvBal">HV-tegoed</label><input id="hvBal" inputmode="numeric" placeholder="0"></div>
           <div><label for="hvCnt">Shiften naar volgende HV</label><input id="hvCnt" inputmode="numeric" placeholder="0"></div>
@@ -1024,7 +1024,7 @@
         <label for="hvDate">Op datum</label>
         <input type="date" id="hvDate">
       </details>
-      <p class="hint">Zondagen en feestdagen tellen niet mee. Op een verlofdag werk je niet voor Cewez, dus daar is er geen loon. Je vakantiegeld krijg je één keer per jaar van het vakantiefonds, met een eigen voorheffing. Vul het in bij <b>Belastingbrief</b> zodra je het krijgt, dan klopt de schatting van je belastingen.</p>
+      <p class="hint">Zondagen en feestdagen tellen niet mee. Op een verlofdag werk je niet, dus daar is er geen loon. Je vakantiegeld krijg je één keer per jaar van het vakantiefonds, met een eigen voorheffing. Vul het in bij <b>Belastingbrief</b> zodra je het krijgt, dan klopt de schatting van je belastingen.</p>
       </details>
     </section>
     <section class="inset grp" id="dopCard">
@@ -1116,7 +1116,7 @@
         <summary>Jouw gegevens invullen (nauwkeuriger)</summary>
         <p class="hint">Vul in wat je weet; lege velden worden niet meegeteld. Alles blijft op je gsm.</p>
 
-        <h3 class="taxh">1. Je loonfiche van Cewez</h3>
+        <h3 class="taxh">1. Je loonfiche</h3>
         <p class="hint">Heb je je loonfiche (281.10) al? Die bedragen zijn het nauwkeurigst en vervangen de bedragen uit de app.</p>
         <div class="row2">
           <div><label for="tx-ficheIncome">Belastbaar loon (code 1250)</label><input id="tx-ficheIncome" data-tx="ficheIncome" inputmode="decimal" placeholder="uit de app"></div>
@@ -1170,7 +1170,7 @@
     <section class="inset grp" id="kaaiCard">
       <details class="fold" data-fold="kaaien">
         <summary><h2>Kaaien</h2></summary>
-        <p class="hint">Plannen van de haven van Zeebrugge (Port of Antwerp-Bruges, via cewez.be › Wegwijs in de haven). Ze openen als PDF: zoom in met twee vingers.</p>
+        <p class="hint">Plannen van de haven van Zeebrugge (Port of Antwerp-Bruges). Ze openen als PDF: zoom in met twee vingers.</p>
         <div class="plans">
           <a class="btn ghost" href="https://cewez.be/wp-content/uploads/2025/05/Port-of-zeebrugge_kaainrs_straten_zeebrugge_2025.pdf" target="_blank" rel="noopener">Kaainummers en straten <small>luchtfoto met alle kaaien</small></a>
           <a class="btn ghost" href="https://cewez.be/wp-content/uploads/2025/05/Zeebrugge_bezoekersplan.pdf" target="_blank" rel="noopener">Bezoekersplan <small>docks en terminals</small></a>
@@ -1211,7 +1211,7 @@
             <input id="sPostcode" data-s="postcode" inputmode="numeric" maxlength="4" autocomplete="postal-code" placeholder="bv. 9000">
             <p class="hint" id="travelInfo"></p>
             <details id="placeBox">
-              <summary>Of kies je woonplaats uit de lijst van Cewez, of vul zelf een bedrag in</summary>
+              <summary>Of kies je woonplaats uit de lijst, of vul zelf een bedrag in</summary>
               <label for="sPlace">Woonplaats (deelgemeente)</label>
               <select id="sPlace" data-s="place"></select>
               <label for="sTravelOwn">Eigen bedrag per volle shift (€, staat op je loonbrief)</label>
@@ -1238,7 +1238,7 @@
           <label for="sWhMode">Voorheffing (belastingen)</label>
           <select id="sWhMode" data-s="withholdingMode">
             <option value="schatting">Sleutelformule (berekend door de app)</option>
-            <option value="percentage">Eigen percentage (gevraagd aan Cewez)</option>
+            <option value="percentage">Eigen percentage (gevraagd aan je werkgever)</option>
           </select>
           <div id="pctWrap">
             <label for="sWhPct">Percentage van het belastbaar bedrag</label>
@@ -1382,9 +1382,9 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="postcodes.js?v=2026-10-10.6"></script>
-<script src="loon.js?v=2026-10-10.6"></script>
-<script src="scan.js?v=2026-10-10.6"></script>
-<script src="app.js?v=2026-10-10.6"></script>
+<script src="postcodes.js?v=2026-10-10.7"></script>
+<script src="loon.js?v=2026-10-10.7"></script>
+<script src="scan.js?v=2026-10-10.7"></script>
+<script src="app.js?v=2026-10-10.7"></script>
 </body>
 </html>
