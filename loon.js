@@ -312,7 +312,8 @@
     const fare = (FARE.find(([max]) => d <= max) || FARE[FARE.length - 1])[1];
     return round2(Math.max(1.68, 0.0299 * fare));
   }
-  // { amount, km, place, places, source: 'tabel' | 'schatting' | 'eigen' | 'woonplaats' } voor een postcode of woonplaats
+  // { amount, km, roadKm, place, places, source: 'tabel' | 'schatting' | 'eigen' | 'woonplaats' } voor een postcode of woonplaats
+  // (roadKm: afstand over de weg, ± 1,25 x de rechte lijn; Aalst 73 km in vogelvlucht = ± 91 km over de weg)
   function travelInfo(date, settings) {
     if (settings.travelOwn > 0) return { amount: round2(settings.travelOwn), source: 'eigen' };
     const table = validOn(TRAVEL, date).table;
@@ -324,7 +325,7 @@
         const place = places.includes(settings.place) ? settings.place : places[0];
         return { amount: table[place], km, place, places, source: 'tabel' };
       }
-      return { amount: travelEstimate(km), km, source: 'schatting' };
+      return { amount: travelEstimate(km), km, roadKm: Math.round(km * 1.25), source: 'schatting' };
     }
     return { amount: table[settings.place] || 0, place: settings.place, source: 'woonplaats' };
   }

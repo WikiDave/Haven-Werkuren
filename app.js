@@ -2205,7 +2205,7 @@ const APP_VERSION = '2026-10-10.8';
     if (pc && !Loon.POSTCODES[pc] && !(settings.travelOwn > 0)) t = `Postcode ${escapeHtml(pc)} ken ik niet; ik gebruik je woonplaats (${money(i.amount)} per shift).`;
     else if (i.source === 'eigen') t = `Jouw bedrag: ${money(i.amount)} per volle shift.`;
     else if (i.source === 'tabel') t = `Vervoersvergoeding: ${money(i.amount)} per volle shift (${escapeHtml(i.place)}), volgens de vervoerstabel.`;
-    else if (i.source === 'schatting') t = `Vervoersvergoeding: ± ${money(i.amount)} per volle shift, geschat op ${Math.round(i.km)} km in vogelvlucht van Zeebrugge (de vergoeding volgt de treinprijs per afstand). Staat er een ander bedrag op je loonbrief? Vul dat zelf in onder "Of kies je woonplaats", bij "Eigen bedrag".`;
+    else if (i.source === 'schatting') t = `Vervoersvergoeding: ± ${money(i.amount)} per volle shift, geschat voor ± ${i.roadKm} km over de weg tot Zeebrugge (de vergoeding volgt de treinprijs voor die afstand, niet een bedrag per km). Staat er een ander bedrag op je loonbrief? Vul dat zelf in onder "Of kies je woonplaats", bij "Eigen bedrag".`;
     else t = i.amount ? `Vervoersvergoeding: ${money(i.amount)} per volle shift (woonplaats ${escapeHtml(settings.place || '')}).` : '';
     for (const id of ['travelInfo', 'qTravelInfo']) { $(id).innerHTML = t; $(id).hidden = settings.transport !== 'auto' || !t; }
     // meerdere deelgemeenten met een ander bedrag in je postcode: kies de jouwe

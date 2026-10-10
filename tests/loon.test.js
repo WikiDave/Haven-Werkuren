@@ -354,6 +354,9 @@ test('vervoersvergoeding per postcode: bedrag uit de tabel, anders geschat op af
   assert.equal(gent.source, 'schatting');
   assert.ok(gent.amount > 4.8 && gent.amount < 5.8, String(gent.amount));
   assert.ok(info('8610').amount > 4.28 && info('8610').amount < 5.2); // Kortemark: net buiten de tabel
+  const aalst = info('9300');
+  assert.ok(aalst.roadKm >= 85 && aalst.roadKm <= 95, String(aalst.roadKm)); // ± 90 km over de weg
+  assert.ok(aalst.amount > 6.5 && aalst.amount < 7.5, String(aalst.amount));
   const brussel = info('1000');
   assert.ok(brussel.amount > gent.amount && brussel.km > 90);
   assert.ok(brussel.amount < 9, String(brussel.amount));       // niet meer lineair (was 10,65)
