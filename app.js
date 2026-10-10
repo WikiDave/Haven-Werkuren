@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-10.1';
+const APP_VERSION = '2026-10-10.2';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -117,7 +117,6 @@ const APP_VERSION = '2026-10-10.1';
   const KEY_CO_NOTES = 'haven-werkuren.companyNotes'; // eigen notities per bedrijf
   const KEY_MARKAGE = 'haven-werkuren.markagePremie'; // premie markage per bedrijf, zelf ingevuld
   const KEY_LASH = 'haven-werkuren.lashPremie'; // premie lashing per bedrijf, zelf ingevuld
-  const KEY_REPLY = 'haven-werkuren.replyTo'; // e-mail en gsm voor een antwoord op een bericht: { email, phone }
   const KEY_DOP = 'haven-werkuren.dop'; // dagen dop (werkloosheid): ['2026-10-08', …]
   const KEY_OTHER_DAYS = 'haven-werkuren.otherWork'; // dagen op een andere job (rode kaart)
   const KEY_OTHER_PAY = 'haven-werkuren.otherPay'; // loon andere job per maand: { '2026-10': { taxable, withholding } }
@@ -767,7 +766,7 @@ const APP_VERSION = '2026-10-10.1';
           : `<span class="c">${list.map(shortCode).join('+')}</span>`;
         inner += `${mark}<span class="a">${Math.round(shown(t))}</span>`;
         if (t.otH) inner += '<span class="dot" title="overuren"></span>';
-      } else if (lv) inner += `<span class="lv">${{ herverdeling: 'HV', recup: 'recup' }[lv.type] || 'verlof'}</span>`;
+      } else if (lv) inner += `<span class="lv">${{ herverdeling: 'HV', recup: 'recup', ziek: 'ziek', ao: 'AO' }[lv.type] || 'verlof'}</span>`;
       else if (dopOn(iso)) inner += '<span class="lv dop">dop</span>';
       else if (otherOn(iso)) inner += '<span class="lv dop">job</span>';
       if (pay) inner += `<span class="pay" title="${escapeHtml(pay.map(payTitle).join(', '))}">€</span>`;
@@ -790,7 +789,7 @@ const APP_VERSION = '2026-10-10.1';
     const part = dp ? dopPart(selected) : 0;
     $('dayLeaveNote').hidden = !lv && !dp && !ow;
     $('dayLeaveNote').classList.toggle('dop', !!(dp || ow));
-    if (lv) $('dayLeaveNote').textContent = `Verlof: ${LEAVE_TYPES[lv.type] || 'verlof'}`;
+    if (lv) $('dayLeaveNote').textContent = `${['ziek', 'ao'].includes(lv.type) ? 'Niet gewerkt' : 'Verlof'}: ${LEAVE_TYPES[lv.type] || 'verlof'}`;
     else if (dp) $('dayLeaveNote').textContent = 'Dop (werkloosheid)' + (part === 0.5 ? ': halve dag, naast je halve shift' : part === 0 ? ': telt niet mee, want er staat een volle shift' : '');
     else if (ow) $('dayLeaveNote').textContent = 'Ander werk (andere job)';
     $('dayOff').hidden = !!(lv || dp || ow);
@@ -1110,7 +1109,7 @@ const APP_VERSION = '2026-10-10.1';
   });
 
   // --- verlof ---------------------------------------------------------------
-  const LEAVE_TYPES = { vakantie: 'jaarlijkse vakantie', 'anciënniteit': 'anciënniteitsverlof', herverdeling: 'herverdelingsdag (HV)', recup: 'recuperatiedag (recup)', ander: 'ander verlof' };
+  const LEAVE_TYPES = { vakantie: 'jaarlijkse vakantie', 'anciënniteit': 'anciënniteitsverlof', herverdeling: 'herverdelingsdag (HV)', recup: 'recuperatiedag (recup)', ziek: 'ziekte', ao: 'arbeidsongeval', ander: 'ander verlof' };
   const hvStats = () => Loon.hvLedger(entries, leave, settings.hvStart || {}, isoDate(today));
   const leaveEnabled = () => settings.status !== 'gelegenheid'; // rode kaart: geen verlof, wel Alfapas-teller
   const leaveOn = (iso) => (leaveEnabled() ? leave.find((l) => l.date === iso) : undefined);
@@ -1128,7 +1127,7 @@ const APP_VERSION = '2026-10-10.1';
   function leaveStats() {
     const todayIso = isoDate(today);
     const y = todayIso.slice(0, 4);
-    const year = leave.filter((l) => l.date.startsWith(y) && l.type !== 'herverdeling' && l.type !== 'recup'); // HV en recup tellen niet als verlofdagen
+    const year = leave.filter((l) => l.date.startsWith(y) && !['herverdeling', 'recup', 'ziek', 'ao'].includes(l.type)); // HV, recup, ziekte en arbeidsongeval tellen niet als verlofdagen
     const quota = Number(settings.leaveQuota) || 0;
     const next = leaveGroups().find((g) => g.days[g.days.length - 1] >= todayIso);
     return { y, count: year.length, taken: year.filter((l) => l.date < todayIso).length, quota, left: quota ? quota - year.length : null, next };
@@ -1239,7 +1238,8 @@ const APP_VERSION = '2026-10-10.1';
   const saveDop = () => { dop = [...new Set(dop)].sort(); save(KEY_DOP, dop); };
   const dopOn = (iso) => dop.includes(iso);
   // deel van een dag dop: wat er overblijft naast de shiften (volle shift of afbestelling = 1, halve = ½)
-  const dopPart = (iso) => Math.max(0, 1 - dayEntries(iso).reduce((t, e) => t + (e.kind === 'half' ? 0.5 : 1), 0));
+  // shiften die om 18u of later beginnen (ook 22u) nemen de dop van die dag niet weg
+  const dopPart = (iso) => Math.max(0, 1 - dayEntries(iso).filter((e) => e.code !== '18').reduce((t, e) => t + (e.kind === 'half' ? 0.5 : 1), 0));
   function dopStats(prefix) {
     const n = dop.filter((d) => d.startsWith(prefix)).reduce((t, d) => t + dopPart(d), 0);
     const per = Number(settings.dopDay) || 0;
@@ -1607,6 +1607,7 @@ const APP_VERSION = '2026-10-10.1';
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
     ['2026-10-10', [
+      'Nieuw bij een dag zonder werk: Ziekte en Arbeidsongeval (tellen niet als verlofdag). Een shift van 18u of 22u laat de dop van die dag nu staan. De antwoord-optie bij berichten is weggehaald.',
       'Back-up bewaren in je Google Drive, iCloud of per e-mail met één knop (Instellingen › Back-up & export). Je ziet ook wanneer je de laatste back-up maakte.',
     ]],
     ['2026-10-09', [
@@ -1620,7 +1621,6 @@ const APP_VERSION = '2026-10-10.1';
       'Nieuwe privacyverklaring: onderaan de pagina en in het uitlegscherm.',
       'Rode kaart met een andere job: duid die dagen aan als Ander werk en vul elke maand het loon van die job in. De schatting van je belastingbrief telt het mee.',
       'Dop: reken je bedrag per dag uit met je laatste betaling van de vakbond of de HVW.',
-      'Contact, Fout melden en Voorstel doen: kies of je een antwoord wil, via e-mail, WhatsApp of sms (optioneel).',
       'Niet gewerkt? Kies in de dag Verlof, HV, Recup of Dop. Recup is nieuw als soort verlof.',
       'Dop (werkloosheid) bijhouden: de dagen staan in de kalender. Vul je bedrag per dag in om te zien wat je ongeveer krijgt.',
       'Premie lashing: sommige bedrijven betalen lashers meer. Vink het aan bij je shift en vul het bedrag in; de app onthoudt het per bedrijf.',
@@ -1746,8 +1746,8 @@ const APP_VERSION = '2026-10-10.1';
     }
   });
 
-  // oud: markeringen van de teller (die is weg) opruimen
-  try { ['haven-werkuren.deviceCounted', 'haven-werkuren.firstSeen'].forEach((k) => localStorage.removeItem(k)); } catch { /* geen opslag */ }
+  // oud: markeringen van de teller en het opgeslagen antwoordadres (beide weg) opruimen
+  try { ['haven-werkuren.deviceCounted', 'haven-werkuren.firstSeen', 'haven-werkuren.replyTo'].forEach((k) => localStorage.removeItem(k)); } catch { /* geen opslag */ }
 
   // --- bericht naar de maker: Fout melden, Voorstel doen en Contact ----------
   // Via FormSubmit (formsubmit.co), dat het formulier per e-mail doorstuurt.
@@ -1772,25 +1772,20 @@ const APP_VERSION = '2026-10-10.1';
     Contact: () => ({ 'App-versie': APP_VERSION }),
   };
   // alle velden van de mail, in volgorde: datum en plaats bovenaan, dan wat de gebruiker schreef
-  function mailFields(form, place, reply) {
+  function mailFields(form, place) {
     const subject = form.elements.Onderwerp.value.trim();
     const f = [
       ['Datum', new Date().toLocaleString('nl-BE', { dateStyle: 'full', timeStyle: 'short', timeZone: 'Europe/Brussels' })],
       ['Plaats', place], ['Onderwerp', subject], ['Bericht', form.elements.Bericht.value.trim()],
     ];
-    if (reply) {
-      f.push(['Antwoord', `${REPLY_VIA[reply.via]}: ${reply.addr}`]);
-      if (reply.via === 'whatsapp') f.push(['WhatsApp', `https://wa.me/${waNumber(reply.addr)}`]);
-    }
     f.push(...Object.entries(mailExtra[place]()));
     f.push(['_subject', `HAVEN APP (${place})(${subject})`], ['_template', 'table'], ['_captcha', 'false']);
-    if (reply?.via === 'email') f.push(['_replyto', reply.addr]); // zo kan de maker gewoon op de mail antwoorden
     return f;
   }
   // Zonder bestand: via de AJAX-ingang van FormSubmit, die met JSON zegt of het gelukt is.
   // Met een bestand: als gewoon formulier in een verborgen frame (de AJAX-ingang laat bijlagen vallen).
-  function sendMail(form, place, reply) {
-    const fields = mailFields(form, place, reply);
+  function sendMail(form, place) {
+    const fields = mailFields(form, place);
     return form.elements.attachment.files.length ? sendFrame(form, fields) : sendAjax(fields);
   }
   async function sendAjax(fields) {
@@ -1847,50 +1842,16 @@ const APP_VERSION = '2026-10-10.1';
       form.submit();
     });
   }
-  const REPLY_VIA = { email: 'E-mail', whatsapp: 'WhatsApp', sms: 'Sms' };
-  // gsm-nummer voor een WhatsApp-link: 0470 12 34 56 -> 32470123456
-  function waNumber(s) {
-    let d = s.replace(/[^\d+]/g, '');
-    if (d.startsWith('+')) d = d.slice(1);
-    else if (d.startsWith('00')) d = d.slice(2);
-    else if (d.startsWith('0')) d = '32' + d.slice(1);
-    return d.replace(/\D/g, '');
-  }
   let mailBusy = false;
   for (const form of document.querySelectorAll('form.mailform')) {
     const out = form.querySelector('.mailmsg');
     const say = (t) => { out.textContent = t; out.hidden = !t; };
     form.addEventListener('input', () => { if (!mailBusy) say(''); });
-    // antwoord gewenst: vakje voor e-mailadres of gsm-nummer, ingevuld met wat vorige keer gebruikt werd
-    const via = form.querySelector('[data-via]');
-    const addr = form.querySelector('[data-via-addr]');
-    const showVia = () => {
-      form.querySelector('[data-via-box]').hidden = !via.value;
-      if (!via.value) return;
-      const isMail = via.value === 'email';
-      form.querySelector('[data-via-label]').textContent = isMail ? 'Je e-mailadres' : 'Je gsm-nummer';
-      addr.type = isMail ? 'email' : 'tel';
-      addr.inputMode = isMail ? 'email' : 'tel';
-      addr.autocomplete = isMail ? 'email' : 'tel';
-      addr.placeholder = isMail ? 'naam@voorbeeld.be' : 'bv. 0470 12 34 56';
-      const saved = load(KEY_REPLY, {});
-      addr.value = (isMail ? saved.email : saved.phone) || '';
-    };
-    via.addEventListener('change', showVia);
     form.addEventListener('submit', async (ev) => {
       ev.preventDefault();
       const { Onderwerp: subj, Bericht: text, attachment: file } = form.elements;
       if (!subj.value.trim()) { say('Vul een onderwerp in.'); subj.focus(); return; }
       if (!text.value.trim()) { say('Schrijf eerst je bericht.'); text.focus(); return; }
-      let reply = null;
-      if (via.value) {
-        const a = addr.value.trim();
-        const isMail = via.value === 'email';
-        if (isMail ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a) : a.replace(/\D/g, '').length < 9) {
-          say(`Vul een geldig ${isMail ? 'e-mailadres' : 'gsm-nummer'} in, of kies "Nee, geen antwoord nodig".`); addr.focus(); return;
-        }
-        reply = { via: via.value, addr: a };
-      }
       if ([...file.files].reduce((t, f) => t + f.size, 0) > MAIL_MAX) { say('Het bestand is te groot (maximaal 10 MB). Kies een kleinere foto of een ander bestand.'); return; }
       if (!MAIL_ID) { say('Versturen kan nog niet: het contactformulier wordt nog ingesteld. Probeer het later opnieuw.'); return; }
       if (!navigator.onLine) { say('Geen verbinding. Probeer opnieuw als je bereik hebt; je tekst blijft staan.'); return; }
@@ -1899,13 +1860,11 @@ const APP_VERSION = '2026-10-10.1';
       const btn = form.querySelector('button[type="submit"]');
       btn.disabled = true;
       say(file.files.length ? 'Versturen… (met een bestand kan dat even duren)' : 'Versturen…');
-      const ok = await sendMail(form, form.dataset.place, reply);
+      const ok = await sendMail(form, form.dataset.place);
       mailBusy = false;
       btn.disabled = false;
       if (ok) {
-        if (reply) save(KEY_REPLY, { ...load(KEY_REPLY, {}), [reply.via === 'email' ? 'email' : 'phone']: reply.addr });
         form.reset();
-        showVia();
         say('Verstuurd, bedankt! Je bericht is bij de maker van de app.');
       } else {
         say('Versturen lukte niet. Probeer het later opnieuw; je tekst blijft staan.');
