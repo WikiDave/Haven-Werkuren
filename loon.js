@@ -207,6 +207,8 @@
   const DEFAULT_SETTINGS = {
     status: 'gelegenheid',      // 'gelegenheid' (rode kaart) | 'pool' (losse pool) | 'timetable'
     place: 'Assebroek',
+    postcode: '',               // postcode van je woonplaats (heel België); gaat voor op de woonplaats hierboven
+    travelOwn: 0,               // eigen bedrag per volle shift (gaat voor op alles)
     transport: 'auto',          // 'auto' (eigen vervoer) | 'fiets'
     bikeKm: 0, bikeRate: 0,     // fiets: km per shift x bedrag per km
     civil: 'ongehuwd',          // 'ongehuwd' | 'gehuwd' | 'wettelijk-samenwonend' | 'gescheiden' | 'weduwe'
@@ -288,9 +290,29 @@
     return { ...r, uur: r.uur ?? round2(r.shift / 7.25) };
   };
 
+  // Postcode: staat de gemeente in de tabel van Cewez, dan dat bedrag; anders een schatting op afstand tot Zeebrugge
+  // (rechte lijn): max(1,68 ; 1,206 + 0,098 per km). Aan de tabel getoetst: gemiddeld 9 cent verschil.
+  const ZEEBRUGGE = [51.33, 3.2];
+  const POSTCODES = (() => { try { return typeof module !== 'undefined' && module.exports ? require('./postcodes.js') : (globalThis.Postcodes || {}); } catch { return {}; } })();
+  function distanceKm(a, b) {
+    const p = Math.PI / 180;
+    const x = Math.sin((b[0] - a[0]) * p / 2) ** 2 + Math.cos(a[0] * p) * Math.cos(b[0] * p) * Math.sin((b[1] - a[1]) * p / 2) ** 2;
+    return 2 * 6371 * Math.asin(Math.sqrt(x));
+  }
+  // { amount, km, source: 'tabel' | 'schatting' | 'eigen' | 'woonplaats' } voor een postcode of woonplaats
+  function travelInfo(date, settings) {
+    if (settings.travelOwn > 0) return { amount: round2(settings.travelOwn), source: 'eigen' };
+    const pc = POSTCODES[String(settings.postcode || '').trim()];
+    if (pc) {
+      const km = distanceKm(ZEEBRUGGE, pc);
+      if (pc[2]) return { amount: pc[2], km, source: 'tabel' };
+      return { amount: round2(Math.max(1.68, 1.206 + 0.098 * km)), km, source: 'schatting' };
+    }
+    return { amount: validOn(TRAVEL, date).table[settings.place] || 0, source: 'woonplaats' };
+  }
   function travelAllowance(date, settings) {
     if (settings.transport === 'fiets') return round2((settings.bikeKm || 0) * (settings.bikeRate || 0));
-    return validOn(TRAVEL, date).table[settings.place] || 0;
+    return travelInfo(date, settings).amount;
   }
 
   // --- regels per shift -------------------------------------------------------
@@ -672,7 +694,7 @@
   const api = {
     round2, addDays, weekday, periodOf, paymentDate,
     START_HOURS, RATE_ROWS, DEFAULT_RATE_PERIODS, FUNCTIONS, FUNCTION_GROUPS, functionOf, isMarkeerder, KADER_RATES, PARAMS, TRAVEL, PLACES, DEFAULT_SETTINGS,
-    legalHolidays, holidays, holidayOn, tariffRow, rateFor, travelAllowance,
+    legalHolidays, holidays, holidayOn, tariffRow, rateFor, travelAllowance, travelInfo, POSTCODES,
     DEFAULT_WITHHOLDING, DEFAULT_INCOME_TAX, setTaxTables, getTaxTables, normalizeTable, shiftLines, estimateWithholding, estimateAnnualTax, calcPeriod, calcAll,
     CLOTHING, CLOTHING_ITEMS, clothingPointsFor, clothingLedger, leaveDays, workedDays, hvLedger,
   };

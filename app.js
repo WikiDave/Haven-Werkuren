@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-10.5';
+const APP_VERSION = '2026-10-10.6';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1608,6 +1608,7 @@ const APP_VERSION = '2026-10-10.5';
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
     ['2026-10-10', [
+      'Vervoersvergoeding voor heel België: vul je postcode in (Instellingen › Netto-instellingen). Staat je gemeente in de tabel van Cewez, dan dat bedrag; anders een schatting op afstand tot Zeebrugge, en je kan zelf een bedrag invullen.',
       'Bij een volle shift staat klein het einduur: 7u45 na je begin. Overuren vul je zoals altijd in.',
       'Nieuw bij een dag zonder werk: Ziekte en Arbeidsongeval (tellen niet als verlofdag). Een shift van 18u of 22u laat de dop van die dag nu staan. De antwoord-optie bij berichten is weggehaald.',
       'Back-up bewaren in je Google Drive, iCloud of per e-mail met één knop (Instellingen › Back-up & export). Je ziet ook wanneer je de laatste back-up maakte.',
@@ -1668,19 +1669,19 @@ const APP_VERSION = '2026-10-10.5';
   // --- jouw instellingen in het uitlegscherm (eerste keer open) ----------------------
   const STATUS_NAMES = { gelegenheid: 'rode kaart', pool: 'losse pool', timetable: 'time table' };
   function renderQuick() {
-    $('qPlace').innerHTML = $('sPlace').innerHTML;
     for (const el of document.querySelectorAll('[data-q]')) {
       const v = settings[el.dataset.q];
       el.value = el.dataset.t === 'num' ? (v ? String(v) : '') : (v ?? '');
     }
     $('qPlaceWrap').hidden = settings.transport !== 'auto';
-    $('quickSum').textContent = `${STATUS_NAMES[settings.status] || ''} · ${settings.transport === 'fiets' ? 'fiets' : settings.place || ''} · ${CIVIL_NAMES[settings.civil] || ''}${Number(settings.kids) ? ` · ${settings.kids} kind(eren)` : ''}`;
+    $('quickSum').textContent = `${STATUS_NAMES[settings.status] || ''} · ${settings.transport === 'fiets' ? 'fiets' : settings.postcode || settings.place || ''} · ${CIVIL_NAMES[settings.civil] || ''}${Number(settings.kids) ? ` · ${settings.kids} kind(eren)` : ''}`;
   }
   $('quickBox').addEventListener('change', (ev) => {
     const el = ev.target.closest('[data-q]');
     if (!el) return;
     let v = el.value;
     if (el.dataset.t === 'num') { v = v.trim() ? Number(v.replace(',', '.')) : 0; if (!Number.isFinite(v) || v < 0) { renderQuick(); return; } }
+    if (el.dataset.q === 'postcode') v = String(v).replace(/\D/g, '').slice(0, 4);
     settings[el.dataset.q] = v;
     save(KEY_SETTINGS, settings);
     save('haven-werkuren.quickDone', true);
@@ -2193,6 +2194,18 @@ const APP_VERSION = '2026-10-10.5';
 
   // --- netto-instellingen -------------------------------------------------
   $('sPlace').innerHTML = Loon.PLACES.map((p) => `<option value="${escapeHtml(p)}">${escapeHtml(p)} (${money(Loon.TRAVEL[Loon.TRAVEL.length - 1].table[p])})</option>`).join('');
+  // wat de vervoersvergoeding per volle shift is en waar dat bedrag vandaan komt
+  function renderTravelInfo() {
+    const pc = String(settings.postcode || '').trim();
+    const i = Loon.travelInfo(isoDate(today), settings);
+    let t = '';
+    if (pc && !Loon.POSTCODES[pc] && !(settings.travelOwn > 0)) t = `Postcode ${escapeHtml(pc)} ken ik niet; ik gebruik je woonplaats (${money(i.amount)} per shift).`;
+    else if (i.source === 'eigen') t = `Jouw bedrag: ${money(i.amount)} per volle shift.`;
+    else if (i.source === 'tabel') t = `Vervoersvergoeding: ${money(i.amount)} per volle shift, volgens de tabel van Cewez.`;
+    else if (i.source === 'schatting') t = `Vervoersvergoeding: ± ${money(i.amount)} per volle shift, geschat op ${Math.round(i.km)} km van Zeebrugge. Staat er een ander bedrag op je loonbrief? Vul dat zelf in onder "Of kies je woonplaats".`;
+    else t = i.amount ? `Vervoersvergoeding: ${money(i.amount)} per volle shift (woonplaats ${escapeHtml(settings.place || '')}).` : '';
+    for (const id of ['travelInfo', 'qTravelInfo']) { $(id).innerHTML = t; $(id).hidden = settings.transport !== 'auto' || !t; }
+  }
   const settingInputs = [...document.querySelectorAll('[data-s]')];
   function renderSettings() {
     for (const el of settingInputs) {
@@ -2202,6 +2215,7 @@ const APP_VERSION = '2026-10-10.5';
       else el.value = v;
     }
     $('placeWrap').hidden = settings.transport !== 'auto';
+    renderTravelInfo();
     $('bikeWrap').hidden = settings.transport !== 'fiets';
     $('pctWrap').hidden = settings.withholdingMode !== 'percentage';
     $('alfaWrap').hidden = settings.status !== 'gelegenheid';
@@ -2221,7 +2235,9 @@ const APP_VERSION = '2026-10-10.5';
         renderSettings(); return alert('Vul een geldig bedrag, aantal of percentage in.');
       }
     }
+    if (el.dataset.s === 'postcode') v = String(v).replace(/\D/g, '').slice(0, 4);
     settings[el.dataset.s] = v;
+    if (el.dataset.s === 'place') settings.postcode = ''; // een woonplaats uit de lijst gaat voor op een oude postcode
     save(KEY_SETTINGS, settings);
     renderSettings(); render();
   });

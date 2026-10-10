@@ -742,8 +742,9 @@
           <option value="fiets">Fiets</option>
         </select>
         <div id="qPlaceWrap">
-          <label for="qPlace">Woonplaats (voor de vervoersvergoeding)</label>
-          <select id="qPlace" data-q="place"></select>
+          <label for="qPostcode">Postcode van je woonplaats (voor de vervoersvergoeding)</label>
+          <input id="qPostcode" data-q="postcode" inputmode="numeric" maxlength="4" autocomplete="postal-code" placeholder="bv. 9000">
+          <p class="hint" id="qTravelInfo"></p>
         </div>
         <div class="row2">
           <div><label for="qCivil">Burgerlijke staat</label>
@@ -1206,8 +1207,16 @@
             <option value="fiets">Fiets</option>
           </select>
           <div id="placeWrap">
-            <label for="sPlace">Woonplaats (deelgemeente)</label>
-            <select id="sPlace" data-s="place"></select>
+            <label for="sPostcode">Postcode van je woonplaats (heel België)</label>
+            <input id="sPostcode" data-s="postcode" inputmode="numeric" maxlength="4" autocomplete="postal-code" placeholder="bv. 9000">
+            <p class="hint" id="travelInfo"></p>
+            <details id="placeBox">
+              <summary>Of kies je woonplaats uit de lijst van Cewez, of vul zelf een bedrag in</summary>
+              <label for="sPlace">Woonplaats (deelgemeente)</label>
+              <select id="sPlace" data-s="place"></select>
+              <label for="sTravelOwn">Eigen bedrag per volle shift (€, staat op je loonbrief)</label>
+              <input id="sTravelOwn" data-s="travelOwn" data-t="num" inputmode="decimal" placeholder="leeg = volgens postcode of woonplaats">
+            </details>
           </div>
           <div class="row2" id="bikeWrap">
             <div><label for="sBikeKm">Km per shift</label><input id="sBikeKm" data-s="bikeKm" data-t="num" inputmode="decimal"></div>
@@ -1373,8 +1382,9 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-10.5"></script>
-<script src="scan.js?v=2026-10-10.5"></script>
-<script src="app.js?v=2026-10-10.5"></script>
+<script src="postcodes.js?v=2026-10-10.6"></script>
+<script src="loon.js?v=2026-10-10.6"></script>
+<script src="scan.js?v=2026-10-10.6"></script>
+<script src="app.js?v=2026-10-10.6"></script>
 </body>
 </html>

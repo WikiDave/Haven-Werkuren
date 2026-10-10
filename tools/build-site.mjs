@@ -11,7 +11,7 @@ const require = createRequire(import.meta.url);
 const { minify } = require(process.env.TERSER || 'terser');
 
 const COPY = ['privacy.html', 'verstuurd.html', 'manifest.webmanifest', 'version.json', 'LICENSE', 'icons', 'vendor'];
-const JS = ['app.js', 'loon.js', 'scan.js', 'sw.js'];
+const JS = ['app.js', 'loon.js', 'postcodes.js', 'scan.js', 'sw.js'];
 
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });

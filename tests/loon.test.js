@@ -159,7 +159,7 @@ test('versienummer van de app en version.json zijn gelijk', () => {
   const appVersion = app.match(/const APP_VERSION = '([^']+)'/)[1];
   const { version } = JSON.parse(fs.readFileSync(path.join(root, 'version.json'), 'utf8'));
   assert.equal(appVersion, version);
-  for (const f of ['loon', 'scan', 'app']) assert.equal(html.match(new RegExp(`<script src="${f}\\.js\\?v=([^"]+)">`))[1], version, f);
+  for (const f of ['postcodes', 'loon', 'scan', 'app']) assert.equal(html.match(new RegExp(`<script src="${f}\\.js\\?v=([^"]+)">`))[1], version, f);
   // geen inline scripts: de Content-Security-Policy laat ze niet toe
   assert.equal((html.match(/<script>/g) || []).length, 0);
 });
@@ -321,4 +321,21 @@ test('foreman en ceelbaas: eigen loon uit de loontabel, markeerder met premie ma
   assert.equal(get(sh('alle', { lash: 15 }), 'lash'), 15); // premie lashing: zelf ingevuld bedrag
   assert.equal(get(sh('alle', {}), 'lash'), undefined);
   assert.equal(get(Loon.shiftLines(shift('2026-10-10', '08', { func: 'foreman' }), ctx({})).lines, 'shiftloon'), 336.83); // zaterdag
+});
+
+test('vervoersvergoeding per postcode: tabel van Cewez, anders geschat op afstand', () => {
+  const al = (settings) => Loon.travelAllowance('2026-10-06', { transport: 'auto', ...settings });
+  assert.equal(al({ place: 'Brugge' }), 2.55);                 // woonplaats zoals voorheen
+  const info = (pc) => Loon.travelInfo('2026-10-06', { postcode: pc });
+  assert.equal(info('8380').amount, 1.68);                     // Zeebrugge: minimum
+  assert.ok(Math.abs(info('8000').amount - 2.55) < 0.6);       // Brugge: dicht bij de tabel (2,55)
+  assert.ok(Math.abs(info('8400').amount - 3.45) < 0.6);       // Oostende: dicht bij de tabel (3,45)
+  const gent = Loon.travelInfo('2026-10-06', { postcode: '9000' });
+  assert.equal(gent.source, 'schatting');
+  assert.ok(gent.amount > 4.5 && gent.amount < 6.5, String(gent.amount));
+  const brussel = Loon.travelInfo('2026-10-06', { postcode: '1000' });
+  assert.ok(brussel.amount > gent.amount && brussel.km > 90);
+  assert.equal(al({ postcode: '0000', place: 'Brugge' }), 2.55); // onbekende postcode: terug naar de woonplaats
+  assert.equal(al({ postcode: '9000', travelOwn: 7.5 }), 7.5);  // eigen bedrag gaat voor
+  assert.equal(Loon.travelAllowance('2026-10-06', { transport: 'fiets', bikeKm: 10, bikeRate: 0.25 }), 2.5);
 });

@@ -2,7 +2,7 @@
 // Altijd eerst het netwerk proberen (zo krijg je de nieuwste versie), anders de bewaarde kopie.
 const CACHE = 'haven-werkuren-v2';
 const CORE = [
-  './', 'index.html', 'app.js', 'loon.js', 'scan.js', 'privacy.html', 'belasting.json', 'manifest.webmanifest',
+  './', 'index.html', 'app.js', 'loon.js', 'postcodes.js', 'scan.js', 'privacy.html', 'belasting.json', 'manifest.webmanifest',
   'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css',
   'vendor/leaflet/images/marker-icon.png', 'vendor/leaflet/images/marker-icon-2x.png',
   'vendor/leaflet/images/marker-shadow.png', 'vendor/leaflet/images/layers.png',

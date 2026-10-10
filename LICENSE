@@ -15,5 +15,6 @@ Onderdelen van anderen in de map vendor/ vallen onder hun eigen licentie:
 - vendor/leaflet: Leaflet (BSD 2-Clause, zie vendor/leaflet/LICENSE)
 - vendor/tesseract: Tesseract.js en tesseract.js-core (Apache 2.0, zie de
   LICENSE-bestanden in die map)
+- postcodes.js: ligging van de postcodes van GeoNames (CC BY 4.0, https://www.geonames.org)
 - vendor/fonts: Barlow Condensed en Public Sans (SIL Open Font License 1.1,
   zie vendor/fonts/OFL-Barlow.txt en vendor/fonts/OFL-PublicSans.txt)
