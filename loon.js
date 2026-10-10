@@ -291,29 +291,26 @@
   };
 
   // Postcode: staat een deelgemeente van de postcode in de vervoerstabel, dan het bedrag uit de tabel
-  // (bij meerdere: de gekozen deelgemeente, anders de hoofdgemeente). Anders een schatting die de tabel volgt:
-  // de vergoeding volgt de treinprijs per afstand (tot 150 km), de afstand is 1,56 x de rechte lijn tot Zeebrugge + 3 km.
-  // Aan de tabel getoetst: gemiddeld 11 cent verschil.
+  // (bij meerdere: de gekozen deelgemeente, anders de hoofdgemeente). Anders een schatting op de afstand tot Zeebrugge
+  // (rechte lijn): 1,206 + 0,098 per km, aan de tabel getoetst gemiddeld 9 cent verschil.
+  // Voor de auto stopt de tabel bij "40 km of meer" (cao Paritair Comité voor het havenbedrijf; Antwerpen idem):
+  // vanaf de verste gemeenten in de tabel (Poeke, Lotenhulle: ± 36 km in rechte lijn) krijgt iedereen het hoogste bedrag.
   const ZEEBRUGGE = [51.33, 3.2];
+  const FAR_KM = 36;
   const POSTCODES = (() => { try { return typeof module !== 'undefined' && module.exports ? require('./postcodes.js') : (globalThis.Postcodes || {}); } catch { return {}; } })();
-  // treinprijs per afstand (tot en met km, maandbedrag); alleen de verhouding tussen de afstanden telt
-  const FARE = [[3, 32], [4, 35], [5, 38], [6, 40], [7, 43], [8, 45], [9, 47], [10, 50], [11, 52], [12, 55], [13, 57], [14, 60], [15, 62],
-    [16, 65], [17, 67], [18, 70], [19, 72], [20, 75], [21, 77], [22, 79], [23, 82], [24, 84], [25, 87], [26, 89], [27, 91], [28, 94],
-    [29, 96], [30, 99], [33, 103], [36, 108], [39, 115], [42, 121], [45, 126], [48, 133], [51, 139], [54, 143], [57, 147], [60, 151],
-    [65, 157], [70, 164], [75, 171], [80, 178], [85, 185], [90, 192], [95, 200], [100, 207], [105, 213], [110, 220], [115, 228],
-    [120, 235], [125, 242], [130, 249], [135, 256], [140, 263], [145, 270], [150, 280]];
   function distanceKm(a, b) {
     const p = Math.PI / 180;
     const x = Math.sin((b[0] - a[0]) * p / 2) ** 2 + Math.cos(a[0] * p) * Math.cos(b[0] * p) * Math.sin((b[1] - a[1]) * p / 2) ** 2;
     return 2 * 6371 * Math.asin(Math.sqrt(x));
   }
-  function travelEstimate(km) {
-    const d = Math.ceil(1.56 * km + 3);
-    const fare = (FARE.find(([max]) => d <= max) || FARE[FARE.length - 1])[1];
-    return round2(Math.max(1.68, 0.0299 * fare));
+  function travelEstimate(km, date) {
+    const max = Math.max(...Object.values(validOn(TRAVEL, date).table));
+    if (km >= FAR_KM) return max;
+    return round2(Math.min(max, Math.max(1.68, 1.206 + 0.098 * km)));
   }
-  // { amount, km, roadKm, place, places, source: 'tabel' | 'schatting' | 'eigen' | 'woonplaats' } voor een postcode of woonplaats
-  // (roadKm: afstand over de weg, ± 1,25 x de rechte lijn; Aalst 73 km in vogelvlucht = ± 91 km over de weg)
+  // { amount, km, roadKm, max, place, places, source: 'tabel' | 'schatting' | 'eigen' | 'woonplaats' } voor een postcode of woonplaats
+  // (max: ver genoeg voor het hoogste bedrag; roadKm: afstand over de weg, ± 1,25 x de rechte lijn,
+  // Aalst 73 km in vogelvlucht = ± 91 km over de weg)
   function travelInfo(date, settings) {
     if (settings.travelOwn > 0) return { amount: round2(settings.travelOwn), source: 'eigen' };
     const table = validOn(TRAVEL, date).table;
@@ -325,7 +322,7 @@
         const place = places.includes(settings.place) ? settings.place : places[0];
         return { amount: table[place], km, place, places, source: 'tabel' };
       }
-      return { amount: travelEstimate(km), km, roadKm: Math.round(km * 1.25), source: 'schatting' };
+      return { amount: travelEstimate(km, date), km, roadKm: Math.round(km * 1.25), max: km >= FAR_KM, source: 'schatting' };
     }
     return { amount: table[settings.place] || 0, place: settings.place, source: 'woonplaats' };
   }

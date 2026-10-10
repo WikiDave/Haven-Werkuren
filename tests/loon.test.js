@@ -349,20 +349,22 @@ test('vervoersvergoeding per postcode: bedrag uit de tabel, anders geschat op af
   for (const place of Object.keys(table)) {
     if (!['Sluis', 'Zuidzande', 'Oostburg', 'Aardenburg', 'Eede', 'Eede-Aardenburg', 'Schoondijke'].includes(place)) assert.ok(listed.has(place), place);
   }
-  // buiten de tabel: geschat volgens de treinprijs per afstand
-  const gent = info('9000');
-  assert.equal(gent.source, 'schatting');
-  assert.ok(gent.amount > 4.8 && gent.amount < 5.8, String(gent.amount));
-  assert.ok(info('8610').amount > 4.28 && info('8610').amount < 5.2); // Kortemark: net buiten de tabel
+  // buiten de tabel: geschat op afstand, met het hoogste bedrag uit de tabel als maximum ("40 km of meer")
+  const max = Math.max(...Object.values(table));
+  assert.equal(max, 4.83);                                     // Poeke, Lotenhulle
+  const lv = info('8810');                                     // Lichtervelde: net binnen, geschat
+  assert.equal(lv.source, 'schatting');
+  assert.ok(lv.amount > 4.28 && lv.amount < max && !lv.max, String(lv.amount));
+  for (const pc of ['8610', '9000', '9300', '8500', '1000', '6700']) { // Kortemark, Gent, Aalst, Kortrijk, Brussel, Aarlen
+    assert.equal(info(pc).amount, max, pc);
+    assert.ok(info(pc).max, pc);
+  }
   const aalst = info('9300');
   assert.ok(aalst.roadKm >= 85 && aalst.roadKm <= 95, String(aalst.roadKm)); // ± 90 km over de weg
-  assert.ok(aalst.amount > 6.5 && aalst.amount < 7.5, String(aalst.amount));
-  const brussel = info('1000');
-  assert.ok(brussel.amount > gent.amount && brussel.km > 90);
-  assert.ok(brussel.amount < 9, String(brussel.amount));       // niet meer lineair (was 10,65)
-  assert.equal(info('6700').amount, Loon.travelEstimate(1000)); // Aarlen: begrensd zoals de treinprijs (150 km)
-  assert.ok(Loon.travelEstimate(1000) < 9);
-  for (let km = 0; km < 300; km++) assert.ok(Loon.travelEstimate(km + 1) >= Loon.travelEstimate(km)); // nooit minder voor verder
+  for (let km = 0; km < 300; km++) {
+    const e = Loon.travelEstimate(km, '2026-10-06');
+    assert.ok(e <= max && Loon.travelEstimate(km + 1, '2026-10-06') >= e); // nooit meer dan het maximum, nooit minder voor verder
+  }
   assert.equal(al({ postcode: '0000', place: 'Brugge' }), 2.55); // onbekende postcode: terug naar de woonplaats
   assert.equal(al({ postcode: '9000', travelOwn: 7.5 }), 7.5);  // eigen bedrag gaat voor
   assert.equal(Loon.travelAllowance('2026-10-06', { transport: 'fiets', bikeKm: 10, bikeRate: 0.25 }), 2.5);

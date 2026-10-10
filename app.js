@@ -1608,7 +1608,7 @@ const APP_VERSION = '2026-10-10.8';
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
     ['2026-10-10', [
-      'Vervoersvergoeding verbeterd: bij een postcode met deelgemeenten in de vervoerstabel (zoals 8000 Brugge of 8400 Oostende) geldt nu het bedrag uit de tabel, en kies je zelf je deelgemeente. Woon je verder, dan volgt de schatting de treinprijs per afstand en loopt ze niet meer te hoog op.',
+      'Vervoersvergoeding verbeterd: bij een postcode met deelgemeenten in de vervoerstabel (zoals 8000 Brugge of 8400 Oostende) geldt nu het bedrag uit de tabel, en kies je zelf je deelgemeente. Woon je verder dan de tabel (± 40 km), dan krijg je het hoogste bedrag uit de tabel: met de auto stopt de vergoeding bij 40 km, ze telt niet per km.',
       'Vervoersvergoeding voor heel België: vul je postcode in (Instellingen › Netto-instellingen). Staat je gemeente in de vervoerstabel, dan dat bedrag; anders een schatting op afstand tot Zeebrugge, en je kan zelf een bedrag invullen.',
       'Bij een volle shift staat klein het einduur: 7u45 na je begin. Overuren vul je zoals altijd in.',
       'Nieuw bij een dag zonder werk: Ziekte en Arbeidsongeval (tellen niet als verlofdag). Een shift van 18u of 22u laat de dop van die dag nu staan. De antwoord-optie bij berichten is weggehaald.',
@@ -2205,7 +2205,8 @@ const APP_VERSION = '2026-10-10.8';
     if (pc && !Loon.POSTCODES[pc] && !(settings.travelOwn > 0)) t = `Postcode ${escapeHtml(pc)} ken ik niet; ik gebruik je woonplaats (${money(i.amount)} per shift).`;
     else if (i.source === 'eigen') t = `Jouw bedrag: ${money(i.amount)} per volle shift.`;
     else if (i.source === 'tabel') t = `Vervoersvergoeding: ${money(i.amount)} per volle shift (${escapeHtml(i.place)}), volgens de vervoerstabel.`;
-    else if (i.source === 'schatting') t = `Vervoersvergoeding: ± ${money(i.amount)} per volle shift, geschat voor ± ${i.roadKm} km over de weg tot Zeebrugge (de vergoeding volgt de treinprijs voor die afstand, niet een bedrag per km). Staat er een ander bedrag op je loonbrief? Vul dat zelf in onder "Of kies je woonplaats", bij "Eigen bedrag".`;
+    else if (i.source === 'schatting' && i.max) t = `Vervoersvergoeding: ${money(i.amount)} per volle shift (± ${i.roadKm} km over de weg tot Zeebrugge). Dat is het hoogste bedrag: met de auto krijg je een vast bedrag per shift volgens de afstand, en de tabel stopt bij 40 km. Wie verder woont, krijgt hetzelfde. Staat er een ander bedrag op je loonbrief? Vul dat zelf in onder "Of kies je woonplaats", bij "Eigen bedrag".`;
+    else if (i.source === 'schatting') t = `Vervoersvergoeding: ± ${money(i.amount)} per volle shift, geschat voor ± ${i.roadKm} km over de weg tot Zeebrugge. Staat er een ander bedrag op je loonbrief? Vul dat zelf in onder "Of kies je woonplaats", bij "Eigen bedrag".`;
     else t = i.amount ? `Vervoersvergoeding: ${money(i.amount)} per volle shift (woonplaats ${escapeHtml(settings.place || '')}).` : '';
     for (const id of ['travelInfo', 'qTravelInfo']) { $(id).innerHTML = t; $(id).hidden = settings.transport !== 'auto' || !t; }
     // meerdere deelgemeenten met een ander bedrag in je postcode: kies de jouwe
