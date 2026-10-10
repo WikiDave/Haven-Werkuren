@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-10.3';
+const APP_VERSION = '2026-10-10.4';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -824,7 +824,7 @@ const APP_VERSION = '2026-10-10.3';
       return `<li>${co ? logoHtml(e.company, e.companyName, 'li-logo') : ''}
         <div class="li-main"><div class="d">${co ? escapeHtml(companyById(e.company)?.name || e.companyName) + ' · ' : ''}${escapeHtml(entryTitle(e))}</div>
         <div class="m">${detail}</div>
-        ${e.kind === 'afbestel' ? '' : `<div class="endrow"><label for="end-${e.id}">Gestopt om</label><input type="time" id="end-${e.id}" data-end="${e.id}" value="${e.end || ''}"><button type="button" class="linkbtn" data-endnow="${e.id}">Nu</button></div>`}</div>
+        ${e.kind === 'afbestel' ? '' : `<div class="endrow"><label for="end-${e.id}">Gestopt om</label><input type="time" id="end-${e.id}" data-end="${e.id}" value="${e.end || ''}"><button type="button" class="linkbtn" data-endnow="${e.id}">Nu</button>${endHint(e)}</div>`}</div>
         <div class="li-amt">${money(x.bruto)}</div>
         <button class="del" data-id="${e.id}" aria-label="Verwijderen">✕</button></li>`;
     }).join('');
@@ -1608,7 +1608,7 @@ const APP_VERSION = '2026-10-10.3';
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
     ['2026-10-10', [
-      'Gestopt om: bij elke shift in de lijst kan je het uur invullen waarop je stopte, of tikken op Nu. Handig als je het snel vergeet.',
+      'Gestopt om: bij elke shift in de lijst kan je het uur invullen waarop je stopte, of tikken op Nu. Handig als je het snel vergeet. Bij een volle shift staat daarnaast klein het einduur: 7u45 na je begin.',
       'Nieuw bij een dag zonder werk: Ziekte en Arbeidsongeval (tellen niet als verlofdag). Een shift van 18u of 22u laat de dop van die dag nu staan. De antwoord-optie bij berichten is weggehaald.',
       'Back-up bewaren in je Google Drive, iCloud of per e-mail met één knop (Instellingen › Back-up & export). Je ziet ook wanneer je de laatste back-up maakte.',
     ]],
@@ -2526,6 +2526,13 @@ const APP_VERSION = '2026-10-10.3';
   });
 
   // --- events -------------------------------------------------------------
+  // volle shift: 7u45 na het begin (de overuren beginnen daarna); enkel als het startuur vastligt (niet bij 18u–22u)
+  function endHint(e) {
+    const h = Number(e.code);
+    if (e.kind !== 'full' || !(h >= 4 && h <= 17)) return '';
+    const total = h * 60 + 7 * 60 + 45;
+    return `<span class="endhint">einde ${Math.floor(total / 60)}u${pad(total % 60)}</span>`;
+  }
   // stop-uur van een shift: zelf invullen of met 'Nu' het huidige uur
   const setEnd = (id, v) => {
     const e = entries.find((x) => x.id === id);
