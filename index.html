@@ -745,6 +745,10 @@
           <label for="qPostcode">Postcode van je woonplaats (voor de vervoersvergoeding)</label>
           <input id="qPostcode" data-q="postcode" inputmode="numeric" maxlength="4" autocomplete="postal-code" placeholder="bv. 9000">
           <p class="hint" id="qTravelInfo"></p>
+          <div id="qPcWrap" hidden>
+            <label for="qPcPlace">Deelgemeente</label>
+            <select id="qPcPlace"></select>
+          </div>
         </div>
         <div class="row2">
           <div><label for="qCivil">Burgerlijke staat</label>
@@ -1210,6 +1214,10 @@
             <label for="sPostcode">Postcode van je woonplaats (heel België)</label>
             <input id="sPostcode" data-s="postcode" inputmode="numeric" maxlength="4" autocomplete="postal-code" placeholder="bv. 9000">
             <p class="hint" id="travelInfo"></p>
+            <div id="sPcWrap" hidden>
+              <label for="sPcPlace">Deelgemeente</label>
+              <select id="sPcPlace"></select>
+            </div>
             <details id="placeBox">
               <summary>Of kies je woonplaats uit de lijst, of vul zelf een bedrag in</summary>
               <label for="sPlace">Woonplaats (deelgemeente)</label>
@@ -1382,9 +1390,9 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="postcodes.js?v=2026-10-10.7"></script>
-<script src="loon.js?v=2026-10-10.7"></script>
-<script src="scan.js?v=2026-10-10.7"></script>
-<script src="app.js?v=2026-10-10.7"></script>
+<script src="postcodes.js?v=2026-10-10.8"></script>
+<script src="loon.js?v=2026-10-10.8"></script>
+<script src="scan.js?v=2026-10-10.8"></script>
+<script src="app.js?v=2026-10-10.8"></script>
 </body>
 </html>

@@ -323,18 +323,43 @@ test('foreman en ceelbaas: eigen loon uit de loontabel, markeerder met premie ma
   assert.equal(get(Loon.shiftLines(shift('2026-10-10', '08', { func: 'foreman' }), ctx({})).lines, 'shiftloon'), 336.83); // zaterdag
 });
 
-test('vervoersvergoeding per postcode: tabel van Cewez, anders geschat op afstand', () => {
+test('vervoersvergoeding per postcode: bedrag uit de tabel, anders geschat op afstand', () => {
   const al = (settings) => Loon.travelAllowance('2026-10-06', { transport: 'auto', ...settings });
   assert.equal(al({ place: 'Brugge' }), 2.55);                 // woonplaats zoals voorheen
-  const info = (pc) => Loon.travelInfo('2026-10-06', { postcode: pc });
-  assert.equal(info('8380').amount, 1.68);                     // Zeebrugge: minimum
-  assert.ok(Math.abs(info('8000').amount - 2.55) < 0.6);       // Brugge: dicht bij de tabel (2,55)
-  assert.ok(Math.abs(info('8400').amount - 3.45) < 0.6);       // Oostende: dicht bij de tabel (3,45)
-  const gent = Loon.travelInfo('2026-10-06', { postcode: '9000' });
+  const info = (pc, place) => Loon.travelInfo('2026-10-06', { postcode: pc, place });
+  // postcodes met deelgemeenten in de tabel: het bedrag uit de tabel, de hoofdgemeente tenzij je een andere kiest
+  assert.equal(info('8380').amount, 1.68);                     // Zeebrugge
+  assert.equal(info('8380', 'Dudzele').amount, 1.77);
+  assert.equal(info('8000').amount, 2.55);                     // Brugge (was geschat op 2,39)
+  assert.equal(info('8000').place, 'Brugge');
+  assert.deepEqual(info('8000').places, ['Brugge', 'Koolkerke']);
+  assert.equal(info('8000', 'Koolkerke').amount, 2.16);
+  assert.equal(info('8000', 'Assebroek').amount, 2.55);        // oude woonplaats buiten de postcode telt niet
+  assert.equal(info('8400').amount, 3.45);                     // Oostende
+  assert.equal(info('8400', 'Stene').amount, 3.59);
+  assert.equal(info('8020').amount, 3.15);                     // Oostkamp
+  assert.equal(info('8020', 'Herstberge').amount, 3.59);       // Hertsberge
+  assert.equal(info('8301').amount, 1.68);                     // Heist
+  assert.equal(info('8730', 'Sint-Joris').amount, 3.59);       // Sint-Joris bij Beernem ...
+  assert.equal(info('8620').source, 'schatting');              // ... niet Sint-Joris bij Nieuwpoort
+  assert.equal(info('8600').source, 'schatting');              // Oostkerke bij Diksmuide is niet die van Damme
+  // elke tabelplaats met een Belgische postcode zit in de lijst, met het juiste bedrag
+  const table = Loon.TRAVEL[Loon.TRAVEL.length - 1].table;
+  const listed = new Set(Object.values(Loon.POSTCODES).flatMap((p) => p[2] || []));
+  for (const place of Object.keys(table)) {
+    if (!['Sluis', 'Zuidzande', 'Oostburg', 'Aardenburg', 'Eede', 'Eede-Aardenburg', 'Schoondijke'].includes(place)) assert.ok(listed.has(place), place);
+  }
+  // buiten de tabel: geschat volgens de treinprijs per afstand
+  const gent = info('9000');
   assert.equal(gent.source, 'schatting');
-  assert.ok(gent.amount > 4.5 && gent.amount < 6.5, String(gent.amount));
-  const brussel = Loon.travelInfo('2026-10-06', { postcode: '1000' });
+  assert.ok(gent.amount > 4.8 && gent.amount < 5.8, String(gent.amount));
+  assert.ok(info('8610').amount > 4.28 && info('8610').amount < 5.2); // Kortemark: net buiten de tabel
+  const brussel = info('1000');
   assert.ok(brussel.amount > gent.amount && brussel.km > 90);
+  assert.ok(brussel.amount < 9, String(brussel.amount));       // niet meer lineair (was 10,65)
+  assert.equal(info('6700').amount, Loon.travelEstimate(1000)); // Aarlen: begrensd zoals de treinprijs (150 km)
+  assert.ok(Loon.travelEstimate(1000) < 9);
+  for (let km = 0; km < 300; km++) assert.ok(Loon.travelEstimate(km + 1) >= Loon.travelEstimate(km)); // nooit minder voor verder
   assert.equal(al({ postcode: '0000', place: 'Brugge' }), 2.55); // onbekende postcode: terug naar de woonplaats
   assert.equal(al({ postcode: '9000', travelOwn: 7.5 }), 7.5);  // eigen bedrag gaat voor
   assert.equal(Loon.travelAllowance('2026-10-06', { transport: 'fiets', bikeKm: 10, bikeRate: 0.25 }), 2.5);

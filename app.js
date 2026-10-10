@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-10.7';
+const APP_VERSION = '2026-10-10.8';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1608,6 +1608,7 @@ const APP_VERSION = '2026-10-10.7';
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
     ['2026-10-10', [
+      'Vervoersvergoeding verbeterd: bij een postcode met deelgemeenten in de vervoerstabel (zoals 8000 Brugge of 8400 Oostende) geldt nu het bedrag uit de tabel, en kies je zelf je deelgemeente. Woon je verder, dan volgt de schatting de treinprijs per afstand en loopt ze niet meer te hoog op.',
       'Vervoersvergoeding voor heel België: vul je postcode in (Instellingen › Netto-instellingen). Staat je gemeente in de vervoerstabel, dan dat bedrag; anders een schatting op afstand tot Zeebrugge, en je kan zelf een bedrag invullen.',
       'Bij een volle shift staat klein het einduur: 7u45 na je begin. Overuren vul je zoals altijd in.',
       'Nieuw bij een dag zonder werk: Ziekte en Arbeidsongeval (tellen niet als verlofdag). Een shift van 18u of 22u laat de dop van die dag nu staan. De antwoord-optie bij berichten is weggehaald.',
@@ -2193,7 +2194,9 @@ const APP_VERSION = '2026-10-10.7';
   }
 
   // --- netto-instellingen -------------------------------------------------
-  $('sPlace').innerHTML = Loon.PLACES.map((p) => `<option value="${escapeHtml(p)}">${escapeHtml(p)} (${money(Loon.TRAVEL[Loon.TRAVEL.length - 1].table[p])})</option>`).join('');
+  const travelTable = Loon.TRAVEL[Loon.TRAVEL.length - 1].table;
+  $('sPlace').innerHTML = '<option value="" disabled>– volgens je postcode –</option>'
+    + Loon.PLACES.map((p) => `<option value="${escapeHtml(p)}">${escapeHtml(p)} (${money(travelTable[p])})</option>`).join('');
   // wat de vervoersvergoeding per volle shift is en waar dat bedrag vandaan komt
   function renderTravelInfo() {
     const pc = String(settings.postcode || '').trim();
@@ -2201,10 +2204,26 @@ const APP_VERSION = '2026-10-10.7';
     let t = '';
     if (pc && !Loon.POSTCODES[pc] && !(settings.travelOwn > 0)) t = `Postcode ${escapeHtml(pc)} ken ik niet; ik gebruik je woonplaats (${money(i.amount)} per shift).`;
     else if (i.source === 'eigen') t = `Jouw bedrag: ${money(i.amount)} per volle shift.`;
-    else if (i.source === 'tabel') t = `Vervoersvergoeding: ${money(i.amount)} per volle shift, volgens de vervoerstabel.`;
-    else if (i.source === 'schatting') t = `Vervoersvergoeding: ± ${money(i.amount)} per volle shift, geschat op ${Math.round(i.km)} km van Zeebrugge. Staat er een ander bedrag op je loonbrief? Vul dat zelf in onder "Of kies je woonplaats".`;
+    else if (i.source === 'tabel') t = `Vervoersvergoeding: ${money(i.amount)} per volle shift (${escapeHtml(i.place)}), volgens de vervoerstabel.`;
+    else if (i.source === 'schatting') t = `Vervoersvergoeding: ± ${money(i.amount)} per volle shift, geschat op ${Math.round(i.km)} km in vogelvlucht van Zeebrugge (de vergoeding volgt de treinprijs per afstand). Staat er een ander bedrag op je loonbrief? Vul dat zelf in onder "Of kies je woonplaats", bij "Eigen bedrag".`;
     else t = i.amount ? `Vervoersvergoeding: ${money(i.amount)} per volle shift (woonplaats ${escapeHtml(settings.place || '')}).` : '';
     for (const id of ['travelInfo', 'qTravelInfo']) { $(id).innerHTML = t; $(id).hidden = settings.transport !== 'auto' || !t; }
+    // meerdere deelgemeenten met een ander bedrag in je postcode: kies de jouwe
+    const choose = i.source === 'tabel' && new Set(i.places.map((p) => travelTable[p])).size > 1;
+    for (const k of ['s', 'q']) {
+      $(`${k}PcWrap`).hidden = settings.transport !== 'auto' || !choose;
+      if (choose) $(`${k}PcPlace`).innerHTML = i.places.map((p) => `<option value="${escapeHtml(p)}"${p === i.place ? ' selected' : ''}>${escapeHtml(p)} (${money(travelTable[p])})</option>`).join('');
+    }
+    // de lijst met woonplaatsen toont wat echt telt
+    if (pc && Loon.POSTCODES[pc]) $('sPlace').value = i.source === 'tabel' ? i.place : '';
+  }
+  for (const id of ['sPcPlace', 'qPcPlace']) {
+    $(id).addEventListener('change', (ev) => {
+      settings.place = ev.target.value; // deelgemeente binnen je postcode; de postcode blijft staan
+      save(KEY_SETTINGS, settings);
+      renderSettings(); render();
+      if (id === 'qPcPlace') { save('haven-werkuren.quickDone', true); renderQuick(); $('quickSaved').hidden = false; }
+    });
   }
   const settingInputs = [...document.querySelectorAll('[data-s]')];
   function renderSettings() {
