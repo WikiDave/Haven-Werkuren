@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-09.1';
+const APP_VERSION = '2026-10-10.1';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1606,6 +1606,9 @@ const APP_VERSION = '2026-10-09.1';
   // --- wat is er nieuw -----------------------------------------------------------
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
+    ['2026-10-10', [
+      'Back-up bewaren in je Google Drive, iCloud of per e-mail met één knop (Instellingen › Back-up & export). Je ziet ook wanneer je de laatste back-up maakte.',
+    ]],
     ['2026-10-09', [
       'Installeren lukt niet na het scannen van de QR-code of vanuit de oude app? Tik op "Openen in Chrome" (bij Uitleg en bij Nieuw adres) en installeer daar.',
     ]],
@@ -2357,10 +2360,40 @@ const APP_VERSION = '2026-10-09.1';
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
+  const KEY_LAST_BACKUP = 'haven-werkuren.lastBackup';
+  const backupJson = () => JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, companyPhones, companyNotes, medChecks, leave, payslips, taxActual, taxExtras, taxUser, markagePremie, lashPremie, dop, otherDays, otherPay }, null, 2);
+  const backupName = () => `werkuren-backup-${isoDate(new Date())}.json`;
+  function backupDone() {
+    save(KEY_LAST_BACKUP, isoDate(new Date()));
+    renderBackupInfo();
+  }
+  function renderBackupInfo() {
+    const d = load(KEY_LAST_BACKUP, '');
+    $('backupInfo').textContent = d ? `Laatste back-up: ${fmtDate(d, { day: 'numeric', month: 'long', year: 'numeric' })}.` : 'Je hebt nog geen back-up gemaakt.';
+  }
   $('exportJson').addEventListener('click', () => {
-    download(`werkuren-backup-${isoDate(new Date())}.json`,
-      JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, companyPhones, companyNotes, medChecks, leave, payslips, taxActual, taxExtras, taxUser, markagePremie, lashPremie, dop, otherDays, otherPay }, null, 2), 'application/json');
+    download(backupName(), backupJson(), 'application/json');
+    backupDone();
   });
+  // Delen via het menu van de gsm: daar kies je zelf Google Drive, iCloud Drive (Bewaar in Bestanden), e-mail, enz.
+  // Er is geen koppeling en niets gaat via de maker: het bestand gaat rechtstreeks van je gsm naar je eigen opslag.
+  $('shareBackup').addEventListener('click', async () => {
+    const file = new File([backupJson()], backupName(), { type: 'application/json' });
+    const msg = (t) => { $('backupMsg').textContent = t; $('backupMsg').hidden = !t; };
+    msg('');
+    try {
+      if (!navigator.canShare || !navigator.canShare({ files: [file] })) throw new Error('niet ondersteund');
+      await navigator.share({ files: [file], title: 'Back-up Haven Werkuren' });
+      backupDone();
+      msg('Back-up bewaard. Zet ze terug met "Back-up terugzetten" en kies het bestand uit je Drive of iCloud.');
+    } catch (err) {
+      if (err && err.name === 'AbortError') return; // delen geannuleerd
+      download(backupName(), backupJson(), 'application/json');
+      backupDone();
+      msg('Delen kan hier niet: de back-up is gedownload. Zet ze zelf in je Drive of iCloud.');
+    }
+  });
+  renderBackupInfo();
   $('importBtn').addEventListener('click', () => $('importFile').click());
   // Een back-up is een bestand van buiten de app: alleen het verwachte formaat doorlaten.
   // Ids, datums en sleutels komen in de pagina terecht, dus die moeten er netjes uitzien;

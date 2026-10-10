@@ -1351,10 +1351,14 @@
           <summary><h2>Back-up &amp; export</h2></summary>
           <p class="hint">Je gegevens staan alleen op dit toestel, in deze browser. Maak af en toe een back-up.</p>
           <div class="tools">
+            <button class="btn" id="shareBackup" style="grid-column:1/-1">Back-up bewaren (Drive, iCloud, e-mail …)</button>
             <button class="btn ghost" id="exportJson">Back-up downloaden</button>
             <button class="btn ghost" id="importBtn">Back-up terugzetten</button>
             <button class="btn ghost" id="exportCsv" style="grid-column:1/-1">Maand als CSV (Excel)</button>
           </div>
+          <p class="hint" id="backupInfo"></p>
+          <p class="hint" id="backupMsg" hidden></p>
+          <p class="hint">Met <b>Back-up bewaren</b> kies je in het menu van je gsm zelf waar het bestand heen gaat, bijvoorbeeld <b>Google Drive</b>, <b>Bewaar in Bestanden</b> (iCloud Drive) of e-mail. Er is geen koppeling en de maker van de app ziet niets. Terugzetten: tik op <b>Back-up terugzetten</b> en kies het bestand uit je Drive of iCloud.</p>
           <input type="file" id="importFile" accept="application/json,.json" hidden>
         </details>
       </section>
@@ -1400,8 +1404,8 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-09.1"></script>
-<script src="scan.js?v=2026-10-09.1"></script>
-<script src="app.js?v=2026-10-09.1"></script>
+<script src="loon.js?v=2026-10-10.1"></script>
+<script src="scan.js?v=2026-10-10.1"></script>
+<script src="app.js?v=2026-10-10.1"></script>
 </body>
 </html>
