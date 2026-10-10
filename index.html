@@ -656,18 +656,6 @@
       <label for="bugFile">Bestand (optioneel)</label>
       <input type="file" id="bugFile" name="attachment" accept="image/*,application/pdf">
       <p class="hint">bv. een schermafbeelding van de app of een foto van je loonbrief. Maximaal 10 MB.</p>
-      <label for="bugVia">Antwoord gewenst? (optioneel)</label>
-      <select id="bugVia" data-via>
-        <option value="">Nee, geen antwoord nodig</option>
-        <option value="email">Ja, via e-mail</option>
-        <option value="whatsapp">Ja, via WhatsApp</option>
-        <option value="sms">Ja, via sms</option>
-      </select>
-      <div data-via-box hidden>
-        <label for="bugAddr" data-via-label>Je e-mailadres</label>
-        <input id="bugAddr" data-via-addr>
-        <p class="hint">Alleen de maker van de app ziet dit. De app onthoudt het op dit toestel voor de volgende keer.</p>
-      </div>
       <label class="check"><input type="checkbox" id="bugDay"> <span>Gekozen dag meesturen (<span id="bugDayName"></span>: shift, functie en bedragen, zonder notities)</span></label>
       <p class="hint">De app-versie en het type toestel worden automatisch meegestuurd.</p>
       <button type="submit" class="btn">Versturen</button>
@@ -687,18 +675,6 @@
       <label for="ideaFile">Bestand (optioneel)</label>
       <input type="file" id="ideaFile" name="attachment" accept="image/*,application/pdf">
       <p class="hint">bv. een schets of een foto van een papier. Maximaal 10 MB.</p>
-      <label for="ideaVia">Antwoord gewenst? (optioneel)</label>
-      <select id="ideaVia" data-via>
-        <option value="">Nee, geen antwoord nodig</option>
-        <option value="email">Ja, via e-mail</option>
-        <option value="whatsapp">Ja, via WhatsApp</option>
-        <option value="sms">Ja, via sms</option>
-      </select>
-      <div data-via-box hidden>
-        <label for="ideaAddr" data-via-label>Je e-mailadres</label>
-        <input id="ideaAddr" data-via-addr>
-        <p class="hint">Alleen de maker van de app ziet dit. De app onthoudt het op dit toestel voor de volgende keer.</p>
-      </div>
       <p class="hint">De app-versie wordt automatisch meegestuurd.</p>
       <button type="submit" class="btn">Versturen</button>
       <p class="hint mailmsg" role="status" hidden></p>
@@ -882,6 +858,8 @@
         <button type="button" data-off="vakantie" data-lv>Verlof</button>
         <button type="button" data-off="herverdeling" data-lv>HV</button>
         <button type="button" data-off="recup" data-lv>Recup</button>
+        <button type="button" data-off="ziek" data-lv>Ziekte</button>
+        <button type="button" data-off="ao" data-lv>Arbeidsongeval</button>
         <button type="button" data-off="dop">Dop</button>
         <button type="button" data-off="ander" data-rk>Ander werk</button>
       </div>
@@ -1022,6 +1000,8 @@
         <option value="anciënniteit">Anciënniteitsverlof</option>
         <option value="herverdeling">Herverdelingsdag (HV)</option>
         <option value="recup">Recup (recuperatiedag)</option>
+        <option value="ziek">Ziekte</option>
+        <option value="ao">Arbeidsongeval</option>
         <option value="ander">Ander verlof</option>
       </select>
       <label class="check"><input type="checkbox" id="lvSat"> Zaterdagen meetellen</label>
@@ -1376,18 +1356,6 @@
           <label for="contactFile">Bestand (optioneel)</label>
           <input type="file" id="contactFile" name="attachment" accept="image/*,application/pdf">
           <p class="hint">bv. een foto of een PDF. Maximaal 10 MB.</p>
-          <label for="contactVia">Antwoord gewenst? (optioneel)</label>
-          <select id="contactVia" data-via>
-            <option value="">Nee, geen antwoord nodig</option>
-            <option value="email">Ja, via e-mail</option>
-            <option value="whatsapp">Ja, via WhatsApp</option>
-            <option value="sms">Ja, via sms</option>
-          </select>
-          <div data-via-box hidden>
-            <label for="contactAddr" data-via-label>Je e-mailadres</label>
-            <input id="contactAddr" data-via-addr>
-            <p class="hint">Alleen de maker van de app ziet dit. De app onthoudt het op dit toestel voor de volgende keer.</p>
-          </div>
           <button type="submit" class="btn">Versturen</button>
           <p class="hint mailmsg" role="status" hidden></p>
         </form>
@@ -1404,8 +1372,8 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="loon.js?v=2026-10-10.1"></script>
-<script src="scan.js?v=2026-10-10.1"></script>
-<script src="app.js?v=2026-10-10.1"></script>
+<script src="loon.js?v=2026-10-10.2"></script>
+<script src="scan.js?v=2026-10-10.2"></script>
+<script src="app.js?v=2026-10-10.2"></script>
 </body>
 </html>
