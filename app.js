@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-10.6';
+const APP_VERSION = '2026-10-10.7';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -656,7 +656,7 @@ const APP_VERSION = '2026-10-10.6';
       ? `Automatisch: ${ROW_NAMES[auto] || 'weekdagtarief'}`
       : `Automatisch zou ${ROW_NAMES[auto] || 'weekdagtarief'} zijn.`;
     const fn = Loon.functionOf(e.func);
-    $('funcHint').textContent = Loon.FUNCTION_GROUPS[fn.group].kader ? `Loon ${fn.label.toLowerCase()} volgens de loontabel van Cewez (shift, uur en overuren).`
+    $('funcHint').textContent = Loon.FUNCTION_GROUPS[fn.group].kader ? `Loon ${fn.label.toLowerCase()} volgens de loontabel (shift, uur en overuren).`
       : fn.group === 'alle' ? '' : Loon.FUNCTION_GROUPS[fn.group].label.replace(/^[^(]*\(/, 'Loon alle werk (').replace(/\)$/, ')');
     $('markageWrap').hidden = !Loon.isMarkeerder(fn.id);
     if (Number.isNaN(e.overtime)) { $('preview').textContent = '—'; $('previewNet').textContent = ''; return; }
@@ -1165,7 +1165,7 @@ const APP_VERSION = '2026-10-10.6';
     $('hvStatus').textContent = `Tegoed: ${dayCount(hv.balance)} HV`
       + (hv.planned ? ` (en ${hv.planned} gepland)` : '')
       + ` · nog ${hv.toNext} shift${hv.toNext === 1 ? '' : 'en'} tot je volgende (${hv.progress}/${hv.per}).`
-      + (st0.date ? '' : ' Vul je tegoed van Cewez in, dan klopt het.');
+      + (st0.date ? '' : ' Vul je tegoed in, dan klopt het.');
     $('hvBal').value = st0.balance ?? '';
     $('hvCnt').value = st0.count ?? '';
     $('hvDate').value = st0.date || '';
@@ -1543,7 +1543,7 @@ const APP_VERSION = '2026-10-10.6';
     $('clMax').textContent = `(max ${l.max})`;
     $('clInfo').textContent = clothingStart.date
       ? `Sinds je loonbrief van ${fmtDate(clothingStart.date)}: +${l.earned} opgebouwd, −${l.spent} afgehaald.`
-      : `Opgebouwd: ${l.earned} · afgehaald: ${l.spent}. Vul onderaan het saldo van je loonbrief in, dan klopt het met Cewez.`;
+      : `Opgebouwd: ${l.earned} · afgehaald: ${l.spent}. Vul onderaan het saldo van je loonbrief in, dan klopt het.`;
     const warn = [];
     if (l.balance >= l.max) warn.push(`Je zit aan het maximum van ${l.max} punten: nieuwe punten gaan verloren. Haal eerst kledij af.`);
     else if (l.lost) warn.push(`${pointsText(l.lost)} verloren omdat je saldo aan het maximum zat.`);
@@ -1608,7 +1608,7 @@ const APP_VERSION = '2026-10-10.6';
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
     ['2026-10-10', [
-      'Vervoersvergoeding voor heel België: vul je postcode in (Instellingen › Netto-instellingen). Staat je gemeente in de tabel van Cewez, dan dat bedrag; anders een schatting op afstand tot Zeebrugge, en je kan zelf een bedrag invullen.',
+      'Vervoersvergoeding voor heel België: vul je postcode in (Instellingen › Netto-instellingen). Staat je gemeente in de vervoerstabel, dan dat bedrag; anders een schatting op afstand tot Zeebrugge, en je kan zelf een bedrag invullen.',
       'Bij een volle shift staat klein het einduur: 7u45 na je begin. Overuren vul je zoals altijd in.',
       'Nieuw bij een dag zonder werk: Ziekte en Arbeidsongeval (tellen niet als verlofdag). Een shift van 18u of 22u laat de dop van die dag nu staan. De antwoord-optie bij berichten is weggehaald.',
       'Back-up bewaren in je Google Drive, iCloud of per e-mail met één knop (Instellingen › Back-up & export). Je ziet ook wanneer je de laatste back-up maakte.',
@@ -1619,8 +1619,8 @@ const APP_VERSION = '2026-10-10.6';
     ['2026-10-08', [
       'Nieuw adres: wikidave.github.io/Haven-Werkuren. De app stuurt je er vanzelf naartoe en neemt je gegevens mee. Zet de app daarna opnieuw op je beginscherm.',
       'Chauffeurs (bv. tugmaster), kraanmannen en speciale tuigen: shift, uur- en overuurloon nu precies volgens de loontabel. Overuren waren te laag (bv. tugmaster 8u: € 44,88 per overuur in plaats van € 37,26). Bedankt voor de melding!',
-      'De app heet nu alleen Haven Werkuren en krijgt een nieuw webadres. Het is geen app van Cewez.',
-      'Weggehaald: het werkaanbod, de nummers van de aanwervers en de bedrijfsingangen (kijk daarvoor op cewez.be of in MyJob), de logo\'s van de bedrijven en de teller.',
+      'De app heet nu alleen Haven Werkuren en krijgt een nieuw webadres.',
+      'Weggehaald: het werkaanbod, de nummers van de aanwervers en de bedrijfsingangen, de logo\'s van de bedrijven en de teller.',
       'Nieuwe privacyverklaring: onderaan de pagina en in het uitlegscherm.',
       'Rode kaart met een andere job: duid die dagen aan als Ander werk en vul elke maand het loon van die job in. De schatting van je belastingbrief telt het mee.',
       'Dop: reken je bedrag per dag uit met je laatste betaling van de vakbond of de HVW.',
@@ -2201,7 +2201,7 @@ const APP_VERSION = '2026-10-10.6';
     let t = '';
     if (pc && !Loon.POSTCODES[pc] && !(settings.travelOwn > 0)) t = `Postcode ${escapeHtml(pc)} ken ik niet; ik gebruik je woonplaats (${money(i.amount)} per shift).`;
     else if (i.source === 'eigen') t = `Jouw bedrag: ${money(i.amount)} per volle shift.`;
-    else if (i.source === 'tabel') t = `Vervoersvergoeding: ${money(i.amount)} per volle shift, volgens de tabel van Cewez.`;
+    else if (i.source === 'tabel') t = `Vervoersvergoeding: ${money(i.amount)} per volle shift, volgens de vervoerstabel.`;
     else if (i.source === 'schatting') t = `Vervoersvergoeding: ± ${money(i.amount)} per volle shift, geschat op ${Math.round(i.km)} km van Zeebrugge. Staat er een ander bedrag op je loonbrief? Vul dat zelf in onder "Of kies je woonplaats".`;
     else t = i.amount ? `Vervoersvergoeding: ${money(i.amount)} per volle shift (woonplaats ${escapeHtml(settings.place || '')}).` : '';
     for (const id of ['travelInfo', 'qTravelInfo']) { $(id).innerHTML = t; $(id).hidden = settings.transport !== 'auto' || !t; }
