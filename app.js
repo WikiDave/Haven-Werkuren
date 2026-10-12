@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-10.8';
+const APP_VERSION = '2026-10-12.1';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1607,6 +1607,9 @@ const APP_VERSION = '2026-10-10.8';
   // --- wat is er nieuw -----------------------------------------------------------
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
+    ['2026-10-12', [
+      'Nagekeken met een echte loonbrief (september, tweede helft): loon, premie, RSZ, belastbaar, vervoer en maaltijdcheques kloppen tot op de cent. Bij lashing (roro, container, high & heavy: 2 kledijpunten) rekent de app geen kledijvergoeding meer, zoals op de loonbrief. De tweede helft van de maand wordt rond de 2e werkdag betaald.',
+    ]],
     ['2026-10-10', [
       'Vervoersvergoeding verbeterd: bij een postcode met deelgemeenten in de vervoerstabel (zoals 8000 Brugge of 8400 Oostende) geldt nu het bedrag uit de tabel, en kies je zelf je deelgemeente. Woon je verder dan de tabel (± 40 km), dan krijg je het hoogste bedrag uit de tabel: met de auto stopt de vergoeding bij 40 km, ze telt niet per km.',
       'Vervoersvergoeding voor heel België: vul je postcode in (Instellingen › Netto-instellingen). Staat je gemeente in de vervoerstabel, dan dat bedrag; anders een schatting op afstand tot Zeebrugge, en je kan zelf een bedrag invullen.',

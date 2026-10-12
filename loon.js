@@ -365,7 +365,9 @@
     // premie lashing: sommige bedrijven betalen lashers meer; bedrag zoals de gebruiker het invulde
     if (entry.lash > 0) add('lash', 'Premie lashing', entry.lash, 'A');
     if (entry.wijziging) add('wijziging', 'Wijzigingsvergoeding', p.wijziging, s.extraType);
-    add('kledij', 'Kledijvergoeding', p.kledij, 'D');
+    // kledijvergoeding: niet bij lashing roro / container / high & heavy (die geeft 2 kledijpunten);
+    // zo op de loonbrief van september 2026 (Speed Lashing: 2 punten, geen 1,59)
+    if (entry.work !== 'lashing') add('kledij', 'Kledijvergoeding', p.kledij, 'D');
     add('vervoer', s.transport === 'fiets' ? 'Fietsvergoeding' : 'Eigen vervoer', travelAllowance(entry.date, s), 'D');
     if (full && (s.status === 'pool' || s.status === 'timetable')) add('internet', 'Internetvergoeding', p.internet, 'D');
     if (full) add('mtc', 'Maaltijdcheque eigen bijdrage', p.mtcOwn, 'M');
@@ -387,15 +389,15 @@
     };
   }
 
-  // A: rond de 19e; B: uiterlijk de 3e werkdag na de periode
+  // A: rond de 19e; B: rond de 2e werkdag na de periode (september 2026: vrijdag 2 oktober)
   function paymentDate(period, overrides = {}) {
     if (period.half === 'A') return { date: `${period.year}-${pad(period.month)}-19`, approx: true };
     let d = period.end, count = 0;
-    while (count < 3) {
+    while (count < 2) {
       d = addDays(d, 1);
       if (![0, 6].includes(weekday(d)) && !holidayOn(d, overrides)) count++;
     }
-    return { date: d, approx: false };
+    return { date: d, approx: true };
   }
 
   // --- voorheffing (voorlopige schatting) -----------------------------------------

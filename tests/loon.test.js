@@ -36,6 +36,31 @@ test('echte loonbrief Cewez augustus 2026, periode A (betaald 19/08/2026)', () =
   assert.equal(line('internet'), undefined); // gelegenheidsarbeider: geen internetvergoeding
 });
 
+test('echte loonbrief september 2026, periode B (betaald 02/10/2026)', () => {
+  // 9 volle shiften, gelegenheidsarbeider, eigen vervoer vanuit Assebroek, ongehuwd; 19/09 Speed Lashing (P&O)
+  const shifts = [
+    shift('2026-09-17', '08'), shift('2026-09-18', '07'), shift('2026-09-19', '07', { work: 'lashing' }),
+    shift('2026-09-22', '10'), shift('2026-09-23', '08'), shift('2026-09-24', '11'), shift('2026-09-25', '15'),
+    shift('2026-09-26', '14'), shift('2026-09-28', '06'),
+  ];
+  const r = Loon.calcPeriod(shifts, ctx({ status: 'gelegenheid', place: 'Assebroek', civil: 'ongehuwd' }));
+  const total = (key) => Loon.round2(r.lines.filter((l) => l.key === key).reduce((a, l) => a + l.amount, 0));
+  assert.deepEqual(r.shifts.map((x) => x.row), ['08', '07', 'ZA', '10', '08', '11', '15', 'ZA', '06']);
+  assert.equal(total('shiftloon'), 1876.64);
+  assert.equal(total('premie'), 47.52);
+  assert.equal(r.basisRsz, 1924.16);
+  assert.equal(r.rsz, 271.61);
+  assert.equal(r.belastbaar, 1652.55);
+  assert.equal(total('kledij'), 12.72);  // 8 x 1,59: niet op de lashingdag
+  assert.equal(total('vervoer'), 24.84); // 9 x 2,76
+  assert.equal(r.D, 37.56);
+  assert.equal(r.mtc, 9.81);
+  // Cewez hield 361,92 voorheffing in; de sleutelformule geeft 371,92 (precies 10 euro meer, nog uit te zoeken)
+  assert.equal(r.voorheffing, 371.92);
+  assert.equal(r.netto, Loon.round2(1318.38 - 10));
+  assert.equal(r.payment.date, '2026-10-02');
+});
+
 test('zondagtarief vanaf 18u00 de dag voor een zon- of feestdag', () => {
   assert.equal(Loon.tariffRow('2026-08-22', '18'), 'ZO'); // zaterdag 22u00
   assert.equal(Loon.tariffRow('2026-08-22', '14'), 'ZA'); // zaterdag overdag
@@ -65,8 +90,8 @@ test('uitbetalingsperiodes', () => {
   assert.equal(Loon.periodOf('2026-09-15').key, '2026-09-A');
   assert.equal(Loon.periodOf('2026-09-16').key, '2026-09-B');
   assert.equal(Loon.periodOf('2026-09-30').end, '2026-09-30');
-  // periode B september: 3e werkdag na 30/09 = maandag 5 oktober
-  assert.equal(Loon.paymentDate(Loon.periodOf('2026-09-20')).date, '2026-10-05');
+  // periode B september: betaald op de 2e werkdag na 30/09 = vrijdag 2 oktober (loonbrief)
+  assert.equal(Loon.paymentDate(Loon.periodOf('2026-09-20')).date, '2026-10-02');
 });
 
 test('bedrijfsvoorheffing volgens de sleutelformule 2026', () => {
