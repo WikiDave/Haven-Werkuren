@@ -256,6 +256,10 @@
   .scanbtn { margin-top: 10px; }
   .slipcheck { margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--bg); font-size: 13px; }
   .slipcheck b.ok { color: #1a8f5a; } .slipcheck b.off { color: var(--ot); }
+  .diffs { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px dashed var(--line); font-size: 14px; }
+  .diffs h3 { margin: 0 0 2px; font-size: 15px; }
+  .diffs ul { margin: 6px 0; padding-left: 18px; } .diffs li { margin: 4px 0; }
+  .diffs b.ok { color: #1a8f5a; } .diffs b.off { color: var(--ot); white-space: nowrap; }
   .leaveday { margin: 0 0 8px; padding: 10px 12px; border-radius: 10px; background: var(--leave); color: var(--leave-text); font-weight: 600; }
   .leaveday.dop { background: var(--bg); color: var(--text); border: 1px dashed var(--line); }
   .cal button .medmark {
@@ -698,6 +702,7 @@
     <div class="tools">
       <label class="btn" for="scanCam">Foto nemen</label>
       <label class="btn ghost" for="scanPick">Foto kiezen</label>
+      <button type="button" class="btn ghost" id="scanManual">Zonder foto invullen</button>
     </div>
     <input type="file" id="scanCam" accept="image/*" capture="environment" hidden>
     <input type="file" id="scanPick" accept="image/*" hidden>
@@ -980,7 +985,8 @@
       <details class="fold" data-fold="uitbetalingen">
         <summary><h2>Uitbetalingen</h2></summary>
       <div id="slips"></div>
-      <button type="button" class="btn ghost scanbtn" data-scan="loonbrief">Loonbrief fotograferen</button>
+      <div id="diffs"></div>
+      <button type="button" class="btn ghost scanbtn" data-scan="loonbrief">Loonbrief fotograferen of invullen</button>
       </details>
     </section>
     <section class="inset grp" id="workCard">
@@ -1390,9 +1396,9 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="postcodes.js?v=2026-10-12.1"></script>
-<script src="loon.js?v=2026-10-12.1"></script>
-<script src="scan.js?v=2026-10-12.1"></script>
-<script src="app.js?v=2026-10-12.1"></script>
+<script src="postcodes.js?v=2026-10-12.2"></script>
+<script src="loon.js?v=2026-10-12.2"></script>
+<script src="scan.js?v=2026-10-12.2"></script>
+<script src="app.js?v=2026-10-12.2"></script>
 </body>
 </html>

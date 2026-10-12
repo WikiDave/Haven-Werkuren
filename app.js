@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-12.1';
+const APP_VERSION = '2026-10-12.2';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -885,6 +885,72 @@ const APP_VERSION = '2026-10-12.1';
     </div>`;
   }
 
+  // --- verschillen met je loonbrieven bijhouden -----------------------------------
+  // per ingevulde loonbrief: loonbrief min app. Een verschil kan een fout van Cewez zijn,
+  // of een shift die in de app anders staat.
+  const SLIP_FIELDS = [['basisRsz', 'Basis RSZ'], ['belastbaar', 'Belastbaar'], ['voorheffing', 'Voorheffing'], ['netto', 'Netto']];
+  function slipDiffs(year) {
+    return Object.keys(payslips).filter((k) => k.startsWith(`${year}-`)).sort().map((key) => {
+      const r = calc.periods[key], ps = payslips[key];
+      const per = Loon.periodOf(`${key.slice(0, 7)}-${key.endsWith('A') ? '01' : '16'}`);
+      const fields = SLIP_FIELDS.filter(([k]) => Number.isFinite(Number(ps[k])) && ps[k] !== null && ps[k] !== '')
+        .map(([k, label]) => ({ k, label, slip: Number(ps[k]), app: r ? r[k] : 0, d: r ? round2(Number(ps[k]) - r[k]) : 0 }));
+      return { key, per, r, fields, off: r ? fields.filter((f) => Math.abs(f.d) >= 0.01) : [] };
+    });
+  }
+  function diffTotals(list) {
+    const tot = {};
+    for (const x of list) for (const f of x.off) tot[f.k] = round2((tot[f.k] || 0) + f.d);
+    return tot;
+  }
+  const signed = (d) => `${d > 0 ? '+' : '−'}${money(Math.abs(d))}`;
+  function renderDiffs() {
+    const year = viewYear;
+    const list = slipDiffs(year);
+    if (!list.length) {
+      $('diffs').innerHTML = `<p class="hint">Vul je loonbrieven in (foto of zonder foto): dan houdt de app bij waar Cewez afwijkt van de berekening.</p>`;
+      return;
+    }
+    const tot = diffTotals(list);
+    const nOff = list.filter((x) => x.off.length).length;
+    const items = list.map((x) => {
+      const name = rangeText([x.per.start, x.per.end]);
+      if (!x.r) return `<li>${name}: geen shiften in de app voor deze periode.</li>`;
+      if (!x.off.length) return `<li>${name}: <b class="ok">klopt</b></li>`;
+      return `<li>${name}: ${x.off.map((f) => `${f.label.toLowerCase()} loonbrief ${money(f.slip)}, app ${money(f.app)} (<b class="off">${signed(f.d)}</b>)`).join('; ')}</li>`;
+    }).join('');
+    const notes = [];
+    if (tot.basisRsz || tot.belastbaar) notes.push('Het brutoloon verschilt: kijk na of al je shiften, uren en premies juist in de app staan. Klopt alles, vraag het dan na bij Cewez.');
+    if (tot.voorheffing < 0) notes.push(`Cewez hield in ${year} samen <b>${money(-tot.voorheffing)} minder voorheffing</b> in dan de app berekent. Voorheffing is een voorschot op je belasting: wat te weinig is ingehouden, betaal je later bij via je belastingbrief (of je krijgt minder terug). De belastingbrief in de app rekent al met de voorheffing van je loonbrieven.`);
+    if (tot.voorheffing > 0) notes.push(`Cewez hield in ${year} samen <b>${money(tot.voorheffing)} meer voorheffing</b> in dan de app berekent. Dat krijg je via je belastingbrief terug; de belastingbrief in de app rekent er al mee.`);
+    if (tot.netto && Math.abs(tot.netto + (tot.voorheffing || 0)) < 0.01 && !tot.basisRsz && !tot.belastbaar) notes.push(`Het verschil in netto (${signed(tot.netto)}) komt volledig van de voorheffing.`);
+    else if (tot.netto) notes.push(`Je kreeg in ${year} samen <b>${money(Math.abs(tot.netto))} ${tot.netto > 0 ? 'meer' : 'minder'} netto</b> dan de app berekent.`);
+    $('diffs').innerHTML = `<div class="diffs"><h3>Verschillen met je loonbrieven ${year}</h3>
+      <p class="hint">${list.length} loonbrie${list.length === 1 ? 'f' : 'ven'} ingevuld · ${nOff ? `${nOff} met een verschil` : 'alles klopt'}</p>
+      <ul>${items}</ul>${notes.map((n) => `<p>${n}</p>`).join('')}
+      <p class="hint">Een verschil kan een fout van Cewez zijn, maar ook een shift die in de app anders staat. Kijk dus eerst je shiften na.</p>
+      ${nOff ? '<button type="button" class="btn ghost" id="diffShare">Overzicht delen</button>' : ''}</div>`;
+  }
+  // overzicht als tekst, om door te sturen (bv. naar Cewez of je vakbond)
+  function diffText(year) {
+    const list = slipDiffs(year).filter((x) => x.off.length);
+    const tot = diffTotals(list);
+    const lines = [`Verschillen tussen mijn loonbrieven en mijn eigen berekening (${year})`, ''];
+    for (const x of list) lines.push(`${rangeText([x.per.start, x.per.end], { day: 'numeric', month: 'long' })}: ` + x.off.map((f) => `${f.label.toLowerCase()} op de loonbrief ${money(f.slip)}, berekend ${money(f.app)} (verschil ${signed(f.d)})`).join('; '));
+    lines.push('');
+    for (const [k, label] of SLIP_FIELDS) if (tot[k]) lines.push(`Totaal ${label.toLowerCase()}: ${signed(tot[k])}`);
+    return lines.join('\n');
+  }
+  $('diffs').addEventListener('click', async (ev) => {
+    if (!ev.target.closest('#diffShare')) return;
+    const text = diffText(viewYear);
+    try {
+      if (navigator.share) { await navigator.share({ title: 'Verschillen loonbrieven', text }); return; }
+    } catch (err) { if (err?.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(text); alert('Het overzicht is gekopieerd. Plak het in een mail of bericht.'); }
+    catch { alert(text); }
+  });
+
   function render() {
     calc = Loon.calcAll(entries, ctx());
     const title = fmtDate(`${viewYear}-${pad(viewMonth + 1)}-01`, { month: 'long', year: 'numeric' });
@@ -922,6 +988,7 @@ const APP_VERSION = '2026-10-12.1';
     $('perCo').hidden = !$('perCo').innerHTML;
 
     $('slips').innerHTML = slipHtml('A') + slipHtml('B');
+    renderDiffs();
     renderClothing();
     renderMedical();
     renderLeave();
@@ -958,8 +1025,12 @@ const APP_VERSION = '2026-10-12.1';
     const periodsOfYear = Object.values(calc.periods).filter((r) => r.period.start.startsWith(y));
     const d = taxExtras[y] || {};
     const has = (k) => Number(d[k]) > 0 || (k.startsWith('fiche') && String(d[k] ?? '') !== '' && Number(d[k]) === 0);
-    const appTaxable = round2(periodsOfYear.reduce((t, r) => t + r.belastbaar, 0));
-    const appWithheld = round2(periodsOfYear.reduce((t, r) => t + r.voorheffing, 0));
+    // waar je de loonbrief invulde, telt het bedrag van de loonbrief (Cewez kan afwijken van de app)
+    const slipOf = (r) => payslips[r.period.key] || {};
+    const pick = (r, k) => (Number.isFinite(Number(slipOf(r)[k])) && slipOf(r)[k] !== null && slipOf(r)[k] !== '' ? Number(slipOf(r)[k]) : r[k]);
+    const nSlips = periodsOfYear.filter((r) => Object.keys(slipOf(r)).length).length;
+    const appTaxable = round2(periodsOfYear.reduce((t, r) => t + pick(r, 'belastbaar'), 0));
+    const appWithheld = round2(periodsOfYear.reduce((t, r) => t + pick(r, 'voorheffing'), 0));
     const useFiche = has('ficheIncome');
     const ow = otherPayYear(y); // loon van een andere job (vakje Ander werk)
     const taxable = (useFiche ? Number(d.ficheIncome) : appTaxable) + (Number(d.holidayPay) || 0) + (Number(d.income) || 0) + ow.taxable;
@@ -987,7 +1058,7 @@ const APP_VERSION = '2026-10-12.1';
         : 'Ongeveer € 0: je voorheffing dekt je belasting.';
       $('taxTable').innerHTML = [
         useFiche ? row('Belastbaar loon (loonfiche)', Number(d.ficheIncome))
-          : row(`Belastbaar loon in de app (${periodsOfYear.length} uitbetaling${periodsOfYear.length === 1 ? '' : 'en'})`, appTaxable),
+          : row(`Belastbaar loon in de app (${periodsOfYear.length} uitbetaling${periodsOfYear.length === 1 ? '' : 'en'}${nSlips ? `, waarvan ${nSlips} volgens je loonbrief` : ''})`, appTaxable),
         d.holidayPay ? row('Vakantiegeld (vakantiefonds)', Number(d.holidayPay)) : '',
         ow.taxable ? row(`Andere job (${ow.months.length} ${ow.months.length === 1 ? 'maand' : 'maanden'} ingevuld)`, ow.taxable) : '',
         d.income ? row('Ander inkomen', Number(d.income)) : '',
@@ -1608,6 +1679,7 @@ const APP_VERSION = '2026-10-12.1';
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
     ['2026-10-12', [
+      'Verschillen met Cewez bijhouden: vul je loonbrief in (met een foto of zonder foto) en de app houdt per jaar bij waar de loonbrief afwijkt van de berekening, met het totaal en een knop om het overzicht te delen. De belastingbrief in de app rekent met de voorheffing van je loonbrieven.',
       'Nagekeken met een echte loonbrief (september, tweede helft): loon, premie, RSZ, belastbaar, vervoer en maaltijdcheques kloppen tot op de cent. Bij lashing (roro, container, high & heavy: 2 kledijpunten) rekent de app geen kledijvergoeding meer, zoals op de loonbrief. De tweede helft van de maand wordt rond de 2e werkdag betaald.',
     ]],
     ['2026-10-10', [
@@ -1969,6 +2041,13 @@ const APP_VERSION = '2026-10-12.1';
       $('scanCam').value = ''; $('scanPick').value = '';
     }
   }
+  $('scanManual').addEventListener('click', () => {
+    scanned = null; $('scanText').textContent = ''; scanMsg(''); scanProgress(null);
+    $('scanKind').value = $('scanDialog').dataset.kind || 'loonbrief';
+    renderScanFields();
+    $('scanCheck').textContent = 'Vul de bedragen van je papier in. Leeg = niet invullen.';
+    $('scanResult').hidden = false;
+  });
   $('scanCam').addEventListener('change', (ev) => runScan(ev.target.files[0]));
   $('scanPick').addEventListener('change', (ev) => runScan(ev.target.files[0]));
   $('scanKind').addEventListener('change', () => { scanned = null; renderScanFields(); });
