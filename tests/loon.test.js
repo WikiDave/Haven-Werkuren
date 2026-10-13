@@ -61,6 +61,48 @@ test('echte loonbrief september 2026, periode B (betaald 02/10/2026)', () => {
   assert.equal(r.payment.date, '2026-10-02');
 });
 
+test('herverdelingsdag, recupdag en opsparen voor recup (cao 05/07/2022)', () => {
+  const lines = (e, settings = {}) => Loon.shiftLines(e, ctx({ status: 'timetable', ...settings }));
+  const get = (r, key) => r.lines.find((l) => l.key === key)?.amount;
+  // HV: basisloon van de dagshift (08u00) van de functie + vaste premie, geen onkostenvergoedingen
+  const hv = lines({ id: 'h', date: '2026-10-14', kind: 'hv', func: 'alle' });
+  assert.equal(get(hv, 'hv'), 180.12);
+  assert.equal(get(hv, 'premie'), 5.28);
+  for (const k of ['kledij', 'vervoer', 'mtc', 'internet']) assert.equal(get(hv, k), undefined, k);
+  assert.equal(get(lines({ id: 'h2', date: '2026-10-14', kind: 'hv', func: 'tugmaster' }), 'hv'), 216.91); // functieloon chauffeur
+  // recupdag: enkel het opgespaarde loon (= dagloon), geen premie of onkostenvergoeding
+  const rd = lines({ id: 'r', date: '2026-10-14', kind: 'recup', func: 'alle' });
+  assert.deepEqual(rd.lines.map((l) => [l.key, l.amount]), [['recupdag', 180.12]]);
+  // zaterdag met opsparen: 100% uitbetaald (180,12), 50% opgespaard (90,06); premie, kledij en vervoer blijven
+  const za = lines(shift('2026-10-17', '08', { recup: true }));
+  assert.equal(get(za, 'shiftloon'), 180.12);
+  assert.equal(za.saved, 90.06);
+  assert.equal(get(za, 'premie'), 5.28);
+  assert.equal(get(za, 'kledij'), 1.59);
+  assert.ok(get(za, 'vervoer') > 0);
+  // zondag met opsparen: 100% uitbetaald, 100% opgespaard
+  const zo = lines(shift('2026-10-18', '08', { recup: true }));
+  assert.equal(get(zo, 'shiftloon'), 180.12);
+  assert.equal(zo.saved, 180.12);
+  // functieloon: chauffeur op zaterdag 325,37 -> 216,91 uitbetaald, 108,46 opgespaard
+  const cz = lines(shift('2026-10-17', '08', { recup: true, func: 'tugmaster' }));
+  assert.equal(get(cz, 'shiftloon'), 216.91);
+  assert.equal(cz.saved, 108.46);
+  // op een weekdag verandert opsparen niets
+  const wk = lines(shift('2026-10-14', '08', { recup: true }));
+  assert.equal(get(wk, 'shiftloon'), 180.12);
+  assert.equal(wk.saved, 0);
+  // teller: 2 zaterdagen + 1 zondag = 2 recupdagen; 1 opgenomen -> saldo 1
+  const led = Loon.recupLedger([
+    shift('2026-10-03', '08', { recup: true, companyName: 'Cosco' }), shift('2026-10-10', '14', { recup: true, companyName: 'Cosco' }),
+    shift('2026-10-11', '06', { recup: true, companyName: 'Cosco' }), shift('2026-10-12', '08', { recup: true }), shift('2026-10-04', '08'),
+  ], [{ date: '2026-10-13', type: 'recup' }, { date: '2026-11-02', type: 'recup' }], {}, '2026-10-20');
+  assert.deepEqual([led.earned, led.taken, led.planned, led.balance], [2, 1, 1, 1]);
+  assert.deepEqual(led.byCompany, { Cosco: 2 });
+  // vrije dagen geven geen kledijpunten
+  assert.equal(Loon.clothingPointsFor({ date: '2026-10-14', kind: 'hv' }), 0);
+});
+
 test('zondagtarief vanaf 18u00 de dag voor een zon- of feestdag', () => {
   assert.equal(Loon.tariffRow('2026-08-22', '18'), 'ZO'); // zaterdag 22u00
   assert.equal(Loon.tariffRow('2026-08-22', '14'), 'ZA'); // zaterdag overdag

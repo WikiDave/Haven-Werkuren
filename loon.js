@@ -284,6 +284,19 @@
     return start;
   }
 
+  // tariefrij van een shift; een halve shift om 18u00 telt van maandag tot vrijdag als namiddagshift
+  // en op zaterdag als zaterdagshift (loontabel)
+  function rowOf(entry, holidays = {}) {
+    let row = tariffRow(entry.date, entry.code, holidays, entry.tariff);
+    if (entry.kind === 'half' && entry.code === '18' && (entry.tariff || 'auto') === 'auto' && weekday(entry.date) !== 0 && !holidayOn(entry.date, holidays)) {
+      row = weekday(entry.date) === 6 ? 'ZA' : '14';
+    }
+    return row;
+  }
+  // recup (cao 05/07/2022): op zaterdag (150%) en zon- of feestdag (200%) betaald aan 100%, de rest opgespaard;
+  // één recupdag = het opgespaarde loon van 2 zaterdagen of 1 zon- of feestdag
+  const RECUP_FACTOR = { ZA: 1.5, ZO: 2 };
+
   // oudere bewaarde tabellen hebben geen uurloon: dat is het shiftloon / 7,25 betaalde uren
   const rateFor = (ratePeriods, date, row) => {
     const r = validOn(ratePeriods, date).values[row];
@@ -347,12 +360,26 @@
       return { row: null, lines };
     }
 
-    const full = kind === 'full';
-    let row = tariffRow(entry.date, entry.code, ctx.holidays, entry.tariff);
-    // halve shift om 18u00 (loontabel): maandag tot vrijdag 4 uur loon van de namiddagshift, zaterdag van de zaterdagshift
-    if (!full && entry.code === '18' && (entry.tariff || 'auto') === 'auto' && weekday(entry.date) !== 0 && !holidayOn(entry.date, ctx.holidays)) {
-      row = weekday(entry.date) === 6 ? 'ZA' : '14';
+    if (kind === 'hv' || kind === 'recup') {
+      // betaalde vrije dag: basisloon van de dagshift (08u00, 100%) van de functie, zonder onkostenvergoedingen;
+      // een herverdelingsdag krijgt ook de vaste premie, een recupdag is enkel het opgespaarde loon
+      const day = rateFor(ctx.ratePeriods, entry.date, '08');
+      const fnDay = functionOf(entry.func);
+      const groupDay = FUNCTION_GROUPS[fnDay.group];
+      const ownDay = groupDay.kader ? kaderRate(groupDay.kader, entry.date, '08', day, groupDay.extra) : null;
+      const base = ownDay ? ownDay.shift : round2(day.shift + groupDay.extra(day));
+      const fnLabel = fnDay.id === 'alle' ? '' : ` (${fnDay.label.toLowerCase()})`;
+      if (kind === 'hv') {
+        add('hv', `Herverdelingsdag${fnLabel}`, base, 'A');
+        add('premie', 'Vaste premie', p.premie, 'A');
+      } else {
+        add('recupdag', `Recupdag${fnLabel}`, base, 'A');
+      }
+      return { row: '08', lines };
     }
+
+    const full = kind === 'full';
+    const row = rowOf(entry, ctx.holidays);
     const rate = rateFor(ctx.ratePeriods, entry.date, row);
     const fn = functionOf(entry.func);
     const group = FUNCTION_GROUPS[fn.group];
@@ -361,7 +388,12 @@
     const label = `Shiftloon${fn.id === 'alle' ? '' : ` ${fn.label.toLowerCase()}`}${full ? '' : ' (halve shift)'}`;
     // halve shift: 4 uur loon volgens het aanvangsuur (loontabel, ook voor functielonen)
     const hourly = own ? own.uur : round2((rate.shift + group.extra(rate)) * rate.uur / rate.shift);
-    add('shiftloon', label, full ? shiftWage : 4 * hourly, 'A');
+    let wage = round2(full ? shiftWage : 4 * hourly);
+    // opsparen voor recup: 100% uitbetaald, de rest (50% op zaterdag, 100% op zon- en feestdag) opgespaard
+    let saved = 0;
+    const recupFactor = entry.recup ? RECUP_FACTOR[row] : 0;
+    if (recupFactor) { const paid = round2(wage / recupFactor); saved = round2(wage - paid); wage = paid; }
+    add('shiftloon', recupFactor ? `${label} (100%, rest opgespaard voor recup)` : label, wage, 'A');
     add('premie', 'Vaste premie', full ? p.premie : p.premieHalf, 'A');
     add('overuren', 'Overuren', (entry.overtime || 0) * (own ? own.overuur : rate.overuur), 'A');
     // premie markage: bedrag zoals de gebruiker het invulde (oude shiften: true = vast bedrag, enkel volle shift)
@@ -376,7 +408,7 @@
     add('vervoer', s.transport === 'fiets' ? 'Fietsvergoeding' : 'Eigen vervoer', travelAllowance(entry.date, s), 'D');
     if (full && (s.status === 'pool' || s.status === 'timetable')) add('internet', 'Internetvergoeding', p.internet, 'D');
     if (full) add('mtc', 'Maaltijdcheque eigen bijdrage', p.mtcOwn, 'M');
-    return { row, lines };
+    return { row, lines, saved };
   }
 
   // bruto van één shift: alles wat onder RSZ en/of voorheffing valt
@@ -573,8 +605,8 @@
     const s = { ...DEFAULT_SETTINGS, ...ctx.settings };
     const period = periodOf(periodEntries[0].date);
     const shifts = periodEntries.map((e) => {
-      const { row, lines } = shiftLines(e, ctx);
-      return { entry: e, row, lines, bruto: brutoOf(lines) };
+      const { row, lines, saved } = shiftLines(e, ctx);
+      return { entry: e, row, lines, bruto: brutoOf(lines), saved: saved || 0 };
     });
     const all = shifts.flatMap((x) => x.lines);
     const byType = (t) => sum(all.filter((l) => l.type === t).map((l) => l.amount));
@@ -647,7 +679,7 @@
 
   // punten van één shift (afbestelling = niet gewerkt = geen punten)
   function clothingPointsFor(entry) {
-    if (entry.kind === 'afbestel') return 0;
+    if (['afbestel', 'hv', 'recup'].includes(entry.kind)) return 0;
     return validOn(CLOTHING, entry.date).perShift[entry.work === 'lashing' ? 'lashing' : 'other'];
   }
 
@@ -702,6 +734,21 @@
     return { balance, earned, taken, planned, shifts, progress: progress % HV_PER, toNext: HV_PER - (progress % HV_PER), per: HV_PER };
   }
 
+  // recup: opgespaarde dagen (zaterdag = 1/2, zon- of feestdag = 1; halve shift de helft daarvan) min opgenomen recupdagen
+  function recupLedger(entries, leaveDays, holidays = {}, today) {
+    const saved = entries.filter((e) => e.recup && e.kind !== 'afbestel').map((e) => {
+      const row = rowOf(e, holidays);
+      return { date: e.date, company: e.companyName || e.company || '', days: (row === 'ZO' ? 1 : row === 'ZA' ? 0.5 : 0) * (e.kind === 'half' ? 0.5 : 1) };
+    }).filter((x) => x.days && (!today || x.date <= today));
+    const earned = sum(saved.map((x) => x.days));
+    const isRecup = (l) => l.type === 'recup';
+    const taken = leaveDays.filter((l) => isRecup(l) && (!today || l.date <= today)).length;
+    const planned = leaveDays.filter((l) => isRecup(l) && today && l.date > today).length;
+    const byCompany = {};
+    for (const x of saved) byCompany[x.company] = (byCompany[x.company] || 0) + x.days;
+    return { earned, taken, planned, balance: earned - taken, byCompany, max: 25 };
+  }
+
   // --- verlof ---------------------------------------------------------------------
   // verlofdagen tussen twee datums: zondagen en feestdagen tellen niet mee, zaterdagen alleen als je die vraagt
   function leaveDays(from, to, { saturdays = false, overrides = {} } = {}) {
@@ -719,7 +766,7 @@
   const api = {
     round2, addDays, weekday, periodOf, paymentDate,
     START_HOURS, RATE_ROWS, DEFAULT_RATE_PERIODS, FUNCTIONS, FUNCTION_GROUPS, functionOf, isMarkeerder, KADER_RATES, PARAMS, TRAVEL, PLACES, DEFAULT_SETTINGS,
-    legalHolidays, holidays, holidayOn, tariffRow, rateFor, travelAllowance, travelInfo, travelEstimate, POSTCODES,
+    legalHolidays, holidays, holidayOn, tariffRow, rateFor, travelAllowance, travelInfo, travelEstimate, POSTCODES, rowOf, RECUP_FACTOR, recupLedger,
     DEFAULT_WITHHOLDING, DEFAULT_INCOME_TAX, setTaxTables, getTaxTables, normalizeTable, shiftLines, estimateWithholding, estimateAnnualTax, calcPeriod, calcAll,
     CLOTHING, CLOTHING_ITEMS, clothingPointsFor, clothingLedger, leaveDays, workedDays, hvLedger,
   };
