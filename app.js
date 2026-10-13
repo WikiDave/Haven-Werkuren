@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-13.1';
+const APP_VERSION = '2026-10-13.2';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1677,7 +1677,7 @@ const APP_VERSION = '2026-10-13.1';
     $('clItem').innerHTML = Object.entries(PACKS).map(([pack, title]) => `<optgroup label="${title}">${
       Loon.CLOTHING_ITEMS.filter((i) => i.pack === pack).map((i) => {
         const short = i.points - l.balance;
-        return `<option value="${i.id}">${escapeHtml(i.name)} · ${i.points} p${short > 0 ? ` (nog ${short} tekort)` : ''}</option>`;
+        return `<option value="${i.id}">${escapeHtml(i.name)}${i.leaving ? ' (verdwijnt uit het gamma)' : ''} · ${i.points} p${short > 0 ? ` (nog ${short} tekort)` : ''}</option>`;
       }).join('')}</optgroup>`).join('');
     if (cur) $('clItem').value = cur;
 
@@ -1730,6 +1730,7 @@ const APP_VERSION = '2026-10-13.1';
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
     ['2026-10-13', [
+      'Nagekeken met de Codex en de loontabel van 1 juli 2026: een halve shift is nu 4 uur loon volgens het aanvangsuur (om 18u00 op een weekdag: 4 uur van de namiddagshift, op zaterdag van de zaterdagshift); vroeger rekende de app de helft van het shiftloon. De kledijlijst volgt bijlage 11 van juli 2026 (buff erbij, helm bij het minimumpakket, softshell bij aanvullend). Alle lonen, premies en de vervoerstabel kloppen met Cewez.',
       'Belastingschijven: bij Belastingbrief zie je je bruto en netto belastbaar loon van het jaar, in welke schijf je zit en hoeveel je nog hebt tot de volgende (de 50% begint bij ± € 57.140 bruto belastbaar). Het jaaroverzicht toont ook je bruto belastbaar loon. Met dank voor de vraag!',
     ]],
     ['2026-10-12', [
