@@ -863,6 +863,7 @@
     <h2 id="dayTitle"></h2>
     <p class="hint" id="dayNote" hidden></p>
     <p class="leaveday" id="dayLeaveNote" hidden></p>
+    <div id="lvFuncWrap" hidden><label for="lvFunc">Betaald volgens de functie</label><select id="lvFunc"></select></div>
     <p class="payday" id="dayPayNote" hidden></p>
     <ul class="list" id="list"></ul>
     <div class="dayoff" id="dayOff">
@@ -940,6 +941,7 @@
       </div>
       <label for="code">Start</label>
       <select id="code"></select>
+      <label class="check" id="recupWrap" hidden><input type="checkbox" id="recup"> Opsparen voor recup: je krijgt 100%, de rest (50% op zaterdag, 100% op zon- en feestdag) wordt opgespaard</label>
 
       <label for="ot">Overuren (na 7u45), bv. 1u30 of 1,5</label>
       <input id="ot" inputmode="decimal" placeholder="0">
@@ -1026,6 +1028,9 @@
       <h3 class="taxh">Herverdelingsdagen</h3>
       <p class="medstatus" id="hvStatus"></p>
       <p class="hint">Per 25 gewerkte shiften bouw je 1 herverdelingsdag (HV) op. Aanvragen doe je telefonisch of online, ten laatste om 11u00 dezelfde dag. Een HV blijft 3 jaar geldig (langer bij ziekte of ongeval) en wordt niet uitbetaald als je hem niet opneemt. Neem je er een, kies dan hierboven als soort "Herverdelingsdag (HV)".</p>
+      <h3 class="taxh">Recup (opsparen)</h3>
+      <p class="medstatus" id="recupStatus"></p>
+      <p class="hint">Werkt je werkgever met recup, dan kies je zelf: opsparen of alles laten uitbetalen. Spaar je op, dan krijg je op zaterdag en op zon- en feestdagen 100% uitbetaald; de rest (50% op zaterdag, 100% op zon- en feestdag) wordt opgespaard. Eén recupdag = 2 zaterdagen of 1 zon- of feestdag. Op een recupdag krijg je het opgespaarde loon, zonder kledij- of vervoersvergoeding. Maximaal 25 dagen per werkgever, op te nemen binnen 3 jaar. Vink "Opsparen voor recup" aan bij je shift.</p>
       <details id="hvStartBox">
         <summary>Je tegoed invullen</summary>
         <p class="hint">Kijk online of in je prestatieboek hoeveel HV je hebt en hoeveel shiften je al opbouwde naar de volgende. Shiften en HV na die datum telt de app er zelf bij.</p>
@@ -1399,9 +1404,9 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="postcodes.js?v=2026-10-13.2"></script>
-<script src="loon.js?v=2026-10-13.2"></script>
-<script src="scan.js?v=2026-10-13.2"></script>
-<script src="app.js?v=2026-10-13.2"></script>
+<script src="postcodes.js?v=2026-10-13.3"></script>
+<script src="loon.js?v=2026-10-13.3"></script>
+<script src="scan.js?v=2026-10-13.3"></script>
+<script src="app.js?v=2026-10-13.3"></script>
 </body>
 </html>

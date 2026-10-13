@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-13.2';
+const APP_VERSION = '2026-10-13.3';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -612,8 +612,10 @@ const APP_VERSION = '2026-10-13.2';
     $('code').value = '08';
   }
 
+  // opsparen voor recup kan enkel als erkende havenarbeider, voor een gewerkte shift aan zaterdag- of zondagtarief
+  const recupAllowed = (e) => settings.status !== 'gelegenheid' && e.kind !== 'afbestel' && !!Loon.RECUP_FACTOR[Loon.rowOf(e, holidayOverrides)];
   function readForm() {
-    return {
+    const e = {
       id: '__preview',
       date: $('date').value, code: $('code').value, kind: $('kind').value, tariff: $('tariff').value, work: $('work').value, func: $('func').value,
       wijziging: $('wijziging').checked, markage: premieAmount('markage'), lash: premieAmount('lash'),
@@ -621,6 +623,8 @@ const APP_VERSION = '2026-10-13.2';
       loc: companyId ? currentLoc() : '', locName: (companyId && locationsOf(companyId).length > 1 && locationOf(companyId, currentLoc())?.name) || '',
       overtime: parseHours($('ot').value), note: $('note').value.trim(),
     };
+    e.recup = recupAllowed(e) && $('recup').checked;
+    return e;
   }
 
   // premies die per bedrijf verschillen: de gebruiker vult het bedrag in, de app onthoudt het per bedrijf
@@ -659,13 +663,14 @@ const APP_VERSION = '2026-10-13.2';
     $('funcHint').textContent = Loon.FUNCTION_GROUPS[fn.group].kader ? `Loon ${fn.label.toLowerCase()} volgens de loontabel (shift, uur en overuren).`
       : fn.group === 'alle' ? '' : Loon.FUNCTION_GROUPS[fn.group].label.replace(/^[^(]*\(/, 'Loon alle werk (').replace(/\)$/, ')');
     $('markageWrap').hidden = !Loon.isMarkeerder(fn.id);
+    $('recupWrap').hidden = !recupAllowed(e);
     if (Number.isNaN(e.overtime)) { $('preview').textContent = '—'; $('previewNet').textContent = ''; return; }
     // netto van deze shift: bereken de uitbetaling opnieuw met deze shift erbij
     const key = Loon.periodOf(e.date).key;
-    const same = entries.filter((x) => Loon.periodOf(x.date).key === key);
+    const same = [...entries, ...paidLeave()].filter((x) => Loon.periodOf(x.date).key === key);
     const x = Loon.calcAll([...same, e], ctx()).shifts[e.id];
     $('preview').textContent = money(x.bruto);
-    $('previewNet').textContent = `netto ± ${money(x.netto)}`;
+    $('previewNet').textContent = `netto ± ${money(x.netto)}${x.saved ? ` · opgespaard voor recup ${money(x.saved)}` : ''}`;
   }
 
   function addEntry() {
@@ -681,6 +686,7 @@ const APP_VERSION = '2026-10-13.2';
     }
     e.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     if (e.kind === 'afbestel') { e.overtime = 0; e.wijziging = false; }
+    if (!e.recup) delete e.recup;
     entries.push(e);
     save(KEY_ENTRIES, entries);
     save(KEY_LAST_WORK, e.work);
@@ -702,7 +708,7 @@ const APP_VERSION = '2026-10-13.2';
       const x = shiftOf(e);
       t.bruto = round2(t.bruto + x.bruto); t.netto = round2(t.netto + x.netto);
       t.otH += overtimeOf(e);
-      t.shifts += e.kind === 'afbestel' ? 0 : 1;
+      t.shifts += ['afbestel', 'hv', 'recup'].includes(e.kind) ? 0 : 1;
       return t;
     }, { bruto: 0, netto: 0, otH: 0, shifts: 0 });
   }
@@ -789,7 +795,13 @@ const APP_VERSION = '2026-10-13.2';
     const part = dp ? dopPart(selected) : 0;
     $('dayLeaveNote').hidden = !lv && !dp && !ow;
     $('dayLeaveNote').classList.toggle('dop', !!(dp || ow));
-    if (lv) $('dayLeaveNote').textContent = `${['ziek', 'ao'].includes(lv.type) ? 'Niet gewerkt' : 'Verlof'}: ${LEAVE_TYPES[lv.type] || 'verlof'}`;
+    if (lv) {
+      const paid = PAID_LEAVE[lv.type] ? calc.shifts[`lv-${lv.date}`] : null;
+      $('dayLeaveNote').textContent = `${['ziek', 'ao'].includes(lv.type) ? 'Niet gewerkt' : 'Verlof'}: ${LEAVE_TYPES[lv.type] || 'verlof'}`
+        + (paid ? ` · betaald ${money(paid.bruto)} bruto, netto ± ${money(paid.netto)}` : '');
+    }
+    $('lvFuncWrap').hidden = !(lv && PAID_LEAVE[lv.type]);
+    if (lv && PAID_LEAVE[lv.type]) $('lvFunc').value = lv.func || 'alle';
     else if (dp) $('dayLeaveNote').textContent = 'Dop (werkloosheid)' + (part === 0.5 ? ': halve dag, naast je halve shift' : part === 0 ? ': telt niet mee, want er staat een volle shift' : '');
     else if (ow) $('dayLeaveNote').textContent = 'Ander werk (andere job)';
     $('dayOff').hidden = !!(lv || dp || ow);
@@ -814,6 +826,7 @@ const APP_VERSION = '2026-10-13.2';
         e.overtime && e.kind !== 'afbestel' ? `<span class="ot">${fmtHours(e.overtime)} overuren (${money(ot?.amount)})</span>` : '',
         e.wijziging ? 'wijzigingsvergoeding' : '',
         `netto ± ${money(x.netto)}`,
+        x.saved ? `opgespaard voor recup ${money(x.saved)}` : '',
         clothingLabel(e),
         e.locName ? escapeHtml(e.locName) : '',
         e.kaai ? `kaai ${escapeHtml(e.kaai)}` : '',
@@ -952,13 +965,14 @@ const APP_VERSION = '2026-10-13.2';
   });
 
   function render() {
-    calc = Loon.calcAll(entries, ctx());
+    calc = Loon.calcAll([...entries, ...paidLeave()], ctx());
     const title = fmtDate(`${viewYear}-${pad(viewMonth + 1)}-01`, { month: 'long', year: 'numeric' });
     $('monthTitle').textContent = title;
     $('sumTitle').textContent = 'Overzicht ' + title;
     document.querySelectorAll('#showMode button').forEach((b) => b.classList.toggle('on', b.dataset.m === showMode));
     const list = monthEntries(viewYear, viewMonth);
-    const t = totals(list);
+    const monthPrefix = `${viewYear}-${pad(viewMonth + 1)}`;
+    const t = totals([...list, ...paidLeave().filter((e) => e.date.startsWith(monthPrefix))]); // HV en recup tellen mee in het bedrag
     const anyEstimate = list.some((e) => calc.periods[Loon.periodOf(e.date).key]?.estimate);
     $('sumLabel').innerHTML = showMode === 'netto' ? `Totaal netto${anyEstimate ? ' <span class="est">schatting</span>' : ''}` : 'Totaal bruto';
     $('tTotalTop').textContent = money(shown(t));
@@ -1003,7 +1017,7 @@ const APP_VERSION = '2026-10-13.2';
     renderCalendar();
     renderDay();
 
-    const yt = totals(entries.filter((e) => e.date.startsWith(String(viewYear))));
+    const yt = totals([...entries, ...paidLeave()].filter((e) => e.date.startsWith(String(viewYear))));
     $('yearLine').textContent = `Heel ${viewYear}: ${money(yt.bruto)} bruto, ${money(yearFigures(viewYear).taxable)} bruto belastbaar, ± ${money(yt.netto)} netto, ${fmtHours(yt.otH)} overuren. Belastingschijven: zie Belastingbrief.`;
   }
 
@@ -1236,6 +1250,12 @@ const APP_VERSION = '2026-10-13.2';
   const hvStats = () => Loon.hvLedger(entries, leave, settings.hvStart || {}, isoDate(today));
   const leaveEnabled = () => settings.status !== 'gelegenheid'; // rode kaart: geen verlof, wel Alfapas-teller
   const leaveOn = (iso) => (leaveEnabled() ? leave.find((l) => l.date === iso) : undefined);
+  // betaalde vrije dagen (HV en recup) als dag in de loonberekening, met de functie van die dag
+  const PAID_LEAVE = { herverdeling: 'hv', recup: 'recup' };
+  function paidLeave() {
+    return leaveEnabled() ? leave.filter((l) => PAID_LEAVE[l.type])
+      .map((l) => ({ id: `lv-${l.date}`, date: l.date, kind: PAID_LEAVE[l.type], func: l.func || 'alle', overtime: 0 })) : [];
+  }
   const newGroupId = () => 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const saveLeave = () => { leave.sort((a, b) => a.date.localeCompare(b.date)); save(KEY_LEAVE, leave); };
   // samen aangevraagde dagen als één blok tonen
@@ -1288,6 +1308,13 @@ const APP_VERSION = '2026-10-13.2';
       + (hv.planned ? ` (en ${hv.planned} gepland)` : '')
       + ` · nog ${hv.toNext} shift${hv.toNext === 1 ? '' : 'en'} tot je volgende (${hv.progress}/${hv.per}).`
       + (st0.date ? '' : ' Vul je tegoed in, dan klopt het.');
+    const rc = Loon.recupLedger(entries, leave, holidayOverrides, isoDate(today));
+    const half = (n) => String(n).replace('.', ',');
+    $('recupStatus').className = 'medstatus' + (rc.balance < 0 ? ' warn' : '');
+    $('recupStatus').textContent = rc.earned || rc.taken || rc.planned
+      ? `Saldo: ${half(rc.balance)} recupdag${rc.balance === 1 ? '' : 'en'} (${half(rc.earned)} opgespaard, ${rc.taken} opgenomen${rc.planned ? `, ${rc.planned} gepland` : ''}).`
+        + Object.entries(rc.byCompany).filter(([co]) => co).map(([co, d]) => ` ${co}: ${half(d)} opgespaard.`).join('')
+      : 'Nog niets opgespaard.';
     $('hvBal').value = st0.balance ?? '';
     $('hvCnt').value = st0.count ?? '';
     $('hvDate').value = st0.date || '';
@@ -1296,7 +1323,7 @@ const APP_VERSION = '2026-10-13.2';
     const days = Loon.leaveDays(from, to, { saturdays, overrides: holidayOverrides }).filter((d) => !leave.some((l) => l.date === d));
     if (!days.length) return 0;
     const g = newGroupId();
-    leave.push(...days.map((date) => ({ date, type, g })));
+    leave.push(...days.map((date) => ({ date, type, g, ...(PAID_LEAVE[type] ? { func: $('func').value } : {}) })));
     saveLeave();
     return days.length;
   }
@@ -1345,10 +1372,16 @@ const APP_VERSION = '2026-10-13.2';
       otherDays.push(selected); saveOther();
     } else {
       if (dayEntries(selected).length && !confirm('Op deze dag staat al een shift. Toch verlof zetten?')) return;
-      leave.push({ date: selected, type, g: newGroupId() });
+      leave.push({ date: selected, type, g: newGroupId(), ...(PAID_LEAVE[type] ? { func: $('func').value } : {}) });
       saveLeave();
     }
     render();
+  });
+  $('lvFunc').addEventListener('change', () => {
+    const lv = leave.find((l) => l.date === selected);
+    if (!lv) return;
+    lv.func = $('lvFunc').value;
+    saveLeave(); render();
   });
   $('dayOffDel').addEventListener('click', () => {
     if (leaveOn(selected)) { leave = leave.filter((l) => l.date !== selected); saveLeave(); }
@@ -1730,6 +1763,7 @@ const APP_VERSION = '2026-10-13.2';
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
     ['2026-10-13', [
+      'Herverdelingsdagen (HV) en recupdagen worden nu betaald in de berekening: het dagloon van je functie (een HV ook met de vaste premie), zonder kledij- of vervoersvergoeding. Kies de functie van die dag in de dag zelf. Nieuw: "Opsparen voor recup" bij een shift op zaterdag, zondag of feestdag (100% uitbetaald, de rest opgespaard), met je recupsaldo bij Verlof. Met dank voor de tip!',
       'Nagekeken met de Codex en de loontabel van 1 juli 2026: een halve shift is nu 4 uur loon volgens het aanvangsuur (om 18u00 op een weekdag: 4 uur van de namiddagshift, op zaterdag van de zaterdagshift); vroeger rekende de app de helft van het shiftloon. De kledijlijst volgt bijlage 11 van juli 2026 (buff erbij, helm bij het minimumpakket, softshell bij aanvullend). Alle lonen, premies en de vervoerstabel kloppen met Cewez.',
       'Belastingschijven: bij Belastingbrief zie je je bruto en netto belastbaar loon van het jaar, in welke schijf je zit en hoeveel je nog hebt tot de volgende (de 50% begint bij ± € 57.140 bruto belastbaar). Het jaaroverzicht toont ook je bruto belastbaar loon. Met dank voor de vraag!',
     ]],
@@ -2716,7 +2750,7 @@ const APP_VERSION = '2026-10-13.2';
     const iso = ev.target.closest('button[data-date]')?.dataset.date;
     if (iso) selectDay(iso, true);
   });
-  ['code', 'kind', 'tariff', 'func', 'ot', 'wijziging', 'markage', 'lash'].forEach((id) => $(id).addEventListener('input', updatePreview));
+  ['code', 'kind', 'tariff', 'func', 'ot', 'wijziging', 'markage', 'lash', 'recup'].forEach((id) => $(id).addEventListener('input', updatePreview));
   $('add').addEventListener('click', addEntry);
   // bij maandwissel: zelfde dagnummer selecteren (of laatste dag van de maand)
   const shiftMonth = (delta) => {
@@ -2743,6 +2777,7 @@ const APP_VERSION = '2026-10-13.2';
   $('func').innerHTML = Object.entries(Loon.FUNCTION_GROUPS).map(([g, grp]) => `<optgroup label="${grp.label}">${
     Loon.FUNCTIONS.filter((f) => f.group === g).map((f) => `<option value="${f.id}">${f.label}</option>`).join('')}</optgroup>`).join('');
   $('func').value = load(KEY_LAST_FUNC, 'alle');
+  $('lvFunc').innerHTML = $('func').innerHTML;
   $('clDate').value = isoDate(today);
   $('medDate').value = isoDate(today);
   renderSettings();
