@@ -148,6 +148,17 @@ test('halve shift, pool en maaltijdcheque', () => {
   assert.equal(half.find((l) => l.key === 'kledij').amount, 1.59);
   assert.equal(half.find((l) => l.key === 'internet'), undefined);
   assert.equal(half.find((l) => l.key === 'mtc'), undefined);
+  // loontabel: 4 uur loon volgens het aanvangsuur van de halve shift
+  const wageOf = (date, code) => Loon.shiftLines(shift(date, code, { kind: 'half' }), ctx()).lines.find((l) => l.key === 'shiftloon').amount;
+  assert.equal(wageOf('2026-09-23', '06'), 104.36);  // 4 x 26,09
+  assert.equal(wageOf('2026-09-23', '08'), 99.36);   // 4 x 24,84 (niet de helft van 180,12)
+  assert.equal(wageOf('2026-09-23', '10'), 106.84);  // 4 x 26,71
+  assert.equal(wageOf('2026-09-23', '14'), 114.28);  // 4 x 28,57
+  assert.equal(wageOf('2026-09-23', '18'), 114.28);  // 18u00 op een weekdag: 4 uur van de namiddagshift
+  assert.equal(wageOf('2026-09-26', '18'), 149.08);  // 18u00 op zaterdag: 4 uur van de zaterdagshift (niet zondag)
+  assert.equal(wageOf('2026-09-26', '08'), 149.08);  // zaterdag
+  const halfLines = Loon.shiftLines(shift('2026-09-23', '08', { kind: 'half' }), ctx()).lines;
+  assert.equal(halfLines.find((l) => l.key === 'vervoer').amount, Loon.travelAllowance('2026-09-23', Loon.DEFAULT_SETTINGS)); // volledige verplaatsing
 });
 
 test('geschat netto per shift verdeelt het periodenetto naar bruto', () => {
@@ -218,6 +229,14 @@ test('kledijartikelen uit bijlage 11', () => {
   assert.equal(parka.points, 90);
   assert.equal(parka.pack, 'minimum');
   assert.equal(new Set(Loon.CLOTHING_ITEMS.map((i) => i.id)).size, Loon.CLOTHING_ITEMS.length);
+  // versie juli 2026: 33 artikelen, buff erbij, Albatros-schoenen weg, helm bij minimum, softshell bij aanvullend
+  const item = (name) => Loon.CLOTHING_ITEMS.find((i) => i.name === name);
+  assert.equal(Loon.CLOTHING_ITEMS.length, 33);
+  assert.deepEqual([item('Buff').pack, item('Buff').points], ['aanvullend', 12]);
+  assert.equal(item('Albatros schoenen'), undefined);
+  assert.equal(item('Helm').pack, 'minimum');
+  assert.equal(item('Softshell').pack, 'aanvullend');
+  assert.ok(item('Signalisatiebroek').leaving && item('Signalisatiebretelbroek').leaving);
 });
 
 test('functielonen: eigen kolom in de loontabel vanaf 7 juli 2026, daarvoor Codex art. 31', () => {
@@ -232,7 +251,7 @@ test('functielonen: eigen kolom in de loontabel vanaf 7 juli 2026, daarvoor Code
   assert.equal(line('2026-10-06', '08', 'tugmaster', 'overuren', { overtime: 1 }), 44.88); // overuur chauffeur, niet 37,26
   assert.equal(line('2026-10-06', '14', 'straddle', 'overuren', { overtime: 2 }), 120.66); // 2 x 60,33
   const half = Loon.shiftLines(shift('2026-10-06', '08', { func: 'tugmaster', kind: 'half' }), ctx()).lines.find((l) => l.key === 'shiftloon');
-  assert.ok(Math.abs(half.amount - 108.455) < 0.006);
+  assert.equal(half.amount, 119.68); // 4 uur x 29,92 (uurloon chauffeur 08u00)
   // voor 7 juli 2026: basisloon + 1 x overuurloon (174,49 + 36,11), overuur in dezelfde verhouding
   assert.equal(wage('2026-06-02', '08', 'tugmaster'), 210.60);
   assert.equal(line('2026-06-02', '08', 'tugmaster', 'overuren', { overtime: 1 }), 43.58);

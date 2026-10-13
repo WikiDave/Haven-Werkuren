@@ -348,15 +348,20 @@
     }
 
     const full = kind === 'full';
-    const row = tariffRow(entry.date, entry.code, ctx.holidays, entry.tariff);
+    let row = tariffRow(entry.date, entry.code, ctx.holidays, entry.tariff);
+    // halve shift om 18u00 (loontabel): maandag tot vrijdag 4 uur loon van de namiddagshift, zaterdag van de zaterdagshift
+    if (!full && entry.code === '18' && (entry.tariff || 'auto') === 'auto' && weekday(entry.date) !== 0 && !holidayOn(entry.date, ctx.holidays)) {
+      row = weekday(entry.date) === 6 ? 'ZA' : '14';
+    }
     const rate = rateFor(ctx.ratePeriods, entry.date, row);
     const fn = functionOf(entry.func);
     const group = FUNCTION_GROUPS[fn.group];
     const own = group.kader ? kaderRate(group.kader, entry.date, row, rate, group.extra) : null; // eigen loon uit de loontabel
     const shiftWage = own ? own.shift : round2(rate.shift + group.extra(rate));
     const label = `Shiftloon${fn.id === 'alle' ? '' : ` ${fn.label.toLowerCase()}`}${full ? '' : ' (halve shift)'}`;
-    // aanname: een halve shift = de helft van het (functie)loon
-    add('shiftloon', label, full ? shiftWage : shiftWage / 2, 'A');
+    // halve shift: 4 uur loon volgens het aanvangsuur (loontabel, ook voor functielonen)
+    const hourly = own ? own.uur : round2((rate.shift + group.extra(rate)) * rate.uur / rate.shift);
+    add('shiftloon', label, full ? shiftWage : 4 * hourly, 'A');
     add('premie', 'Vaste premie', full ? p.premie : p.premieHalf, 'A');
     add('overuren', 'Overuren', (entry.overtime || 0) * (own ? own.overuur : rate.overuur), 'A');
     // premie markage: bedrag zoals de gebruiker het invulde (oude shiften: true = vast bedrag, enkel volle shift)
@@ -624,19 +629,21 @@
     max: 300,
     perShift: { lashing: 2, other: 1 }, // lashing roro / container / high & heavy = 2; al de rest = 1
   }];
+  // bijlage 11 (versie juli 2026); "verdwijnt" = verdwijnt uit het gamma
   const CLOTHING_ITEMS = [
     ['minimum', 'Handschoenen (per paar)', 2], ['minimum', 'Oordopjes', 2], ['minimum', 'Impacthandschoenen (per paar)', 3],
-    ['minimum', 'Fluo gilet', 9], ['minimum', 'Signalisatiebroek', 27], ['minimum', 'Broek stretch', 30],
-    ['minimum', 'Helm met veiligheidsbril', 34], ['minimum', 'Sweater', 37], ['minimum', 'Samurai merlot schoenen', 46],
-    ['minimum', 'Albatros schoenen', 66], ['minimum', 'Elten schoenen', 81], ['minimum', 'Winterparka', 90],
-    ['basis', 'Signaalfluitje', 2], ['basis', 'Zonnebril', 8], ['basis', 'Stootpet', 20], ['basis', 'Helm', 26],
-    ['basis', 'Signalisatieregenbroek', 28], ['basis', 'Signalisatiebretelbroek', 38], ['basis', 'Softshell', 40],
+    ['minimum', 'Fluo gilet', 9], ['minimum', 'Helm', 26], ['minimum', 'Signalisatiebroek', 27, 'verdwijnt'],
+    ['minimum', 'Broek stretch', 30], ['minimum', 'Helm met veiligheidsbril', 34], ['minimum', 'Sweater', 37],
+    ['minimum', 'Samurai merlot schoenen', 46], ['minimum', 'Elten schoenen', 81], ['minimum', 'Winterparka', 90],
+    ['basis', 'Signaalfluitje', 2], ['basis', 'Zonnebril', 8], ['basis', 'Stootpet', 20],
+    ['basis', 'Signalisatieregenbroek', 28], ['basis', 'Signalisatiebretelbroek', 38, 'verdwijnt'],
     ['basis', 'Bretelbroek stretch', 40], ['basis', 'Otoplastieken (op maat)', 60], ['basis', 'Winterlaarzen', 79],
     ['aanvullend', 'Life saving kiss', 2], ['aanvullend', 'Zweetbandje helm', 2], ['aanvullend', 'Schoenveters', 2],
     ['aanvullend', 'Helmmuts', 9], ['aanvullend', 'Helmcover signaalman', 11], ['aanvullend', 'Helmcover foreman', 11],
-    ['aanvullend', 'Thermisch onderbroek', 11], ['aanvullend', 'Thermisch onderhemd', 11],
-    ['aanvullend', 'Signalisatie t-shirt', 21], ['aanvullend', 'Regenlaarzen', 36], ['aanvullend', 'Winteroverall', 140],
-  ].map(([pack, name, points]) => ({ id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-$/, ''), pack, name, points }));
+    ['aanvullend', 'Thermisch onderbroek', 11], ['aanvullend', 'Thermisch onderhemd', 11], ['aanvullend', 'Buff', 12],
+    ['aanvullend', 'Signalisatie t-shirt', 21], ['aanvullend', 'Regenlaarzen', 36], ['aanvullend', 'Softshell', 40],
+    ['aanvullend', 'Winteroverall', 140],
+  ].map(([pack, name, points, note]) => ({ id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-$/, ''), pack, name, points, ...(note ? { leaving: true } : {}) }));
 
   // punten van één shift (afbestelling = niet gewerkt = geen punten)
   function clothingPointsFor(entry) {
