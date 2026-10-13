@@ -36,6 +36,31 @@ test('echte loonbrief Cewez augustus 2026, periode A (betaald 19/08/2026)', () =
   assert.equal(line('internet'), undefined); // gelegenheidsarbeider: geen internetvergoeding
 });
 
+test('echte loonbrief september 2026, periode B (betaald 02/10/2026)', () => {
+  // 9 volle shiften, gelegenheidsarbeider, eigen vervoer vanuit Assebroek, ongehuwd; 19/09 Speed Lashing (P&O)
+  const shifts = [
+    shift('2026-09-17', '08'), shift('2026-09-18', '07'), shift('2026-09-19', '07', { work: 'lashing' }),
+    shift('2026-09-22', '10'), shift('2026-09-23', '08'), shift('2026-09-24', '11'), shift('2026-09-25', '15'),
+    shift('2026-09-26', '14'), shift('2026-09-28', '06'),
+  ];
+  const r = Loon.calcPeriod(shifts, ctx({ status: 'gelegenheid', place: 'Assebroek', civil: 'ongehuwd' }));
+  const total = (key) => Loon.round2(r.lines.filter((l) => l.key === key).reduce((a, l) => a + l.amount, 0));
+  assert.deepEqual(r.shifts.map((x) => x.row), ['08', '07', 'ZA', '10', '08', '11', '15', 'ZA', '06']);
+  assert.equal(total('shiftloon'), 1876.64);
+  assert.equal(total('premie'), 47.52);
+  assert.equal(r.basisRsz, 1924.16);
+  assert.equal(r.rsz, 271.61);
+  assert.equal(r.belastbaar, 1652.55);
+  assert.equal(total('kledij'), 12.72);  // 8 x 1,59: niet op de lashingdag
+  assert.equal(total('vervoer'), 24.84); // 9 x 2,76
+  assert.equal(r.D, 37.56);
+  assert.equal(r.mtc, 9.81);
+  // Cewez hield 361,92 voorheffing in; de sleutelformule geeft 371,92 (precies 10 euro meer, nog uit te zoeken)
+  assert.equal(r.voorheffing, 371.92);
+  assert.equal(r.netto, Loon.round2(1318.38 - 10));
+  assert.equal(r.payment.date, '2026-10-02');
+});
+
 test('zondagtarief vanaf 18u00 de dag voor een zon- of feestdag', () => {
   assert.equal(Loon.tariffRow('2026-08-22', '18'), 'ZO'); // zaterdag 22u00
   assert.equal(Loon.tariffRow('2026-08-22', '14'), 'ZA'); // zaterdag overdag
@@ -65,8 +90,8 @@ test('uitbetalingsperiodes', () => {
   assert.equal(Loon.periodOf('2026-09-15').key, '2026-09-A');
   assert.equal(Loon.periodOf('2026-09-16').key, '2026-09-B');
   assert.equal(Loon.periodOf('2026-09-30').end, '2026-09-30');
-  // periode B september: 3e werkdag na 30/09 = maandag 5 oktober
-  assert.equal(Loon.paymentDate(Loon.periodOf('2026-09-20')).date, '2026-10-05');
+  // periode B september: betaald op de 2e werkdag na 30/09 = vrijdag 2 oktober (loonbrief)
+  assert.equal(Loon.paymentDate(Loon.periodOf('2026-09-20')).date, '2026-10-02');
 });
 
 test('bedrijfsvoorheffing volgens de sleutelformule 2026', () => {
@@ -323,18 +348,48 @@ test('foreman en ceelbaas: eigen loon uit de loontabel, markeerder met premie ma
   assert.equal(get(Loon.shiftLines(shift('2026-10-10', '08', { func: 'foreman' }), ctx({})).lines, 'shiftloon'), 336.83); // zaterdag
 });
 
-test('vervoersvergoeding per postcode: tabel van Cewez, anders geschat op afstand', () => {
+test('vervoersvergoeding per postcode: bedrag uit de tabel, anders geschat op afstand', () => {
   const al = (settings) => Loon.travelAllowance('2026-10-06', { transport: 'auto', ...settings });
   assert.equal(al({ place: 'Brugge' }), 2.55);                 // woonplaats zoals voorheen
-  const info = (pc) => Loon.travelInfo('2026-10-06', { postcode: pc });
-  assert.equal(info('8380').amount, 1.68);                     // Zeebrugge: minimum
-  assert.ok(Math.abs(info('8000').amount - 2.55) < 0.6);       // Brugge: dicht bij de tabel (2,55)
-  assert.ok(Math.abs(info('8400').amount - 3.45) < 0.6);       // Oostende: dicht bij de tabel (3,45)
-  const gent = Loon.travelInfo('2026-10-06', { postcode: '9000' });
-  assert.equal(gent.source, 'schatting');
-  assert.ok(gent.amount > 4.5 && gent.amount < 6.5, String(gent.amount));
-  const brussel = Loon.travelInfo('2026-10-06', { postcode: '1000' });
-  assert.ok(brussel.amount > gent.amount && brussel.km > 90);
+  const info = (pc, place) => Loon.travelInfo('2026-10-06', { postcode: pc, place });
+  // postcodes met deelgemeenten in de tabel: het bedrag uit de tabel, de hoofdgemeente tenzij je een andere kiest
+  assert.equal(info('8380').amount, 1.68);                     // Zeebrugge
+  assert.equal(info('8380', 'Dudzele').amount, 1.77);
+  assert.equal(info('8000').amount, 2.55);                     // Brugge (was geschat op 2,39)
+  assert.equal(info('8000').place, 'Brugge');
+  assert.deepEqual(info('8000').places, ['Brugge', 'Koolkerke']);
+  assert.equal(info('8000', 'Koolkerke').amount, 2.16);
+  assert.equal(info('8000', 'Assebroek').amount, 2.55);        // oude woonplaats buiten de postcode telt niet
+  assert.equal(info('8400').amount, 3.45);                     // Oostende
+  assert.equal(info('8400', 'Stene').amount, 3.59);
+  assert.equal(info('8020').amount, 3.15);                     // Oostkamp
+  assert.equal(info('8020', 'Herstberge').amount, 3.59);       // Hertsberge
+  assert.equal(info('8301').amount, 1.68);                     // Heist
+  assert.equal(info('8730', 'Sint-Joris').amount, 3.59);       // Sint-Joris bij Beernem ...
+  assert.equal(info('8620').source, 'schatting');              // ... niet Sint-Joris bij Nieuwpoort
+  assert.equal(info('8600').source, 'schatting');              // Oostkerke bij Diksmuide is niet die van Damme
+  // elke tabelplaats met een Belgische postcode zit in de lijst, met het juiste bedrag
+  const table = Loon.TRAVEL[Loon.TRAVEL.length - 1].table;
+  const listed = new Set(Object.values(Loon.POSTCODES).flatMap((p) => p[2] || []));
+  for (const place of Object.keys(table)) {
+    if (!['Sluis', 'Zuidzande', 'Oostburg', 'Aardenburg', 'Eede', 'Eede-Aardenburg', 'Schoondijke'].includes(place)) assert.ok(listed.has(place), place);
+  }
+  // buiten de tabel: geschat op afstand, met het hoogste bedrag uit de tabel als maximum ("40 km of meer")
+  const max = Math.max(...Object.values(table));
+  assert.equal(max, 4.83);                                     // Poeke, Lotenhulle
+  const lv = info('8810');                                     // Lichtervelde: net binnen, geschat
+  assert.equal(lv.source, 'schatting');
+  assert.ok(lv.amount > 4.28 && lv.amount < max && !lv.max, String(lv.amount));
+  for (const pc of ['8610', '9000', '9300', '8500', '1000', '6700']) { // Kortemark, Gent, Aalst, Kortrijk, Brussel, Aarlen
+    assert.equal(info(pc).amount, max, pc);
+    assert.ok(info(pc).max, pc);
+  }
+  const aalst = info('9300');
+  assert.ok(aalst.roadKm >= 85 && aalst.roadKm <= 95, String(aalst.roadKm)); // ± 90 km over de weg
+  for (let km = 0; km < 300; km++) {
+    const e = Loon.travelEstimate(km, '2026-10-06');
+    assert.ok(e <= max && Loon.travelEstimate(km + 1, '2026-10-06') >= e); // nooit meer dan het maximum, nooit minder voor verder
+  }
   assert.equal(al({ postcode: '0000', place: 'Brugge' }), 2.55); // onbekende postcode: terug naar de woonplaats
   assert.equal(al({ postcode: '9000', travelOwn: 7.5 }), 7.5);  // eigen bedrag gaat voor
   assert.equal(Loon.travelAllowance('2026-10-06', { transport: 'fiets', bikeKm: 10, bikeRate: 0.25 }), 2.5);

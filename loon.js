@@ -290,25 +290,41 @@
     return { ...r, uur: r.uur ?? round2(r.shift / 7.25) };
   };
 
-  // Postcode: staat de gemeente in de tabel van Cewez, dan dat bedrag; anders een schatting op afstand tot Zeebrugge
-  // (rechte lijn): max(1,68 ; 1,206 + 0,098 per km). Aan de tabel getoetst: gemiddeld 9 cent verschil.
+  // Postcode: staat een deelgemeente van de postcode in de vervoerstabel, dan het bedrag uit de tabel
+  // (bij meerdere: de gekozen deelgemeente, anders de hoofdgemeente). Anders een schatting op de afstand tot Zeebrugge
+  // (rechte lijn): 1,206 + 0,098 per km, aan de tabel getoetst gemiddeld 9 cent verschil.
+  // Voor de auto stopt de tabel bij "40 km of meer" (cao Paritair Comité voor het havenbedrijf; Antwerpen idem):
+  // vanaf de verste gemeenten in de tabel (Poeke, Lotenhulle: ± 36 km in rechte lijn) krijgt iedereen het hoogste bedrag.
   const ZEEBRUGGE = [51.33, 3.2];
+  const FAR_KM = 36;
   const POSTCODES = (() => { try { return typeof module !== 'undefined' && module.exports ? require('./postcodes.js') : (globalThis.Postcodes || {}); } catch { return {}; } })();
   function distanceKm(a, b) {
     const p = Math.PI / 180;
     const x = Math.sin((b[0] - a[0]) * p / 2) ** 2 + Math.cos(a[0] * p) * Math.cos(b[0] * p) * Math.sin((b[1] - a[1]) * p / 2) ** 2;
     return 2 * 6371 * Math.asin(Math.sqrt(x));
   }
-  // { amount, km, source: 'tabel' | 'schatting' | 'eigen' | 'woonplaats' } voor een postcode of woonplaats
+  function travelEstimate(km, date) {
+    const max = Math.max(...Object.values(validOn(TRAVEL, date).table));
+    if (km >= FAR_KM) return max;
+    return round2(Math.min(max, Math.max(1.68, 1.206 + 0.098 * km)));
+  }
+  // { amount, km, roadKm, max, place, places, source: 'tabel' | 'schatting' | 'eigen' | 'woonplaats' } voor een postcode of woonplaats
+  // (max: ver genoeg voor het hoogste bedrag; roadKm: afstand over de weg, ± 1,25 x de rechte lijn,
+  // Aalst 73 km in vogelvlucht = ± 91 km over de weg)
   function travelInfo(date, settings) {
     if (settings.travelOwn > 0) return { amount: round2(settings.travelOwn), source: 'eigen' };
+    const table = validOn(TRAVEL, date).table;
     const pc = POSTCODES[String(settings.postcode || '').trim()];
     if (pc) {
       const km = distanceKm(ZEEBRUGGE, pc);
-      if (pc[2]) return { amount: pc[2], km, source: 'tabel' };
-      return { amount: round2(Math.max(1.68, 1.206 + 0.098 * km)), km, source: 'schatting' };
+      const places = (pc[2] || []).filter((p) => table[p]);
+      if (places.length) {
+        const place = places.includes(settings.place) ? settings.place : places[0];
+        return { amount: table[place], km, place, places, source: 'tabel' };
+      }
+      return { amount: travelEstimate(km, date), km, roadKm: Math.round(km * 1.25), max: km >= FAR_KM, source: 'schatting' };
     }
-    return { amount: validOn(TRAVEL, date).table[settings.place] || 0, source: 'woonplaats' };
+    return { amount: table[settings.place] || 0, place: settings.place, source: 'woonplaats' };
   }
   function travelAllowance(date, settings) {
     if (settings.transport === 'fiets') return round2((settings.bikeKm || 0) * (settings.bikeRate || 0));
@@ -349,7 +365,9 @@
     // premie lashing: sommige bedrijven betalen lashers meer; bedrag zoals de gebruiker het invulde
     if (entry.lash > 0) add('lash', 'Premie lashing', entry.lash, 'A');
     if (entry.wijziging) add('wijziging', 'Wijzigingsvergoeding', p.wijziging, s.extraType);
-    add('kledij', 'Kledijvergoeding', p.kledij, 'D');
+    // kledijvergoeding: niet bij lashing roro / container / high & heavy (die geeft 2 kledijpunten);
+    // zo op de loonbrief van september 2026 (Speed Lashing: 2 punten, geen 1,59)
+    if (entry.work !== 'lashing') add('kledij', 'Kledijvergoeding', p.kledij, 'D');
     add('vervoer', s.transport === 'fiets' ? 'Fietsvergoeding' : 'Eigen vervoer', travelAllowance(entry.date, s), 'D');
     if (full && (s.status === 'pool' || s.status === 'timetable')) add('internet', 'Internetvergoeding', p.internet, 'D');
     if (full) add('mtc', 'Maaltijdcheque eigen bijdrage', p.mtcOwn, 'M');
@@ -371,15 +389,15 @@
     };
   }
 
-  // A: rond de 19e; B: uiterlijk de 3e werkdag na de periode
+  // A: rond de 19e; B: rond de 2e werkdag na de periode (september 2026: vrijdag 2 oktober)
   function paymentDate(period, overrides = {}) {
     if (period.half === 'A') return { date: `${period.year}-${pad(period.month)}-19`, approx: true };
     let d = period.end, count = 0;
-    while (count < 3) {
+    while (count < 2) {
       d = addDays(d, 1);
       if (![0, 6].includes(weekday(d)) && !holidayOn(d, overrides)) count++;
     }
-    return { date: d, approx: false };
+    return { date: d, approx: true };
   }
 
   // --- voorheffing (voorlopige schatting) -----------------------------------------
@@ -694,7 +712,7 @@
   const api = {
     round2, addDays, weekday, periodOf, paymentDate,
     START_HOURS, RATE_ROWS, DEFAULT_RATE_PERIODS, FUNCTIONS, FUNCTION_GROUPS, functionOf, isMarkeerder, KADER_RATES, PARAMS, TRAVEL, PLACES, DEFAULT_SETTINGS,
-    legalHolidays, holidays, holidayOn, tariffRow, rateFor, travelAllowance, travelInfo, POSTCODES,
+    legalHolidays, holidays, holidayOn, tariffRow, rateFor, travelAllowance, travelInfo, travelEstimate, POSTCODES,
     DEFAULT_WITHHOLDING, DEFAULT_INCOME_TAX, setTaxTables, getTaxTables, normalizeTable, shiftLines, estimateWithholding, estimateAnnualTax, calcPeriod, calcAll,
     CLOTHING, CLOTHING_ITEMS, clothingPointsFor, clothingLedger, leaveDays, workedDays, hvLedger,
   };

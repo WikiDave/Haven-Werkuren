@@ -256,6 +256,12 @@
   .scanbtn { margin-top: 10px; }
   .slipcheck { margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--bg); font-size: 13px; }
   .slipcheck b.ok { color: #1a8f5a; } .slipcheck b.off { color: var(--ot); }
+  .diffs { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px dashed var(--line); font-size: 14px; }
+  .diffs h3 { margin: 0 0 2px; font-size: 15px; }
+  .diffs ul { margin: 6px 0; padding-left: 18px; } .diffs li { margin: 4px 0; }
+  #taxBrackets table { width: 100%; margin: 6px 0; border-collapse: collapse; } #taxBrackets td { padding: 3px 0; vertical-align: top; } #taxBrackets td + td { text-align: right; }
+  #taxBrackets tr.cur td { font-weight: 700; color: var(--accent); } #taxBrackets p { margin: 6px 0; }
+  .diffs b.ok { color: #1a8f5a; } .diffs b.off { color: var(--ot); white-space: nowrap; }
   .leaveday { margin: 0 0 8px; padding: 10px 12px; border-radius: 10px; background: var(--leave); color: var(--leave-text); font-weight: 600; }
   .leaveday.dop { background: var(--bg); color: var(--text); border: 1px dashed var(--line); }
   .cal button .medmark {
@@ -698,6 +704,7 @@
     <div class="tools">
       <label class="btn" for="scanCam">Foto nemen</label>
       <label class="btn ghost" for="scanPick">Foto kiezen</label>
+      <button type="button" class="btn ghost" id="scanManual">Zonder foto invullen</button>
     </div>
     <input type="file" id="scanCam" accept="image/*" capture="environment" hidden>
     <input type="file" id="scanPick" accept="image/*" hidden>
@@ -745,6 +752,10 @@
           <label for="qPostcode">Postcode van je woonplaats (voor de vervoersvergoeding)</label>
           <input id="qPostcode" data-q="postcode" inputmode="numeric" maxlength="4" autocomplete="postal-code" placeholder="bv. 9000">
           <p class="hint" id="qTravelInfo"></p>
+          <div id="qPcWrap" hidden>
+            <label for="qPcPlace">Deelgemeente</label>
+            <select id="qPcPlace"></select>
+          </div>
         </div>
         <div class="row2">
           <div><label for="qCivil">Burgerlijke staat</label>
@@ -976,7 +987,8 @@
       <details class="fold" data-fold="uitbetalingen">
         <summary><h2>Uitbetalingen</h2></summary>
       <div id="slips"></div>
-      <button type="button" class="btn ghost scanbtn" data-scan="loonbrief">Loonbrief fotograferen</button>
+      <div id="diffs"></div>
+      <button type="button" class="btn ghost scanbtn" data-scan="loonbrief">Loonbrief fotograferen of invullen</button>
       </details>
     </section>
     <section class="inset grp" id="workCard">
@@ -1111,6 +1123,7 @@
       <p class="taxresult" id="taxResult"></p>
       <p class="slipcheck" id="taxActual" hidden></p>
       <table class="slip-t" id="taxTable"></table>
+      <div class="slipcheck" id="taxBrackets" hidden></div>
       <button type="button" class="btn ghost scanbtn" data-scan="fiche">Loonfiche of aanslagbiljet fotograferen</button>
       <details id="taxExtraBox">
         <summary>Jouw gegevens invullen (nauwkeuriger)</summary>
@@ -1210,6 +1223,10 @@
             <label for="sPostcode">Postcode van je woonplaats (heel België)</label>
             <input id="sPostcode" data-s="postcode" inputmode="numeric" maxlength="4" autocomplete="postal-code" placeholder="bv. 9000">
             <p class="hint" id="travelInfo"></p>
+            <div id="sPcWrap" hidden>
+              <label for="sPcPlace">Deelgemeente</label>
+              <select id="sPcPlace"></select>
+            </div>
             <details id="placeBox">
               <summary>Of kies je woonplaats uit de lijst, of vul zelf een bedrag in</summary>
               <label for="sPlace">Woonplaats (deelgemeente)</label>
@@ -1382,9 +1399,9 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="postcodes.js?v=2026-10-10.7"></script>
-<script src="loon.js?v=2026-10-10.7"></script>
-<script src="scan.js?v=2026-10-10.7"></script>
-<script src="app.js?v=2026-10-10.7"></script>
+<script src="postcodes.js?v=2026-10-13.1"></script>
+<script src="loon.js?v=2026-10-13.1"></script>
+<script src="scan.js?v=2026-10-13.1"></script>
+<script src="app.js?v=2026-10-13.1"></script>
 </body>
 </html>
