@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-12.2';
+const APP_VERSION = '2026-10-13.1';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1004,7 +1004,7 @@ const APP_VERSION = '2026-10-12.2';
     renderDay();
 
     const yt = totals(entries.filter((e) => e.date.startsWith(String(viewYear))));
-    $('yearLine').textContent = `Heel ${viewYear}: ${money(yt.bruto)} bruto, ± ${money(yt.netto)} netto, ${fmtHours(yt.otH)} overuren.`;
+    $('yearLine').textContent = `Heel ${viewYear}: ${money(yt.bruto)} bruto, ${money(yearFigures(viewYear).taxable)} bruto belastbaar, ± ${money(yt.netto)} netto, ${fmtHours(yt.otH)} overuren. Belastingschijven: zie Belastingbrief.`;
   }
 
   $('showMode').addEventListener('click', (ev) => {
@@ -1019,18 +1019,68 @@ const APP_VERSION = '2026-10-12.2';
   const TAX_FIELDS = ['ficheIncome', 'ficheWithholding', 'workBonus', 'holidayPay', 'holidayWithholding', 'income', 'withholding', 'kidsUnder3',
     'partnerIncome', 'partnerWithholding', 'pension', 'otherReductions', 'realCosts'];
   const CIVIL_NAMES = { ongehuwd: 'ongehuwd', gehuwd: 'gehuwd', 'wettelijk-samenwonend': 'wettelijk samenwonend', gescheiden: 'gescheiden', weduwe: 'weduwe / weduwnaar' };
+  // belastbaar loon en voorheffing van een jaar; waar je de loonbrief invulde, telt het bedrag van de loonbrief
+  // (Cewez kan afwijken van de app)
+  function yearFigures(year) {
+    const periodsOfYear = Object.values(calc.periods).filter((r) => r.period.start.startsWith(String(year)));
+    const slipOf = (r) => payslips[r.period.key] || {};
+    const pick = (r, k) => (Number.isFinite(Number(slipOf(r)[k])) && slipOf(r)[k] !== null && slipOf(r)[k] !== '' ? Number(slipOf(r)[k]) : r[k]);
+    return {
+      periodsOfYear,
+      nSlips: periodsOfYear.filter((r) => Object.keys(slipOf(r)).length).length,
+      taxable: round2(periodsOfYear.reduce((t, r) => t + pick(r, 'belastbaar'), 0)),
+      withheld: round2(periodsOfYear.reduce((t, r) => t + pick(r, 'voorheffing'), 0)),
+    };
+  }
+
+  // belastingschijven: waar je netto belastbaar inkomen zit en hoeveel je nog hebt tot de volgende schijf
+  function renderBrackets(year, r, show) {
+    const box = $('taxBrackets');
+    const t = Loon.getTaxTables().incomeTax.filter((x) => x.from <= `${year}-12-31`).pop();
+    if (!show || !t || !r.calculated) { box.hidden = true; return; }
+    const pct = (rate) => `${Math.round(rate * 100)}%`;
+    const eur = (n) => money(n).replace(/,00$/, ''); // grensbedragen zonder cent
+    const net = r.netTaxable;
+    let lower = 0;
+    const rows = t.brackets.map(([upper, rate]) => {
+      const range = upper === Infinity ? `${pct(rate)} boven ${eur(lower)}` : `${pct(rate)}${lower ? ` van ${eur(lower)}` : ''} tot ${eur(upper)}`;
+      const state = net >= upper ? 'vol' : net > lower || (!lower && net >= 0) ? (upper === Infinity ? 'je zit hier' : `je zit hier · nog ${money(upper - net)}`) : '';
+      const cur = net < upper && (net > lower || !lower);
+      lower = upper;
+      return `<tr class="${cur ? 'cur' : ''}"><td>${range}</td><td>${state}</td></tr>`;
+    }).join('');
+    const top = t.brackets[t.brackets.length - 2][0]; // begin van de hoogste schijf (netto belastbaar)
+    const topGross = r.realCosts ? top + r.costs : (top / (1 - t.costRate) <= t.costMax / t.costRate ? top / (1 - t.costRate) : top + t.costMax);
+    // ruwe schatting voor heel het jaar, aan het tempo van tot nu toe (enkel voor het lopende jaar)
+    let proj = '';
+    const todayIso = isoDate(today);
+    if (String(year) === todayIso.slice(0, 4)) {
+      const days = entries.filter((e) => e.date.startsWith(`${year}-`) && e.date <= todayIso).map((e) => e.date).sort();
+      const from = days[0];
+      const ms = 864e5, dayNr = (d) => Math.round((new Date(`${d}T12:00:00`) - new Date(`${year}-01-01T12:00:00`)) / ms);
+      const elapsed = from ? dayNr(todayIso) - dayNr(from) + 1 : 0;
+      const sofar = round2(Object.values(calc.periods).filter((x) => x.period.start.startsWith(`${year}-`) && x.period.start <= todayIso)
+        .reduce((a, x) => a + (Number.isFinite(Number(payslips[x.period.key]?.belastbaar)) ? Number(payslips[x.period.key].belastbaar) : x.belastbaar), 0));
+      if (elapsed >= 60 && sofar > 0) {
+        const total = dayNr(`${year}-12-31`) - dayNr(from) + 1;
+        const p = round2(sofar * total / elapsed);
+        proj = `<p>Aan het tempo van tot nu toe kom je voor heel ${year} op ± <b>${money(p)}</b> bruto belastbaar loon uit de haven (ruwe schatting).</p>`;
+      }
+    }
+    box.innerHTML = `<b>Belastingschijven ${year}</b>
+      <p>Bruto belastbaar: <b>${money(r.belastbaar)}</b>. Min ${r.realCosts ? 'je werkelijke' : 'de forfaitaire'} beroepskosten (${money(r.costs)}) is dat <b>${money(net)}</b> netto belastbaar. Daarop gelden de schijven:</p>
+      <table>${rows}</table>
+      <p class="hint">Alleen het deel boven een grens wordt aan het hogere percentage belast, niet je hele loon. De schijf van ${pct(t.brackets[t.brackets.length - 1][1])} begint bij ${eur(top)} netto belastbaar: dat is ± ${eur(topGross)} bruto belastbaar${r.realCosts ? '' : ` (met ${eur(Math.min(topGross * t.costRate, t.costMax))} forfaitaire beroepskosten)`}. Daarbovenop komt nog de gemeentebelasting.${r.couple ? ' Bij een gezamenlijke aanslag kan een deel naar je partner gaan (huwelijksquotiënt): dan zit je lager.' : ''}</p>
+      ${proj}`;
+    box.hidden = false;
+  }
+
   function renderTax() {
     const y = String(taxYear);
     $('taxYear').textContent = `${y} · brief in ${taxYear + 1}`;
-    const periodsOfYear = Object.values(calc.periods).filter((r) => r.period.start.startsWith(y));
+    const { periodsOfYear, nSlips, taxable: appTaxable, withheld: appWithheld } = yearFigures(y);
     const d = taxExtras[y] || {};
     const has = (k) => Number(d[k]) > 0 || (k.startsWith('fiche') && String(d[k] ?? '') !== '' && Number(d[k]) === 0);
-    // waar je de loonbrief invulde, telt het bedrag van de loonbrief (Cewez kan afwijken van de app)
-    const slipOf = (r) => payslips[r.period.key] || {};
-    const pick = (r, k) => (Number.isFinite(Number(slipOf(r)[k])) && slipOf(r)[k] !== null && slipOf(r)[k] !== '' ? Number(slipOf(r)[k]) : r[k]);
-    const nSlips = periodsOfYear.filter((r) => Object.keys(slipOf(r)).length).length;
-    const appTaxable = round2(periodsOfYear.reduce((t, r) => t + pick(r, 'belastbaar'), 0));
-    const appWithheld = round2(periodsOfYear.reduce((t, r) => t + pick(r, 'voorheffing'), 0));
     const useFiche = has('ficheIncome');
     const ow = otherPayYear(y); // loon van een andere job (vakje Ander werk)
     const taxable = (useFiche ? Number(d.ficheIncome) : appTaxable) + (Number(d.holidayPay) || 0) + (Number(d.income) || 0) + ow.taxable;
@@ -1079,6 +1129,7 @@ const APP_VERSION = '2026-10-12.2';
         `<tr class="tot"><td>${diff < 0 ? 'Terug te krijgen' : 'Bij te betalen'} <span class="est">schatting</span></td><td>${money(Math.abs(diff))}</td></tr>`,
       ].join('');
     }
+    renderBrackets(taxYear, r, periodsOfYear.length || taxable);
     const act = taxActual[y];
     $('taxActual').hidden = !Number.isFinite(act);
     if (Number.isFinite(act)) {
@@ -1678,6 +1729,9 @@ const APP_VERSION = '2026-10-12.2';
   // --- wat is er nieuw -----------------------------------------------------------
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
+    ['2026-10-13', [
+      'Belastingschijven: bij Belastingbrief zie je je bruto en netto belastbaar loon van het jaar, in welke schijf je zit en hoeveel je nog hebt tot de volgende (de 50% begint bij ± € 57.140 bruto belastbaar). Het jaaroverzicht toont ook je bruto belastbaar loon. Met dank voor de vraag!',
+    ]],
     ['2026-10-12', [
       'Verschillen met Cewez bijhouden: vul je loonbrief in (met een foto of zonder foto) en de app houdt per jaar bij waar de loonbrief afwijkt van de berekening, met het totaal en een knop om het overzicht te delen. De belastingbrief in de app rekent met de voorheffing van je loonbrieven.',
       'Nagekeken met een echte loonbrief (september, tweede helft): loon, premie, RSZ, belastbaar, vervoer en maaltijdcheques kloppen tot op de cent. Bij lashing (roro, container, high & heavy: 2 kledijpunten) rekent de app geen kledijvergoeding meer, zoals op de loonbrief. De tweede helft van de maand wordt rond de 2e werkdag betaald.',
