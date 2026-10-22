@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-13.3';
+const APP_VERSION = '2026-10-23.3';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -101,6 +101,7 @@ const APP_VERSION = '2026-10-13.3';
   const KEY_LAST_FUNC = 'haven-werkuren.lastFunction';
   const KEY_MEDICAL = 'haven-werkuren.medicalChecks';
   const KEY_LEAVE = 'haven-werkuren.leave';
+  const KEY_RECEIVED = 'haven-werkuren.received';   // ontvangen bedragen per periode: { '2026-10-A': [{ id, date, amount }] }
   const KEY_PAYSLIPS = 'haven-werkuren.payslips';   // ingescande loonbrieven per periode
   const KEY_TAX_ACTUAL = 'haven-werkuren.taxActual'; // echte aanslag per inkomstenjaar
   const KEY_TAX_EXTRA = 'haven-werkuren.taxExtras';
@@ -148,6 +149,7 @@ const APP_VERSION = '2026-10-13.3';
   let showMode = load(KEY_MODE, 'bruto');
   let purchases = load(KEY_PURCHASES, []);
   let medChecks = load(KEY_MEDICAL, []); // [{ id, date, note }]
+  let received = load(KEY_RECEIVED, {});
   let payslips = load(KEY_PAYSLIPS, {}); // { '2026-09-B': { basisRsz, belastbaar, voorheffing, netto } }
   let taxActual = load(KEY_TAX_ACTUAL, {}); // { jaar: bedrag (min = terug) }
   let leave = load(KEY_LEAVE, []);       // [{ date, type, g }] één per verlofdag; g = samen aangevraagd
@@ -684,6 +686,8 @@ const APP_VERSION = '2026-10-13.3';
       if (e[k]) { p.store()[e.company || ''] = e[k]; save(p.key, p.store()); }
       if (e[k] === undefined) delete e[k];
     }
+    const rules = Loon.workRuleWarnings(entries, e);
+    if (rules.length && !confirm(`Let op, rusttijden (Codex art. 36):\n- ${rules.join('\n- ')}\n\nToch opslaan?`)) return;
     e.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     if (e.kind === 'afbestel') { e.overtime = 0; e.wijziging = false; }
     if (!e.recup) delete e.recup;
@@ -802,6 +806,7 @@ const APP_VERSION = '2026-10-13.3';
     }
     $('lvFuncWrap').hidden = !(lv && PAID_LEAVE[lv.type]);
     if (lv && PAID_LEAVE[lv.type]) $('lvFunc').value = lv.func || 'alle';
+    else if (dp && ['zondag', 'feestdag'].includes(Loon.dopDayRule(selected, holidayOverrides))) $('dayLeaveNote').textContent = `Dop (werkloosheid): telt niet mee, want op een ${Loon.dopDayRule(selected, holidayOverrides)} is er geen dop. Haal hem weg.`;
     else if (dp) $('dayLeaveNote').textContent = 'Dop (werkloosheid)' + (part === 0.5 ? ': halve dag, naast je halve shift' : part === 0 ? ': telt niet mee, want er staat een volle shift' : '');
     else if (ow) $('dayLeaveNote').textContent = 'Ander werk (andere job)';
     $('dayOff').hidden = !!(lv || dp || ow);
@@ -964,6 +969,41 @@ const APP_VERSION = '2026-10-13.3';
     catch { alert(text); }
   });
 
+  // --- ontvangen bedragen (loon dat in stukken of op verschillende dagen binnenkomt) ----------------
+  const receivedTotal = (key) => round2((received[key] || []).reduce((t, x) => t + x.amount, 0));
+  function renderReceived() {
+    const year = String(viewYear);
+    const keys = [...new Set([...Object.keys(calc.periods), ...Object.keys(received)])].filter((k) => k.startsWith(`${year}-`)).sort();
+    const cur = $('rcPeriod').value;
+    const name = (k) => rangeText([Loon.periodOf(`${k.slice(0, 7)}-${k.endsWith('A') ? '01' : '16'}`).start, Loon.periodOf(`${k.slice(0, 7)}-${k.endsWith('A') ? '01' : '16'}`).end]);
+    $('rcPeriod').innerHTML = keys.map((k) => `<option value="${k}">${name(k)}</option>`).join('') || '<option value="">geen periodes</option>';
+    if (keys.includes(cur)) $('rcPeriod').value = cur; else if (keys.length) $('rcPeriod').value = keys[keys.length - 1];
+    $('rcList').innerHTML = keys.filter((k) => (received[k] || []).length).map((k) => {
+      const r = calc.periods[k], got = receivedTotal(k), d = r ? round2(got - r.netto) : null;
+      const items = received[k].slice().sort((a, b) => a.date.localeCompare(b.date)).map((x) => `<li>${fmtDate(x.date, { day: 'numeric', month: 'short' })}: ${money(x.amount)} <button type="button" class="linkbtn" data-rcdel="${k}|${x.id}">weghalen</button></li>`).join('');
+      const cmp = r ? `Berekend door de app: ${money(r.netto)}. ${Math.abs(d) < 0.01 ? '<b class="ok">Klopt.</b>' : d > 0 ? `Je ontving <b class="off">${money(d)} meer</b>.` : `Nog <b class="off">${money(-d)}</b> te goed (of een deel dat nog volgt).`}` : 'Geen shiften in de app voor deze periode.';
+      return `<p><b>${name(k)}</b>: ontvangen ${money(got)}</p><ul>${items}</ul><p class="hint">${cmp}</p>`;
+    }).join('');
+  }
+  $('rcAdd').addEventListener('click', () => {
+    const key = $('rcPeriod').value, date = $('rcDate').value;
+    const amount = Number($('rcAmt').value.trim().replace(/\s|€/g, '').replace(',', '.'));
+    if (!key) return alert('Kies een periode.');
+    if (!date) return alert('Kies de datum waarop je het bedrag ontving.');
+    if (!Number.isFinite(amount) || amount <= 0) return alert('Vul een geldig bedrag in.');
+    (received[key] ||= []).push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), date, amount: round2(amount) });
+    save(KEY_RECEIVED, received); $('rcAmt').value = '';
+    render();
+  });
+  $('rcList').addEventListener('click', (ev) => {
+    const v = ev.target.closest('[data-rcdel]')?.dataset.rcdel;
+    if (!v) return;
+    const [key, id] = v.split('|');
+    received[key] = (received[key] || []).filter((x) => x.id !== id);
+    if (!received[key].length) delete received[key];
+    save(KEY_RECEIVED, received); render();
+  });
+
   function render() {
     calc = Loon.calcAll([...entries, ...paidLeave()], ctx());
     const title = fmtDate(`${viewYear}-${pad(viewMonth + 1)}-01`, { month: 'long', year: 'numeric' });
@@ -1003,6 +1043,7 @@ const APP_VERSION = '2026-10-13.3';
 
     $('slips').innerHTML = slipHtml('A') + slipHtml('B');
     renderDiffs();
+    renderReceived();
     renderClothing();
     renderMedical();
     renderLeave();
@@ -1366,7 +1407,10 @@ const APP_VERSION = '2026-10-13.3';
     const type = ev.target.closest('[data-off]')?.dataset.off;
     if (!type) return;
     if (type === 'dop') {
+      const rule = Loon.dopDayRule(selected, holidayOverrides);
+      if (rule === 'zondag' || rule === 'feestdag') return alert(`Op een ${rule} is er geen dop.`);
       if (!dopPart(selected)) return alert('Op een dag met een volle shift (of afbestelling) is er geen dop. Bij een halve shift kan wel een halve dop.');
+      if (rule === 'zaterdag' && !confirm('Dop op een zaterdag is ongewoon. Kijk na of je die dag echt dop krijgt. Toch invullen?')) return;
       dop.push(selected); saveDop();
     } else if (type === 'ander') {
       otherDays.push(selected); saveOther();
@@ -1395,7 +1439,7 @@ const APP_VERSION = '2026-10-13.3';
   const dopOn = (iso) => dop.includes(iso);
   // deel van een dag dop: wat er overblijft naast de shiften (volle shift of afbestelling = 1, halve = ½)
   // shiften die om 18u of later beginnen (ook 22u) nemen de dop van die dag niet weg
-  const dopPart = (iso) => Math.max(0, 1 - dayEntries(iso).filter((e) => e.code !== '18').reduce((t, e) => t + (e.kind === 'half' ? 0.5 : 1), 0));
+  const dopPart = (iso) => ['zondag', 'feestdag'].includes(Loon.dopDayRule(iso, holidayOverrides)) ? 0 : Math.max(0, 1 - dayEntries(iso).filter((e) => e.code !== '18').reduce((t, e) => t + (e.kind === 'half' ? 0.5 : 1), 0));
   function dopStats(prefix) {
     const n = dop.filter((d) => d.startsWith(prefix)).reduce((t, d) => t + dopPart(d), 0);
     const per = Number(settings.dopDay) || 0;
@@ -1762,6 +1806,15 @@ const APP_VERSION = '2026-10-13.3';
   // --- wat is er nieuw -----------------------------------------------------------
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
+    ['2026-10-23', [
+      'Er zijn ook andere apps voor havenarbeiders in omloop. Die zijn niet van de maker van Haven Werkuren, die er niets mee te maken heeft en er niet verantwoordelijk voor is. Haven Werkuren vind je enkel op wikidave.github.io/Haven-Werkuren.',
+      'Dop telt niet meer op zondagen en feestdagen (op een zaterdag vraagt de app of je het zeker weet). Bij een shift met te weinig rust (minder dan 11 uur, behalve een dagtaak na een namiddagtaak) of meer dan 6 shiften of 50 uur in een week, waarschuwt de app volgens de Codex (art. 36).',
+      'Ontvangen bedragen: komt je loon in stukken of op verschillende dagen? Vul elk bedrag in bij de periode waarvoor het is (Uitbetalingen), dan telt de app ze op en toont het verschil met zijn berekening.',
+    ]],
+    ['2026-10-22', [
+      'De eerste helft van de maand wordt rond de 3e werkdag na de 15e betaald (oktober: dinsdag 20 oktober), zoals op je rekeningafschrift.',
+      'Berichten aan de maker: je statuut wordt niet meer meegestuurd, en bij het bestand staat een waarschuwing om geen loonbrieven of andere persoonlijke papieren bij te voegen. De privacyverklaring vermeldt nu op welke grond een bericht via FormSubmit buiten de EU gaat.',
+    ]],
     ['2026-10-13', [
       'Herverdelingsdagen (HV) en recupdagen worden nu betaald in de berekening: het dagloon van je functie (een HV ook met de vaste premie), zonder kledij- of vervoersvergoeding. Kies de functie van die dag in de dag zelf. Nieuw: "Opsparen voor recup" bij een shift op zaterdag, zondag of feestdag (100% uitbetaald, de rest opgespaard), met je recupsaldo bij Verlof. Met dank voor de tip!',
       'Nagekeken met de Codex en de loontabel van 1 juli 2026: een halve shift is nu 4 uur loon volgens het aanvangsuur (om 18u00 op een weekdag: 4 uur van de namiddagshift, op zaterdag van de zaterdagshift); vroeger rekende de app de helft van het shiftloon. De kledijlijst volgt bijlage 11 van juli 2026 (buff erbij, helm bij het minimumpakket, softshell bij aanvullend). Alle lonen, premies en de vervoerstabel kloppen met Cewez.',
@@ -1926,7 +1979,7 @@ const APP_VERSION = '2026-10-13.3';
   // extra regels in de mail, per plaats in de app (veldnamen zonder spaties: FormSubmit maakt er _ van)
   const mailExtra = {
     'Fout melden': () => {
-      const x = { 'App-versie': `${APP_VERSION} · statuut: ${settings.status || ''} · als app: ${standalone ? 'ja' : 'nee'} · scherm: ${screen.width}×${screen.height}`, Toestel: navigator.userAgent };
+      const x = { 'App-versie': `${APP_VERSION} · als app: ${standalone ? 'ja' : 'nee'} · scherm: ${screen.width}×${screen.height}`, Toestel: navigator.userAgent };
       if ($('bugDay').checked) {
         const list = entries.filter((e) => e.date === selected);
         x.Dag = [fmtDate(selected, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), ...(list.length ? list.map((e) => {
@@ -1936,7 +1989,7 @@ const APP_VERSION = '2026-10-13.3';
       }
       return x;
     },
-    'Voorstel doen': () => ({ 'App-versie': `${APP_VERSION} · statuut: ${settings.status || ''}` }),
+    'Voorstel doen': () => ({ 'App-versie': APP_VERSION }),
     Contact: () => ({ 'App-versie': APP_VERSION }),
   };
   // alle velden van de mail, in volgorde: datum en plaats bovenaan, dan wat de gebruiker schreef
@@ -2529,7 +2582,7 @@ const APP_VERSION = '2026-10-13.3';
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
   const KEY_LAST_BACKUP = 'haven-werkuren.lastBackup';
-  const backupJson = () => JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, companyPhones, companyNotes, medChecks, leave, payslips, taxActual, taxExtras, taxUser, markagePremie, lashPremie, dop, otherDays, otherPay }, null, 2);
+  const backupJson = () => JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, companyPhones, companyNotes, medChecks, leave, payslips, received, taxActual, taxExtras, taxUser, markagePremie, lashPremie, dop, otherDays, otherPay }, null, 2);
   const backupName = () => `werkuren-backup-${isoDate(new Date())}.json`;
   function backupDone() {
     save(KEY_LAST_BACKUP, isoDate(new Date()));
@@ -2568,7 +2621,7 @@ const APP_VERSION = '2026-10-13.3';
   // een logo moet een eigen foto zijn; tekst wordt ingekort.
   const ID_RE = /^[\w-]{0,60}$/;
   const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-  const KEY_RES = { payslips: /^\d{4}-\d{2}-[AB]$/, otherPay: /^\d{4}-\d{2}$/, taxExtras: /^\d{4}$/, taxActual: /^\d{4}$/ };
+  const KEY_RES = { payslips: /^\d{4}-\d{2}-[AB]$/, received: /^\d{4}-\d{2}-[AB]$/, otherPay: /^\d{4}-\d{2}$/, taxExtras: /^\d{4}$/, taxActual: /^\d{4}$/ };
   function cleanBackupValue(v, key, depth = 0) {
     if (depth > 8) throw new Error('te diep');
     if (v === null || typeof v === 'boolean') return v;
@@ -2615,6 +2668,7 @@ const APP_VERSION = '2026-10-13.3';
     if (data.companyPhones) companyPhones = data.companyPhones;
     if (data.companyNotes) companyNotes = data.companyNotes;
     if (data.payslips) payslips = data.payslips;
+    received = data.received && typeof data.received === 'object' ? data.received : {};
     if (data.taxActual) taxActual = data.taxActual;
     if (data.taxExtras) taxExtras = data.taxExtras;
     if (data.taxUser) { taxUser = data.taxUser; applyTaxTables(); }
@@ -2629,7 +2683,7 @@ const APP_VERSION = '2026-10-13.3';
     if (data.otherPay) otherPay = data.otherPay;
     save(KEY_ENTRIES, entries); save(KEY_PERIODS, periods); save(KEY_SETTINGS, settings); save(KEY_HOLIDAYS, holidayOverrides);
     save(KEY_CUSTOM_CO, customCompanies); save(KEY_HIDDEN_CO, hiddenCompanies);
-    save(KEY_MEDICAL, medChecks); save(KEY_LEAVE, leave); save(KEY_PAYSLIPS, payslips); save(KEY_TAX_ACTUAL, taxActual); save(KEY_TAX_EXTRA, taxExtras); save(KEY_TAX_USER, taxUser); save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation); save(KEY_CO_PHONE, companyPhones); save(KEY_CO_NOTES, companyNotes);
+    save(KEY_MEDICAL, medChecks); save(KEY_LEAVE, leave); save(KEY_PAYSLIPS, payslips); save(KEY_RECEIVED, received); save(KEY_TAX_ACTUAL, taxActual); save(KEY_TAX_EXTRA, taxExtras); save(KEY_TAX_USER, taxUser); save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation); save(KEY_CO_PHONE, companyPhones); save(KEY_CO_NOTES, companyNotes);
     save(KEY_MARKAGE, markagePremie); save(KEY_LASH, lashPremie); save(KEY_DOP, dop); save(KEY_OTHER_DAYS, otherDays); save(KEY_OTHER_PAY, otherPay);
     renderCompanyPicker(); renderSettings(); renderTaxTables(); renderHolidays(); renderRates(); render();
   }
@@ -2653,7 +2707,7 @@ const APP_VERSION = '2026-10-13.3';
     entries: KEY_ENTRIES, periods: KEY_PERIODS, settings: KEY_SETTINGS, holidayOverrides: KEY_HOLIDAYS, customCompanies: KEY_CUSTOM_CO,
     hiddenCompanies: KEY_HIDDEN_CO, purchases: KEY_PURCHASES, clothingStart: KEY_CLOTH_START, companyLocations: KEY_CO_LOCS,
     companyPins: KEY_CO_PIN, lastLocation: KEY_LAST_LOC, companyPhones: KEY_CO_PHONE, companyNotes: KEY_CO_NOTES, medChecks: KEY_MEDICAL,
-    leave: KEY_LEAVE, payslips: KEY_PAYSLIPS, taxActual: KEY_TAX_ACTUAL, taxExtras: KEY_TAX_EXTRA, taxUser: KEY_TAX_USER,
+    leave: KEY_LEAVE, payslips: KEY_PAYSLIPS, received: KEY_RECEIVED, taxActual: KEY_TAX_ACTUAL, taxExtras: KEY_TAX_EXTRA, taxUser: KEY_TAX_USER,
     markagePremie: KEY_MARKAGE, lashPremie: KEY_LASH, dop: KEY_DOP, otherDays: KEY_OTHER_DAYS, otherPay: KEY_OTHER_PAY,
   };
   function rawStorage() {

@@ -661,6 +661,7 @@
       <label for="bugText">Bericht</label>
       <textarea id="bugText" name="Bericht" rows="5" placeholder="Wat ging er mis, en wat had je verwacht? bv. op mijn loonbrief staat € 239,84"></textarea>
       <label for="bugFile">Bestand (optioneel)</label>
+      <p class="hint"><b>Voeg geen loonbrief of andere persoonlijke papieren toe.</b> Een schermafdruk van enkel het probleem volstaat.</p>
       <input type="file" id="bugFile" name="attachment" accept="image/*,application/pdf">
       <p class="hint">bv. een schermafbeelding van de app of een foto van je loonbrief. Maximaal 10 MB.</p>
       <label class="check"><input type="checkbox" id="bugDay"> <span>Gekozen dag meesturen (<span id="bugDayName"></span>: shift, functie en bedragen, zonder notities)</span></label>
@@ -680,6 +681,7 @@
       <label for="ideaText">Bericht</label>
       <textarea id="ideaText" name="Bericht" rows="5" placeholder="Wat stel je voor, en waarom zou dat helpen?"></textarea>
       <label for="ideaFile">Bestand (optioneel)</label>
+      <p class="hint"><b>Voeg geen loonbrief of andere persoonlijke papieren toe.</b> Een schermafdruk van enkel het probleem volstaat.</p>
       <input type="file" id="ideaFile" name="attachment" accept="image/*,application/pdf">
       <p class="hint">bv. een schets of een foto van een papier. Maximaal 10 MB.</p>
       <p class="hint">De app-versie wordt automatisch meegestuurd.</p>
@@ -814,7 +816,7 @@
 
     <section>
       <h3>Over deze app</h3>
-      <p class="disclaimer-text">Dit is een <b>hobbyproject</b> van een havenarbeider, <b>David Schütt</b>, gebouwd met behulp van AI (Claude). Het heeft <b>niets te maken met Cewez</b>. De bedragen en informatie kunnen fout zijn: controleer altijd je loonbrief.</p>
+      <p class="disclaimer-text">Dit is een <b>hobbyproject</b> van een havenarbeider, <b>David Schütt</b>, gebouwd met behulp van AI (Claude). Het heeft <b>niets te maken met Cewez</b>. De bedragen en informatie kunnen fout zijn: controleer altijd je loonbrief. <b>Andere apps voor havenarbeiders</b> zijn niet van de maker van deze app: hij heeft er niets mee te maken en is niet verantwoordelijk voor hun berekeningen, hun inhoud of wat ze met je gegevens doen. Haven Werkuren vind je enkel op <b>wikidave.github.io/Haven-Werkuren</b>.</p>
       <p class="hint">De app werkt offline op je gsm: je uren, je loon en al je gegevens blijven op je toestel en worden niet naar de maker of naar iemand anders gestuurd. Alleen een bericht dat je zelf verstuurt via Contact, Fout melden of Voorstel doen gaat via de dienst FormSubmit per e-mail naar de maker. Meer uitleg in de <a href="privacy.html">privacyverklaring</a>.</p>
     </section>
 
@@ -990,6 +992,18 @@
         <summary><h2>Uitbetalingen</h2></summary>
       <div id="slips"></div>
       <div id="diffs"></div>
+      <div class="diffs" id="received">
+        <h3>Ontvangen bedragen</h3>
+        <p class="hint">Komt je loon in stukken of op verschillende dagen? Vul elk bedrag in dat je ontving (zie je rekeningafschrift) bij de periode waarvoor het is. De app telt ze op en zet ze naast zijn berekening.</p>
+        <label for="rcPeriod">Periode</label>
+        <select id="rcPeriod"></select>
+        <div class="row2">
+          <div><label for="rcDate">Datum ontvangen</label><input type="date" id="rcDate"></div>
+          <div><label for="rcAmt">Bedrag (€)</label><input id="rcAmt" inputmode="decimal" placeholder="bv. 1640,27"></div>
+        </div>
+        <button type="button" class="btn ghost" id="rcAdd">Bedrag toevoegen</button>
+        <div id="rcList"></div>
+      </div>
       <button type="button" class="btn ghost scanbtn" data-scan="loonbrief">Loonbrief fotograferen of invullen</button>
       </details>
     </section>
@@ -1386,6 +1400,7 @@
           <label for="contactText">Bericht</label>
           <textarea id="contactText" name="Bericht" rows="5" placeholder="Je bericht"></textarea>
           <label for="contactFile">Bestand (optioneel)</label>
+      <p class="hint"><b>Voeg geen loonbrief of andere persoonlijke papieren toe.</b> Een schermafdruk van enkel het probleem volstaat.</p>
           <input type="file" id="contactFile" name="attachment" accept="image/*,application/pdf">
           <p class="hint">bv. een foto of een PDF. Maximaal 10 MB.</p>
           <button type="submit" class="btn">Versturen</button>
@@ -1397,16 +1412,16 @@
   <iframe name="mailFrame" id="mailFrame" title="Versturen" hidden></iframe>
 
   <footer class="disclaimer">
-    <p>Dit is een <b>hobbyproject</b> van een havenarbeider, <b>David Schütt</b>, gebouwd met behulp van AI (Claude). Het heeft <b>niets te maken met Cewez</b>. De bedragen en informatie kunnen fout zijn: controleer altijd je loonbrief.</p>
+    <p>Dit is een <b>hobbyproject</b> van een havenarbeider, <b>David Schütt</b>, gebouwd met behulp van AI (Claude). Het heeft <b>niets te maken met Cewez</b>. De bedragen en informatie kunnen fout zijn: controleer altijd je loonbrief. <b>Andere apps voor havenarbeiders</b> zijn niet van de maker van deze app: hij heeft er niets mee te maken en is niet verantwoordelijk voor hun berekeningen, hun inhoud of wat ze met je gegevens doen. Haven Werkuren vind je enkel op <b>wikidave.github.io/Haven-Werkuren</b>.</p>
     <p>De app werkt offline op je gsm: je uren, je loon en al je gegevens blijven op je toestel en worden niet naar de maker of naar iemand anders gestuurd. Alleen een bericht dat je zelf verstuurt via Contact, Fout melden of Voorstel doen gaat via de dienst FormSubmit per e-mail naar de maker. Meer uitleg in de <a href="privacy.html">privacyverklaring</a>.</p>
     <p>© 2026 David Schütt · alle rechten voorbehouden. De app kopiëren, aanpassen of verder verspreiden mag niet zonder toestemming.</p>
   </footer>
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="postcodes.js?v=2026-10-13.3"></script>
-<script src="loon.js?v=2026-10-13.3"></script>
-<script src="scan.js?v=2026-10-13.3"></script>
-<script src="app.js?v=2026-10-13.3"></script>
+<script src="postcodes.js?v=2026-10-23.3"></script>
+<script src="loon.js?v=2026-10-23.3"></script>
+<script src="scan.js?v=2026-10-23.3"></script>
+<script src="app.js?v=2026-10-23.3"></script>
 </body>
 </html>
