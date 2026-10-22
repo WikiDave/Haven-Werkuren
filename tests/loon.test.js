@@ -103,6 +103,30 @@ test('herverdelingsdag, recupdag en opsparen voor recup (cao 05/07/2022)', () =>
   assert.equal(Loon.clothingPointsFor({ date: '2026-10-14', kind: 'hv' }), 0);
 });
 
+test('dop niet op zondag of feestdag, rusttijden volgens de Codex art. 36', () => {
+  assert.equal(Loon.dopDayRule('2026-10-18'), 'zondag');
+  assert.equal(Loon.dopDayRule('2026-11-11'), 'feestdag');
+  assert.equal(Loon.dopDayRule('2026-10-17'), 'zaterdag');
+  assert.equal(Loon.dopDayRule('2026-10-14'), '');
+  const w = (list, c) => Loon.workRuleWarnings(list, c);
+  // namiddag 14u00 en de volgende dag dagtaak 08u00: toegelaten (enige uitzondering)
+  assert.deepEqual(w([shift('2026-10-13', '14')], shift('2026-10-14', '08')), []);
+  // namiddag 14u00 en de volgende dag morgentaak 06u00: 8u15 rust
+  assert.equal(w([shift('2026-10-13', '14')], shift('2026-10-14', '06')).length, 1);
+  // nachttaak (22u00) en de volgende dag 08u00: 2u15 rust
+  assert.match(w([shift('2026-10-13', '18')], shift('2026-10-14', '08'))[0], /rust/);
+  // dagtaak met 3 overuren (eindigt 18u45) en volgende morgen 05u00: 10u15 rust
+  assert.equal(w([shift('2026-10-13', '08', { overtime: 3 })], shift('2026-10-14', '05')).length, 1);
+  // gewone opeenvolging: niets
+  assert.deepEqual(w([shift('2026-10-13', '08')], shift('2026-10-14', '08')), []);
+  // 7 shiften van maandag tot zondag
+  const week = ['2026-10-12', '2026-10-13', '2026-10-14', '2026-10-15', '2026-10-16', '2026-10-17'].map((d) => shift(d, '08'));
+  assert.ok(w(week, shift('2026-10-18', '08')).some((x) => /7 shiften/.test(x)));
+  assert.deepEqual(w(week.slice(0, 5), shift('2026-10-17', '08')), []);
+  // afbestelling telt niet
+  assert.deepEqual(w([shift('2026-10-13', '18')], { id: 'a', date: '2026-10-14', code: '08', kind: 'afbestel' }), []);
+});
+
 test('zondagtarief vanaf 18u00 de dag voor een zon- of feestdag', () => {
   assert.equal(Loon.tariffRow('2026-08-22', '18'), 'ZO'); // zaterdag 22u00
   assert.equal(Loon.tariffRow('2026-08-22', '14'), 'ZA'); // zaterdag overdag

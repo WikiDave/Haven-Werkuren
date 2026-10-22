@@ -749,6 +749,48 @@
     return { earned, taken, planned, balance: earned - taken, byCompany, max: 25 };
   }
 
+  // dop (werkloosheid): niet op zondag en niet op een wettelijke feestdag; zaterdag is ongewoon
+  // '' = gewone dag, 'zondag' en 'feestdag' = geen dop, 'zaterdag' = navragen
+  function dopDayRule(date, overrides = {}) {
+    if (weekday(date) === 0) return 'zondag';
+    if (holidayOn(date, overrides)) return 'feestdag';
+    return weekday(date) === 6 ? 'zaterdag' : '';
+  }
+
+  // --- rusttijden (Codex art. 36) -------------------------------------------------
+  // minstens 11 uur rust tussen twee taken (behalve een dagtaak 08u00 na een namiddagtaak 14u00 de dag ervoor),
+  // maximaal 6 shiften van maandag tot zondag en 50 arbeidsuren per week
+  const MIN = 60000;
+  function shiftSpan(e) {
+    if (!e || !['full', 'half'].includes(e.kind) || !e.date || !e.code) return null;
+    const hour = e.code === '18' && e.kind === 'full' ? 22 : Number(e.code); // volle taak in de rij 18u-22u: nachttaak om 22u00
+    const start = Date.parse(`${e.date}T00:00:00Z`) / MIN + hour * 60;
+    const span = (e.kind === 'full' ? 465 : 240) + Math.round((Number(e.overtime) || 0) * 60); // 7u45 of 4 uur, plus overuren
+    const work = (e.kind === 'full' ? 435 : 240) + Math.round((Number(e.overtime) || 0) * 60); // min een half uur schafttijd
+    return { e, hour, start, end: start + span, work };
+  }
+  const mondayOf = (date) => addDays(date, -((weekday(date) + 6) % 7));
+  function workRuleWarnings(entries, candidate) {
+    const me = shiftSpan(candidate);
+    if (!me) return [];
+    const others = entries.filter((x) => x.id !== candidate.id).map(shiftSpan).filter(Boolean);
+    const fmt = (m) => { const d = new Date(m * MIN); return `${d.getUTCDate()}/${d.getUTCMonth() + 1} ${String(d.getUTCHours()).padStart(2, '0')}u${String(d.getUTCMinutes()).padStart(2, '0')}`; };
+    const out = [];
+    for (const o of others) {
+      const [a, b] = o.start <= me.start ? [o, me] : [me, o];
+      const rest = b.start - a.end;
+      if (rest < 0) { out.push(`Overlapt met je shift van ${fmt(o.start)}.`); continue; }
+      const allowed = a.hour === 14 && b.hour === 8 && b.e.date === addDays(a.e.date, 1);
+      if (rest < 660 && !allowed) out.push(`Maar ${Math.floor(rest / 60)}u${String(rest % 60).padStart(2, '0')} rust tussen ${fmt(a.start)} en ${fmt(b.start)} (minstens 11 uur).`);
+    }
+    const week = mondayOf(candidate.date), end = addDays(week, 7);
+    const inWeek = [...others, me].filter((x) => x.e.date >= week && x.e.date < end);
+    if (inWeek.length > 6) out.push(`${inWeek.length} shiften in de week van ${fmt(Date.parse(`${week}T00:00:00Z`) / MIN).split(' ')[0]} (maximaal 6).`);
+    const hours = inWeek.reduce((t, x) => t + x.work, 0) / 60;
+    if (hours > 50) out.push(`${String(Math.round(hours * 10) / 10).replace('.', ',')} arbeidsuren in die week (maximaal 50).`);
+    return out;
+  }
+
   // --- verlof ---------------------------------------------------------------------
   // verlofdagen tussen twee datums: zondagen en feestdagen tellen niet mee, zaterdagen alleen als je die vraagt
   function leaveDays(from, to, { saturdays = false, overrides = {} } = {}) {
@@ -766,7 +808,7 @@
   const api = {
     round2, addDays, weekday, periodOf, paymentDate,
     START_HOURS, RATE_ROWS, DEFAULT_RATE_PERIODS, FUNCTIONS, FUNCTION_GROUPS, functionOf, isMarkeerder, KADER_RATES, PARAMS, TRAVEL, PLACES, DEFAULT_SETTINGS,
-    legalHolidays, holidays, holidayOn, tariffRow, rateFor, travelAllowance, travelInfo, travelEstimate, POSTCODES, rowOf, RECUP_FACTOR, recupLedger,
+    legalHolidays, holidays, holidayOn, tariffRow, rateFor, travelAllowance, travelInfo, travelEstimate, POSTCODES, rowOf, RECUP_FACTOR, recupLedger, dopDayRule, workRuleWarnings,
     DEFAULT_WITHHOLDING, DEFAULT_INCOME_TAX, setTaxTables, getTaxTables, normalizeTable, shiftLines, estimateWithholding, estimateAnnualTax, calcPeriod, calcAll,
     CLOTHING, CLOTHING_ITEMS, clothingPointsFor, clothingLedger, leaveDays, workedDays, hvLedger,
   };

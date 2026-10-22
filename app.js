@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-23.1';
+const APP_VERSION = '2026-10-23.2';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -686,6 +686,8 @@ const APP_VERSION = '2026-10-23.1';
       if (e[k]) { p.store()[e.company || ''] = e[k]; save(p.key, p.store()); }
       if (e[k] === undefined) delete e[k];
     }
+    const rules = Loon.workRuleWarnings(entries, e);
+    if (rules.length && !confirm(`Let op, rusttijden (Codex art. 36):\n- ${rules.join('\n- ')}\n\nToch opslaan?`)) return;
     e.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     if (e.kind === 'afbestel') { e.overtime = 0; e.wijziging = false; }
     if (!e.recup) delete e.recup;
@@ -804,6 +806,7 @@ const APP_VERSION = '2026-10-23.1';
     }
     $('lvFuncWrap').hidden = !(lv && PAID_LEAVE[lv.type]);
     if (lv && PAID_LEAVE[lv.type]) $('lvFunc').value = lv.func || 'alle';
+    else if (dp && ['zondag', 'feestdag'].includes(Loon.dopDayRule(selected, holidayOverrides))) $('dayLeaveNote').textContent = `Dop (werkloosheid): telt niet mee, want op een ${Loon.dopDayRule(selected, holidayOverrides)} is er geen dop. Haal hem weg.`;
     else if (dp) $('dayLeaveNote').textContent = 'Dop (werkloosheid)' + (part === 0.5 ? ': halve dag, naast je halve shift' : part === 0 ? ': telt niet mee, want er staat een volle shift' : '');
     else if (ow) $('dayLeaveNote').textContent = 'Ander werk (andere job)';
     $('dayOff').hidden = !!(lv || dp || ow);
@@ -1404,7 +1407,10 @@ const APP_VERSION = '2026-10-23.1';
     const type = ev.target.closest('[data-off]')?.dataset.off;
     if (!type) return;
     if (type === 'dop') {
+      const rule = Loon.dopDayRule(selected, holidayOverrides);
+      if (rule === 'zondag' || rule === 'feestdag') return alert(`Op een ${rule} is er geen dop.`);
       if (!dopPart(selected)) return alert('Op een dag met een volle shift (of afbestelling) is er geen dop. Bij een halve shift kan wel een halve dop.');
+      if (rule === 'zaterdag' && !confirm('Dop op een zaterdag is ongewoon. Kijk na of je die dag echt dop krijgt. Toch invullen?')) return;
       dop.push(selected); saveDop();
     } else if (type === 'ander') {
       otherDays.push(selected); saveOther();
@@ -1433,7 +1439,7 @@ const APP_VERSION = '2026-10-23.1';
   const dopOn = (iso) => dop.includes(iso);
   // deel van een dag dop: wat er overblijft naast de shiften (volle shift of afbestelling = 1, halve = ½)
   // shiften die om 18u of later beginnen (ook 22u) nemen de dop van die dag niet weg
-  const dopPart = (iso) => Math.max(0, 1 - dayEntries(iso).filter((e) => e.code !== '18').reduce((t, e) => t + (e.kind === 'half' ? 0.5 : 1), 0));
+  const dopPart = (iso) => ['zondag', 'feestdag'].includes(Loon.dopDayRule(iso, holidayOverrides)) ? 0 : Math.max(0, 1 - dayEntries(iso).filter((e) => e.code !== '18').reduce((t, e) => t + (e.kind === 'half' ? 0.5 : 1), 0));
   function dopStats(prefix) {
     const n = dop.filter((d) => d.startsWith(prefix)).reduce((t, d) => t + dopPart(d), 0);
     const per = Number(settings.dopDay) || 0;
@@ -1801,6 +1807,7 @@ const APP_VERSION = '2026-10-23.1';
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
     ['2026-10-23', [
+      'Dop telt niet meer op zondagen en feestdagen (op een zaterdag vraagt de app of je het zeker weet). Bij een shift met te weinig rust (minder dan 11 uur, behalve een dagtaak na een namiddagtaak) of meer dan 6 shiften of 50 uur in een week, waarschuwt de app volgens de Codex (art. 36).',
       'Ontvangen bedragen: komt je loon in stukken of op verschillende dagen? Vul elk bedrag in bij de periode waarvoor het is (Uitbetalingen), dan telt de app ze op en toont het verschil met zijn berekening.',
     ]],
     ['2026-10-22', [
