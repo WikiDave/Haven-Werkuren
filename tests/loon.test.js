@@ -134,6 +134,9 @@ test('uitbetalingsperiodes', () => {
   assert.equal(Loon.periodOf('2026-09-30').end, '2026-09-30');
   // periode B september: betaald op de 2e werkdag na 30/09 = vrijdag 2 oktober (loonbrief)
   assert.equal(Loon.paymentDate(Loon.periodOf('2026-09-20')).date, '2026-10-02');
+  // periode A: 3e werkdag na de 15e (loonbrief augustus: 19/8; rekeningafschrift oktober: 20/10)
+  assert.equal(Loon.paymentDate(Loon.periodOf('2026-08-10')).date, '2026-08-19');
+  assert.equal(Loon.paymentDate(Loon.periodOf('2026-10-10')).date, '2026-10-20');
 });
 
 test('bedrijfsvoorheffing volgens de sleutelformule 2026', () => {

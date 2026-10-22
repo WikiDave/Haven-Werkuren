@@ -426,11 +426,11 @@
     };
   }
 
-  // A: rond de 19e; B: rond de 2e werkdag na de periode (september 2026: vrijdag 2 oktober)
+  // A: rond de 3e werkdag na de 15e (augustus: wo 19/8, oktober: di 20/10); B: rond de 2e werkdag na de periode (do 1/10 -> vr 2/10)
   function paymentDate(period, overrides = {}) {
-    if (period.half === 'A') return { date: `${period.year}-${pad(period.month)}-19`, approx: true };
     let d = period.end, count = 0;
-    while (count < 2) {
+    const n = period.half === 'A' ? 3 : 2;
+    while (count < n) {
       d = addDays(d, 1);
       if (![0, 6].includes(weekday(d)) && !holidayOn(d, overrides)) count++;
     }

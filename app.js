@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-22.1';
+const APP_VERSION = '2026-10-22.2';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1763,6 +1763,7 @@ const APP_VERSION = '2026-10-22.1';
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
     ['2026-10-22', [
+      'De eerste helft van de maand wordt rond de 3e werkdag na de 15e betaald (oktober: dinsdag 20 oktober), zoals op je rekeningafschrift.',
       'Berichten aan de maker: je statuut wordt niet meer meegestuurd, en bij het bestand staat een waarschuwing om geen loonbrieven of andere persoonlijke papieren bij te voegen. De privacyverklaring vermeldt nu op welke grond een bericht via FormSubmit buiten de EU gaat.',
     ]],
     ['2026-10-13', [
