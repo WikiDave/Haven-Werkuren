@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-23.2';
+const APP_VERSION = '2026-10-23.3';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1807,6 +1807,7 @@ const APP_VERSION = '2026-10-23.2';
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
     ['2026-10-23', [
+      'Er zijn ook andere apps voor havenarbeiders in omloop. Die zijn niet van de maker van Haven Werkuren, die er niets mee te maken heeft en er niet verantwoordelijk voor is. Haven Werkuren vind je enkel op wikidave.github.io/Haven-Werkuren.',
       'Dop telt niet meer op zondagen en feestdagen (op een zaterdag vraagt de app of je het zeker weet). Bij een shift met te weinig rust (minder dan 11 uur, behalve een dagtaak na een namiddagtaak) of meer dan 6 shiften of 50 uur in een week, waarschuwt de app volgens de Codex (art. 36).',
       'Ontvangen bedragen: komt je loon in stukken of op verschillende dagen? Vul elk bedrag in bij de periode waarvoor het is (Uitbetalingen), dan telt de app ze op en toont het verschil met zijn berekening.',
     ]],
