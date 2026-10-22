@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-13.3';
+const APP_VERSION = '2026-10-22.1';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1762,6 +1762,9 @@ const APP_VERSION = '2026-10-13.3';
   // --- wat is er nieuw -----------------------------------------------------------
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
+    ['2026-10-22', [
+      'Berichten aan de maker: je statuut wordt niet meer meegestuurd, en bij het bestand staat een waarschuwing om geen loonbrieven of andere persoonlijke papieren bij te voegen. De privacyverklaring vermeldt nu op welke grond een bericht via FormSubmit buiten de EU gaat.',
+    ]],
     ['2026-10-13', [
       'Herverdelingsdagen (HV) en recupdagen worden nu betaald in de berekening: het dagloon van je functie (een HV ook met de vaste premie), zonder kledij- of vervoersvergoeding. Kies de functie van die dag in de dag zelf. Nieuw: "Opsparen voor recup" bij een shift op zaterdag, zondag of feestdag (100% uitbetaald, de rest opgespaard), met je recupsaldo bij Verlof. Met dank voor de tip!',
       'Nagekeken met de Codex en de loontabel van 1 juli 2026: een halve shift is nu 4 uur loon volgens het aanvangsuur (om 18u00 op een weekdag: 4 uur van de namiddagshift, op zaterdag van de zaterdagshift); vroeger rekende de app de helft van het shiftloon. De kledijlijst volgt bijlage 11 van juli 2026 (buff erbij, helm bij het minimumpakket, softshell bij aanvullend). Alle lonen, premies en de vervoerstabel kloppen met Cewez.',
@@ -1926,7 +1929,7 @@ const APP_VERSION = '2026-10-13.3';
   // extra regels in de mail, per plaats in de app (veldnamen zonder spaties: FormSubmit maakt er _ van)
   const mailExtra = {
     'Fout melden': () => {
-      const x = { 'App-versie': `${APP_VERSION} · statuut: ${settings.status || ''} · als app: ${standalone ? 'ja' : 'nee'} · scherm: ${screen.width}×${screen.height}`, Toestel: navigator.userAgent };
+      const x = { 'App-versie': `${APP_VERSION} · als app: ${standalone ? 'ja' : 'nee'} · scherm: ${screen.width}×${screen.height}`, Toestel: navigator.userAgent };
       if ($('bugDay').checked) {
         const list = entries.filter((e) => e.date === selected);
         x.Dag = [fmtDate(selected, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), ...(list.length ? list.map((e) => {
@@ -1936,7 +1939,7 @@ const APP_VERSION = '2026-10-13.3';
       }
       return x;
     },
-    'Voorstel doen': () => ({ 'App-versie': `${APP_VERSION} · statuut: ${settings.status || ''}` }),
+    'Voorstel doen': () => ({ 'App-versie': APP_VERSION }),
     Contact: () => ({ 'App-versie': APP_VERSION }),
   };
   // alle velden van de mail, in volgorde: datum en plaats bovenaan, dan wat de gebruiker schreef
