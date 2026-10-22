@@ -992,6 +992,18 @@
         <summary><h2>Uitbetalingen</h2></summary>
       <div id="slips"></div>
       <div id="diffs"></div>
+      <div class="diffs" id="received">
+        <h3>Ontvangen bedragen</h3>
+        <p class="hint">Komt je loon in stukken of op verschillende dagen? Vul elk bedrag in dat je ontving (zie je rekeningafschrift) bij de periode waarvoor het is. De app telt ze op en zet ze naast zijn berekening.</p>
+        <label for="rcPeriod">Periode</label>
+        <select id="rcPeriod"></select>
+        <div class="row2">
+          <div><label for="rcDate">Datum ontvangen</label><input type="date" id="rcDate"></div>
+          <div><label for="rcAmt">Bedrag (€)</label><input id="rcAmt" inputmode="decimal" placeholder="bv. 1640,27"></div>
+        </div>
+        <button type="button" class="btn ghost" id="rcAdd">Bedrag toevoegen</button>
+        <div id="rcList"></div>
+      </div>
       <button type="button" class="btn ghost scanbtn" data-scan="loonbrief">Loonbrief fotograferen of invullen</button>
       </details>
     </section>
@@ -1407,9 +1419,9 @@
 </main>
 
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="postcodes.js?v=2026-10-22.2"></script>
-<script src="loon.js?v=2026-10-22.2"></script>
-<script src="scan.js?v=2026-10-22.2"></script>
-<script src="app.js?v=2026-10-22.2"></script>
+<script src="postcodes.js?v=2026-10-23.1"></script>
+<script src="loon.js?v=2026-10-23.1"></script>
+<script src="scan.js?v=2026-10-23.1"></script>
+<script src="app.js?v=2026-10-23.1"></script>
 </body>
 </html>

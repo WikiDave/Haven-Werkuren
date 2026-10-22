@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-22.2';
+const APP_VERSION = '2026-10-23.1';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -101,6 +101,7 @@ const APP_VERSION = '2026-10-22.2';
   const KEY_LAST_FUNC = 'haven-werkuren.lastFunction';
   const KEY_MEDICAL = 'haven-werkuren.medicalChecks';
   const KEY_LEAVE = 'haven-werkuren.leave';
+  const KEY_RECEIVED = 'haven-werkuren.received';   // ontvangen bedragen per periode: { '2026-10-A': [{ id, date, amount }] }
   const KEY_PAYSLIPS = 'haven-werkuren.payslips';   // ingescande loonbrieven per periode
   const KEY_TAX_ACTUAL = 'haven-werkuren.taxActual'; // echte aanslag per inkomstenjaar
   const KEY_TAX_EXTRA = 'haven-werkuren.taxExtras';
@@ -148,6 +149,7 @@ const APP_VERSION = '2026-10-22.2';
   let showMode = load(KEY_MODE, 'bruto');
   let purchases = load(KEY_PURCHASES, []);
   let medChecks = load(KEY_MEDICAL, []); // [{ id, date, note }]
+  let received = load(KEY_RECEIVED, {});
   let payslips = load(KEY_PAYSLIPS, {}); // { '2026-09-B': { basisRsz, belastbaar, voorheffing, netto } }
   let taxActual = load(KEY_TAX_ACTUAL, {}); // { jaar: bedrag (min = terug) }
   let leave = load(KEY_LEAVE, []);       // [{ date, type, g }] één per verlofdag; g = samen aangevraagd
@@ -964,6 +966,41 @@ const APP_VERSION = '2026-10-22.2';
     catch { alert(text); }
   });
 
+  // --- ontvangen bedragen (loon dat in stukken of op verschillende dagen binnenkomt) ----------------
+  const receivedTotal = (key) => round2((received[key] || []).reduce((t, x) => t + x.amount, 0));
+  function renderReceived() {
+    const year = String(viewYear);
+    const keys = [...new Set([...Object.keys(calc.periods), ...Object.keys(received)])].filter((k) => k.startsWith(`${year}-`)).sort();
+    const cur = $('rcPeriod').value;
+    const name = (k) => rangeText([Loon.periodOf(`${k.slice(0, 7)}-${k.endsWith('A') ? '01' : '16'}`).start, Loon.periodOf(`${k.slice(0, 7)}-${k.endsWith('A') ? '01' : '16'}`).end]);
+    $('rcPeriod').innerHTML = keys.map((k) => `<option value="${k}">${name(k)}</option>`).join('') || '<option value="">geen periodes</option>';
+    if (keys.includes(cur)) $('rcPeriod').value = cur; else if (keys.length) $('rcPeriod').value = keys[keys.length - 1];
+    $('rcList').innerHTML = keys.filter((k) => (received[k] || []).length).map((k) => {
+      const r = calc.periods[k], got = receivedTotal(k), d = r ? round2(got - r.netto) : null;
+      const items = received[k].slice().sort((a, b) => a.date.localeCompare(b.date)).map((x) => `<li>${fmtDate(x.date, { day: 'numeric', month: 'short' })}: ${money(x.amount)} <button type="button" class="linkbtn" data-rcdel="${k}|${x.id}">weghalen</button></li>`).join('');
+      const cmp = r ? `Berekend door de app: ${money(r.netto)}. ${Math.abs(d) < 0.01 ? '<b class="ok">Klopt.</b>' : d > 0 ? `Je ontving <b class="off">${money(d)} meer</b>.` : `Nog <b class="off">${money(-d)}</b> te goed (of een deel dat nog volgt).`}` : 'Geen shiften in de app voor deze periode.';
+      return `<p><b>${name(k)}</b>: ontvangen ${money(got)}</p><ul>${items}</ul><p class="hint">${cmp}</p>`;
+    }).join('');
+  }
+  $('rcAdd').addEventListener('click', () => {
+    const key = $('rcPeriod').value, date = $('rcDate').value;
+    const amount = Number($('rcAmt').value.trim().replace(/\s|€/g, '').replace(',', '.'));
+    if (!key) return alert('Kies een periode.');
+    if (!date) return alert('Kies de datum waarop je het bedrag ontving.');
+    if (!Number.isFinite(amount) || amount <= 0) return alert('Vul een geldig bedrag in.');
+    (received[key] ||= []).push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), date, amount: round2(amount) });
+    save(KEY_RECEIVED, received); $('rcAmt').value = '';
+    render();
+  });
+  $('rcList').addEventListener('click', (ev) => {
+    const v = ev.target.closest('[data-rcdel]')?.dataset.rcdel;
+    if (!v) return;
+    const [key, id] = v.split('|');
+    received[key] = (received[key] || []).filter((x) => x.id !== id);
+    if (!received[key].length) delete received[key];
+    save(KEY_RECEIVED, received); render();
+  });
+
   function render() {
     calc = Loon.calcAll([...entries, ...paidLeave()], ctx());
     const title = fmtDate(`${viewYear}-${pad(viewMonth + 1)}-01`, { month: 'long', year: 'numeric' });
@@ -1003,6 +1040,7 @@ const APP_VERSION = '2026-10-22.2';
 
     $('slips').innerHTML = slipHtml('A') + slipHtml('B');
     renderDiffs();
+    renderReceived();
     renderClothing();
     renderMedical();
     renderLeave();
@@ -1762,6 +1800,9 @@ const APP_VERSION = '2026-10-22.2';
   // --- wat is er nieuw -----------------------------------------------------------
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
+    ['2026-10-23', [
+      'Ontvangen bedragen: komt je loon in stukken of op verschillende dagen? Vul elk bedrag in bij de periode waarvoor het is (Uitbetalingen), dan telt de app ze op en toont het verschil met zijn berekening.',
+    ]],
     ['2026-10-22', [
       'De eerste helft van de maand wordt rond de 3e werkdag na de 15e betaald (oktober: dinsdag 20 oktober), zoals op je rekeningafschrift.',
       'Berichten aan de maker: je statuut wordt niet meer meegestuurd, en bij het bestand staat een waarschuwing om geen loonbrieven of andere persoonlijke papieren bij te voegen. De privacyverklaring vermeldt nu op welke grond een bericht via FormSubmit buiten de EU gaat.',
@@ -2533,7 +2574,7 @@ const APP_VERSION = '2026-10-22.2';
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
   const KEY_LAST_BACKUP = 'haven-werkuren.lastBackup';
-  const backupJson = () => JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, companyPhones, companyNotes, medChecks, leave, payslips, taxActual, taxExtras, taxUser, markagePremie, lashPremie, dop, otherDays, otherPay }, null, 2);
+  const backupJson = () => JSON.stringify({ entries, periods, settings, holidayOverrides, customCompanies, hiddenCompanies, purchases, clothingStart, companyLocations, companyPins, lastLocation, companyPhones, companyNotes, medChecks, leave, payslips, received, taxActual, taxExtras, taxUser, markagePremie, lashPremie, dop, otherDays, otherPay }, null, 2);
   const backupName = () => `werkuren-backup-${isoDate(new Date())}.json`;
   function backupDone() {
     save(KEY_LAST_BACKUP, isoDate(new Date()));
@@ -2572,7 +2613,7 @@ const APP_VERSION = '2026-10-22.2';
   // een logo moet een eigen foto zijn; tekst wordt ingekort.
   const ID_RE = /^[\w-]{0,60}$/;
   const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-  const KEY_RES = { payslips: /^\d{4}-\d{2}-[AB]$/, otherPay: /^\d{4}-\d{2}$/, taxExtras: /^\d{4}$/, taxActual: /^\d{4}$/ };
+  const KEY_RES = { payslips: /^\d{4}-\d{2}-[AB]$/, received: /^\d{4}-\d{2}-[AB]$/, otherPay: /^\d{4}-\d{2}$/, taxExtras: /^\d{4}$/, taxActual: /^\d{4}$/ };
   function cleanBackupValue(v, key, depth = 0) {
     if (depth > 8) throw new Error('te diep');
     if (v === null || typeof v === 'boolean') return v;
@@ -2619,6 +2660,7 @@ const APP_VERSION = '2026-10-22.2';
     if (data.companyPhones) companyPhones = data.companyPhones;
     if (data.companyNotes) companyNotes = data.companyNotes;
     if (data.payslips) payslips = data.payslips;
+    received = data.received && typeof data.received === 'object' ? data.received : {};
     if (data.taxActual) taxActual = data.taxActual;
     if (data.taxExtras) taxExtras = data.taxExtras;
     if (data.taxUser) { taxUser = data.taxUser; applyTaxTables(); }
@@ -2633,7 +2675,7 @@ const APP_VERSION = '2026-10-22.2';
     if (data.otherPay) otherPay = data.otherPay;
     save(KEY_ENTRIES, entries); save(KEY_PERIODS, periods); save(KEY_SETTINGS, settings); save(KEY_HOLIDAYS, holidayOverrides);
     save(KEY_CUSTOM_CO, customCompanies); save(KEY_HIDDEN_CO, hiddenCompanies);
-    save(KEY_MEDICAL, medChecks); save(KEY_LEAVE, leave); save(KEY_PAYSLIPS, payslips); save(KEY_TAX_ACTUAL, taxActual); save(KEY_TAX_EXTRA, taxExtras); save(KEY_TAX_USER, taxUser); save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation); save(KEY_CO_PHONE, companyPhones); save(KEY_CO_NOTES, companyNotes);
+    save(KEY_MEDICAL, medChecks); save(KEY_LEAVE, leave); save(KEY_PAYSLIPS, payslips); save(KEY_RECEIVED, received); save(KEY_TAX_ACTUAL, taxActual); save(KEY_TAX_EXTRA, taxExtras); save(KEY_TAX_USER, taxUser); save(KEY_PURCHASES, purchases); save(KEY_CLOTH_START, clothingStart); save(KEY_CO_LOCS, companyLocations); save(KEY_CO_PIN, companyPins); save(KEY_LAST_LOC, lastLocation); save(KEY_CO_PHONE, companyPhones); save(KEY_CO_NOTES, companyNotes);
     save(KEY_MARKAGE, markagePremie); save(KEY_LASH, lashPremie); save(KEY_DOP, dop); save(KEY_OTHER_DAYS, otherDays); save(KEY_OTHER_PAY, otherPay);
     renderCompanyPicker(); renderSettings(); renderTaxTables(); renderHolidays(); renderRates(); render();
   }
@@ -2657,7 +2699,7 @@ const APP_VERSION = '2026-10-22.2';
     entries: KEY_ENTRIES, periods: KEY_PERIODS, settings: KEY_SETTINGS, holidayOverrides: KEY_HOLIDAYS, customCompanies: KEY_CUSTOM_CO,
     hiddenCompanies: KEY_HIDDEN_CO, purchases: KEY_PURCHASES, clothingStart: KEY_CLOTH_START, companyLocations: KEY_CO_LOCS,
     companyPins: KEY_CO_PIN, lastLocation: KEY_LAST_LOC, companyPhones: KEY_CO_PHONE, companyNotes: KEY_CO_NOTES, medChecks: KEY_MEDICAL,
-    leave: KEY_LEAVE, payslips: KEY_PAYSLIPS, taxActual: KEY_TAX_ACTUAL, taxExtras: KEY_TAX_EXTRA, taxUser: KEY_TAX_USER,
+    leave: KEY_LEAVE, payslips: KEY_PAYSLIPS, received: KEY_RECEIVED, taxActual: KEY_TAX_ACTUAL, taxExtras: KEY_TAX_EXTRA, taxUser: KEY_TAX_USER,
     markagePremie: KEY_MARKAGE, lashPremie: KEY_LASH, dop: KEY_DOP, otherDays: KEY_OTHER_DAYS, otherPay: KEY_OTHER_PAY,
   };
   function rawStorage() {
