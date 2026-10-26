@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-23.3';
+const APP_VERSION = '2026-10-26.1';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -99,6 +99,7 @@ const APP_VERSION = '2026-10-23.3';
   const KEY_MODE = 'haven-werkuren.showMode';
   const KEY_LAST_WORK = 'haven-werkuren.lastWork';
   const KEY_LAST_FUNC = 'haven-werkuren.lastFunction';
+  const KEY_LAST_CODE = 'haven-werkuren.lastCode';   // laatst gekozen aanvangsuur in het formulier
   const KEY_MEDICAL = 'haven-werkuren.medicalChecks';
   const KEY_LEAVE = 'haven-werkuren.leave';
   const KEY_RECEIVED = 'haven-werkuren.received';   // ontvangen bedragen per periode: { '2026-10-A': [{ id, date, amount }] }
@@ -611,7 +612,8 @@ const APP_VERSION = '2026-10-23.3';
   // --- formulier ----------------------------------------------------------
   function fillCodes() {
     $('code').innerHTML = Loon.START_HOURS.map((r) => `<option value="${r.id}">${r.label}</option>`).join('');
-    $('code').value = '08';
+    const last = load(KEY_LAST_CODE, '08');
+    $('code').value = Loon.START_HOURS.some((r) => r.id === last) ? last : '08'; // het laatst gekozen uur, niet altijd 08u00
   }
 
   // opsparen voor recup kan enkel als erkende havenarbeider, voor een gewerkte shift aan zaterdag- of zondagtarief
@@ -695,6 +697,7 @@ const APP_VERSION = '2026-10-23.3';
     save(KEY_ENTRIES, entries);
     save(KEY_LAST_WORK, e.work);
     save(KEY_LAST_FUNC, e.func);
+    save(KEY_LAST_CODE, e.code);
     $('ot').value = ''; $('note').value = ''; $('kaai').value = ''; $('wijziging').checked = false; $('markage').checked = false; $('markageAmt').hidden = true; $('lash').checked = false; $('lashAmt').hidden = true;
     $('kind').value = 'full'; $('tariff').value = 'auto';
     renderCompanyPicker();
@@ -1806,6 +1809,9 @@ const APP_VERSION = '2026-10-23.3';
   // --- wat is er nieuw -----------------------------------------------------------
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
+    ['2026-10-26', [
+      'Het invulvak voor een nieuwe shift onthoudt nu je laatst gekozen aanvangsuur, in plaats van altijd terug te springen naar 08u00. Je opgeslagen shiften veranderen daar niet door.',
+    ]],
     ['2026-10-23', [
       'Er zijn ook andere apps voor havenarbeiders in omloop. Die zijn niet van de maker van Haven Werkuren, die er niets mee te maken heeft en er niet verantwoordelijk voor is. Haven Werkuren vind je enkel op wikidave.github.io/Haven-Werkuren.',
       'Dop telt niet meer op zondagen en feestdagen (op een zaterdag vraagt de app of je het zeker weet). Bij een shift met te weinig rust (minder dan 11 uur, behalve een dagtaak na een namiddagtaak) of meer dan 6 shiften of 50 uur in een week, waarschuwt de app volgens de Codex (art. 36).',
