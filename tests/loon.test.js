@@ -181,6 +181,16 @@ test('bedrijfsvoorheffing volgens de sleutelformule 2026', () => {
   assert.equal(bv(1000, { werkbonus: 50 }), 66.94);
 });
 
+test('belastingvrije som 11.550 vanaf 1 november 2026 (KB 27/09/2026)', () => {
+  const bv = (belastbaar, date) => Loon.estimateWithholding(belastbaar, {}, date).amount;
+  // oktober: 11170 -> 371,92 (zie hoger)
+  assert.equal(bv(1652.55, '2026-10-16'), 371.92);
+  // november: 33591,20 netto; schaal 11913,96 - 11550 x 26,75% (3089,63) = 8824,33; / 12 = 735,36; / 2 = 367,68
+  assert.equal(bv(1652.55, '2026-11-16'), 367.68);
+  // per maand: (11550 - 11170) x 26,75% / 12 = 8,47 minder
+  assert.equal(Loon.round2(bv(1652.55, '2026-10-16') * 2 - bv(1652.55, '2026-11-16') * 2), 8.48); // afronding per halve maand
+});
+
 test('belastingbedragen vervangen en nieuwe bedragen vanaf een datum', () => {
   const bv = (belastbaar, date) => Loon.estimateWithholding(belastbaar, {}, date).amount;
   const w = Loon.DEFAULT_WITHHOLDING[0];
@@ -196,7 +206,7 @@ test('belastingbedragen vervangen en nieuwe bedragen vanaf een datum', () => {
   } finally {
     Loon.setTaxTables();
   }
-  assert.equal(bv(1652.55, '2026-11-16'), 371.92);
+  assert.equal(bv(1652.55, '2026-11-16'), 367.68); // standaardbedragen: vanaf 1/11/2026 al 11.550
 });
 
 test('belasting.json is gelijk aan de standaardbedragen in loon.js', () => {

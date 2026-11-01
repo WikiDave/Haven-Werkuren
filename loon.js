@@ -452,6 +452,16 @@
     quotientRate: 0.30, quotientMax: 13788,
     kidsReduction: [0, 621, 1660, 4396, 7614, 11098, 14582, 18104, 21968], extraKid: 3864,
     werkbonusRate: 0.3314,                    // vermindering: 33,14% van de werkbonus (luik A)
+  }, {
+    // KB 27/09/2026 (BS 02/10/2026): belastingvrije som 11.550 voor inkomsten betaald vanaf 1/11/2026;
+    // de andere bedragen blijven tot er bevestigde nieuwe zijn
+    from: '2026-11-01',
+    scale: [[16710, 0.2675], [29500, 0.4280], [51050, 0.4815], [Infinity, 0.5350]],
+    costRate: 0.30, costMax: 6070,
+    taxFree: 11550,
+    quotientRate: 0.30, quotientMax: 13788,
+    kidsReduction: [0, 621, 1660, 4396, 7614, 11098, 14582, 18104, 21968], extraKid: 3864,
+    werkbonusRate: 0.3314,
   }];
 
   // in JSON staat "null" voor een schijf zonder bovengrens; hier is dat Infinity

@@ -1,7 +1,7 @@
 // Haven Werkuren: de app zelf (uit index.html gehaald, zodat een strikte Content-Security-Policy kan).
 // Versie van de app. Bij elke wijziging ophogen, samen met version.json en de ?v= van loon.js
 // (een test controleert dat ze gelijk zijn).
-const APP_VERSION = '2026-10-26.1';
+const APP_VERSION = '2026-11-01.1';
 (() => {
   // Nieuwere versie online? Dan opnieuw laden zonder de bewaarde (oude) kopie.
   // version.json wordt nooit uit de cache gehaald; de ?v= in de link omzeilt de oude pagina.
@@ -1809,6 +1809,9 @@ const APP_VERSION = '2026-10-26.1';
   // --- wat is er nieuw -----------------------------------------------------------
   // Nieuwste bovenaan. Bij elke nieuwe functie hier een regel toevoegen.
   const NEWS = [
+    ['2026-11-01', [
+      'Vanaf 1 november 2026 is de belastingvrije som in de bedrijfsvoorheffing hoger (€ 11.550 in plaats van € 11.170): ongeveer € 8,47 minder voorheffing per maand. De app rekent er mee vanaf de uitbetalingen van november.',
+    ]],
     ['2026-10-26', [
       'Het invulvak voor een nieuwe shift onthoudt nu je laatst gekozen aanvangsuur, in plaats van altijd terug te springen naar 08u00. Je opgeslagen shiften veranderen daar niet door.',
     ]],

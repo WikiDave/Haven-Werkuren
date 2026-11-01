@@ -1,8 +1,8 @@
 {
-  "updated": "2026-10-05",
+  "updated": "2026-11-01",
   "note": "Belastingbedragen voor Haven Werkuren. withholding = sleutelformule bedrijfsvoorheffing (per betaaldatum), incomeTax = personenbelasting (per inkomstenjaar). null = geen bovengrens.",
   "sources": {
-    "withholding": "FOD Financien, bijlage III KB/WIB 92 (BS 29-12-2025); kinderverminderingen en max. quotient 2026: bedragen 2024 geindexeerd",
+    "withholding": "FOD Financien, bijlage III KB/WIB 92 (BS 29-12-2025); kinderverminderingen en max. quotient 2026: bedragen 2024 geindexeerd; vanaf 01/11/2026 belastingvrije som 11.550 (KB 27/09/2026, BS 02/10/2026; Securex, BeSoX, Numb3rs)",
     "incomeTax": "Geindexeerde bedragen aanslagjaar 2027 (Practicali)"
   },
   "withholding": [
@@ -12,6 +12,18 @@
       "costRate": 0.3,
       "costMax": 6070,
       "taxFree": 11170,
+      "quotientRate": 0.3,
+      "quotientMax": 13788,
+      "kidsReduction": [0, 621, 1660, 4396, 7614, 11098, 14582, 18104, 21968],
+      "extraKid": 3864,
+      "werkbonusRate": 0.3314
+    },
+    {
+      "from": "2026-11-01",
+      "scale": [[16710, 0.2675], [29500, 0.428], [51050, 0.4815], [null, 0.535]],
+      "costRate": 0.3,
+      "costMax": 6070,
+      "taxFree": 11550,
       "quotientRate": 0.3,
       "quotientMax": 13788,
       "kidsReduction": [0, 621, 1660, 4396, 7614, 11098, 14582, 18104, 21968],
